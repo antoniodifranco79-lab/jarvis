@@ -162,3 +162,76 @@ def test_auto_provider_falls_back_to_ollama(tmp_path, monkeypatch):
     assert s.resolved_provider == "ollama" and s.active_model == "qwen3:8b"
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-real")
     assert s.resolved_provider == "anthropic" and s.active_model == "claude-opus-5-5"
+
+
+async def test_ensure_ready_pulls_missing_model(monkeypatch):
+    from jarvis.providers import ollama as mod
+
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        if request.url.path == "/api/tags":
+            return httpx.Response(200, json={"models": [{"name": "llama3:8b"}]})
+        if request.url.path == "/api/pull":
+            chunks = [
+                {"status": "pulling", "total": 100, "completed": 10},
+                {"status": "pulling", "total": 100, "completed": 60},
+                {"status": "pulling", "total": 100, "completed": 100},
+                {"status": "success"},
+            ]
+            return httpx.Response(200, text=ndjson(chunks))
+        return httpx.Response(404)
+
+    transport = httpx.MockTransport(handler)
+    real_init = mod.OllamaClient.__init__
+
+    def patched_init(self, base_url="http://127.0.0.1:11434", **kw):
+        kw.setdefault("http", httpx.AsyncClient(transport=transport))
+        real_init(self, base_url, **kw)
+
+    monkeypatch.setattr(mod.OllamaClient, "__init__", patched_init)
+    notices: list[str] = []
+
+    async def notify(msg: str) -> None:
+        notices.append(msg)
+
+    assert await mod.ensure_ready("http://ollama.test", "qwen3:8b", notify)
+    assert "/api/pull" in calls
+    assert (
+        any("0%" in n for n in notices)
+        and any("50%" in n for n in notices)
+        and notices[-1] == "qwen3:8b is ready."
+    )
+
+
+async def test_ensure_ready_without_ollama_installed(monkeypatch):
+    from jarvis.providers import ollama as mod
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused")
+
+    real_init = mod.OllamaClient.__init__
+
+    def patched_init(self, base_url="http://127.0.0.1:11434", **kw):
+        kw.setdefault("http", httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+        real_init(self, base_url, **kw)
+
+    monkeypatch.setattr(mod.OllamaClient, "__init__", patched_init)
+    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+    notices: list[str] = []
+
+    async def notify(msg: str) -> None:
+        notices.append(msg)
+
+    assert not await mod.ensure_ready("http://ollama.test", "qwen3:8b", notify)
+    assert "isn't installed" in notices[0]
+
+
+def test_has_model():
+    c = OllamaClient(
+        "http://ollama.test",
+        http=httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(404))),
+    )
+    assert c.has_model(["qwen3:8b", "llama3:latest"], "qwen3:8b")
+    assert c.has_model(["qwen3:8b"], "qwen3") and not c.has_model(["qwen3:4b"], "qwen3:8b")

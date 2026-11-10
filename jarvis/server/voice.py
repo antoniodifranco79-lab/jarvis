@@ -27,7 +27,6 @@ class ServerVoice:
         """None when the voice stack can be used, else the reason it can't."""
         try:
             import faster_whisper  # noqa: F401
-            import openwakeword  # noqa: F401
             import sounddevice  # noqa: F401
         except ImportError as exc:
             return f"voice stack not installed ({exc.name}); pip install 'jarvis-ai[voice]'"

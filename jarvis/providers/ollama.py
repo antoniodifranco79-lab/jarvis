@@ -9,13 +9,19 @@ format whichever brain is answering.
 
 from __future__ import annotations
 
+import asyncio
 import json
+import logging
+import shutil
+import subprocess
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from types import SimpleNamespace
 from typing import Any
 
 import httpx
+
+log = logging.getLogger(__name__)
 
 
 class OllamaError(RuntimeError):
@@ -293,3 +299,66 @@ class OllamaClient:
             return [m["name"] for m in r.json().get("models", [])]
         except Exception:  # noqa: BLE001
             return []
+
+    def has_model(self, models: list[str], wanted: str) -> bool:
+        base = wanted.split(":")[0]
+        return any(m == wanted or (":" not in wanted and m.split(":")[0] == base) for m in models)
+
+    async def pull(self, model: str, progress: Callable[[str], Awaitable[None]] | None = None) -> None:
+        """Download a model through the API, reporting progress in 25% steps."""
+        last = -1
+        async with self.http.stream(
+            "POST", f"{self.base}/api/pull", json={"name": model, "stream": True}, timeout=None
+        ) as r:
+            if r.status_code >= 400:
+                raise OllamaError(self.describe_error(r.status_code, await r.aread(), model))
+            async for line in r.aiter_lines():
+                if not line.strip():
+                    continue
+                chunk = json.loads(line)
+                if "error" in chunk:
+                    raise OllamaError(f"Could not download {model}: {chunk['error']}")
+                total, done = chunk.get("total") or 0, chunk.get("completed") or 0
+                if total and progress:
+                    step = int(done * 100 / total) // 25 * 25
+                    if step > last:
+                        last = step
+                        await progress(f"Downloading {model}: {step}%")
+        if progress:
+            await progress(f"{model} is ready.")
+
+
+async def ensure_ready(
+    base_url: str, model: str, notify: Callable[[str], Awaitable[None]], *, start_timeout: float = 30.0
+) -> bool:
+    """Make the local brain usable: start ``ollama serve`` if needed and pull the model if missing.
+
+    Returns True when Ollama answers and the model is present."""
+    client = OllamaClient(base_url)
+    if not await client.is_up():
+        exe = shutil.which("ollama")
+        if not exe:
+            await notify("Ollama isn't installed. Get it from ollama.com, start it, and ask me again.")
+            return False
+        try:
+            subprocess.Popen(
+                [exe, "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
+            )
+        except OSError as exc:
+            await notify(f"Couldn't start Ollama: {exc}")
+            return False
+        deadline = asyncio.get_running_loop().time() + start_timeout
+        while not await client.is_up():
+            if asyncio.get_running_loop().time() > deadline:
+                await notify("Ollama didn't start in time. Run 'ollama serve' yourself and ask me again.")
+                return False
+            await asyncio.sleep(0.5)
+        await notify("Ollama started.")
+    if not client.has_model(await client.models(), model):
+        await notify(f"The {model} model isn't downloaded yet. Fetching it now; this takes a few minutes.")
+        try:
+            await client.pull(model, notify)
+        except OllamaError as exc:
+            await notify(str(exc))
+            return False
+    return True

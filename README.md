@@ -180,7 +180,7 @@ docker compose up --build   # HUD in container (solo testo + voce nel browser)
 ## Note e limiti
 
 - I modelli Claude più recenti vincolano i blocchi di ragionamento alla conversazione: per questo Jarvis non modifica mai lo storico, lo estende soltanto, e apre una sessione nuova (riassunta) quando serve.
-- La wake word in locale richiede `openwakeword` e `onnxruntime`; se non riesci a installarli usa `jarvis voice --push-to-talk` oppure la wake mode del HUD (riconoscimento vocale del browser, Chrome consigliato).
+- La wake word usa openWakeWord quando è installato; su Linux con Python 3.12+ l'installer lo aggiunge senza dipendenze (`pip install --no-deps openwakeword`) e, se manca, Jarvis ascolta il proprio nome con Whisper. In alternativa: `jarvis voice --push-to-talk` o la wake mode del HUD.
 - Il tool `look` (schermo/webcam) richiede `pip install "jarvis-ai[vision]"`.
 - Home Assistant funziona con un *long-lived access token* (Profilo → Sicurezza).
 

@@ -59,13 +59,17 @@ if ! pip install -q -e ".[$EXTRAS]"; then
   warn "full install failed; retrying with the core + HUD only"
   pip install -q -e ".[server]"
 fi
+case ",$EXTRAS," in *,voice,*)
+  # openWakeWord's tflite dependency has no wheels for Python 3.12+ on Linux: install it without deps (onnx is enough)
+  python -c "import openwakeword" 2>/dev/null || pip install -q --no-deps openwakeword >/dev/null 2>&1 || warn "openWakeWord unavailable: the Whisper wake-word fallback will be used";;
+esac
 
 if [ ! -f .env ]; then
   cp .env.example .env
   KEY=""
   if { exec 3< /dev/tty; } 2>/dev/null; then
     printf 'Anthropic API key (sk-ant-..., leave empty to add later): '
-    read -r KEY <&3 || KEY=""
+    read -r -t 300 KEY <&3 || KEY=""   # 5-minute timeout: never hang in a non-interactive run
     exec 3<&-
   fi
   if [ -n "$KEY" ]; then

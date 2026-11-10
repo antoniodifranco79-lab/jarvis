@@ -18,6 +18,7 @@ jobs:
       - if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y portaudio19-dev ffmpeg
       - run: python -m pip install -e ".[server,voice,local,app]" pyinstaller
+      - run: python -m pip install --no-deps openwakeword
       - run: pyinstaller packaging/jarvis.spec --noconfirm --clean
       - name: Package
         shell: bash

@@ -216,7 +216,6 @@ def _doctor(_: argparse.Namespace) -> None:
         ("edge_tts", "edge-tts voice"),
         ("sounddevice", "microphone/speaker (voice extra)"),
         ("faster_whisper", "speech-to-text (voice extra)"),
-        ("openwakeword", "wake word (voice extra)"),
         ("mss", "screen vision (vision extra)"),
         ("cv2", "camera vision (vision extra)"),
     ):
@@ -225,6 +224,21 @@ def _doctor(_: argparse.Namespace) -> None:
             row(label, True)
         except Exception:  # noqa: BLE001
             row(label, None if module != "anthropic" else False)
+    from .voice.wakeword import openwakeword_available
+
+    try:
+        __import__("faster_whisper")
+        whisper_ok = True
+    except Exception:  # noqa: BLE001
+        whisper_ok = False
+    if openwakeword_available():
+        row("wake word", True, "openWakeWord ('hey jarvis')")
+    elif whisper_ok:
+        row(
+            "wake word", True, "Whisper fallback (say 'Jarvis'); optional: pip install --no-deps openwakeword"
+        )
+    else:
+        row("wake word", None, "voice extra not installed")
     import shutil
 
     player = next((p for p in ("ffplay", "mpv", "afplay", "mpg123", "cvlc") if shutil.which(p)), None)

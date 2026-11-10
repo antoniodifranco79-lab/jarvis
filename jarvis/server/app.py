@@ -67,7 +67,7 @@ class Hub:
             self.clients.discard(ws)
 
     async def on_event(self, event: Event) -> None:
-        if event.type in ("state", "tool_end", "reminder", "session"):
+        if event.type in ("state", "tool_end", "reminder", "session", "notice"):
             await self.broadcast(event.to_dict())
             if event.type == "reminder":
                 await self.speak_text(f"{self.jarvis.settings.user_name}, {event.data['message']}")
@@ -156,6 +156,15 @@ def create_app(
         await j.start()
         state["jarvis"] = j
         state["hub"] = Hub(j, Speaker(settings))
+        if settings.resolved_provider == "ollama":
+            from ..providers.ollama import ensure_ready
+
+            async def notify(message: str) -> None:
+                await j.bus.publish("notice", message=message)
+
+            state["brain_prep"] = asyncio.create_task(
+                ensure_ready(settings.ollama_url, settings.ollama_model, notify), name="jarvis-ollama"
+            )
         if voice:
             from .voice import ServerVoice
 
@@ -165,11 +174,11 @@ def create_app(
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:
-        task = state.get("voice")
-        if task:
-            task.cancel()
-            with contextlib.suppress(Exception):
-                await task
+        for task in (state.get("voice"), state.get("brain_prep")):
+            if task:
+                task.cancel()
+                with contextlib.suppress(Exception):
+                    await task
         if "jarvis" in state:
             await state["jarvis"].stop()
 

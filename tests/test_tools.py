@@ -171,3 +171,11 @@ async def test_reminder_and_memory_tools(settings, memory):
 def test_tool_result_preview():
     assert ToolResult("a" * 500).preview(20).endswith("…")
     assert ToolResult.image("AAAA", caption="shot").preview() == "[image] shot"
+
+
+def test_whisper_wake_fallback_matches_name():
+    from jarvis.voice.wakeword import WhisperWakeListener
+
+    assert WhisperWakeListener.heard_name(" Hey Jarvis, che ore sono?")
+    assert WhisperWakeListener.heard_name("ehi giarvis")
+    assert not WhisperWakeListener.heard_name("buongiorno a tutti")
