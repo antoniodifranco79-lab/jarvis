@@ -110,9 +110,10 @@ class Settings(BaseSettings):
     record_max_seconds: float = 15.0
     record_silence_seconds: float = 1.0
 
-    # --- HUD server ---
+    # --- HUD server / desktop app ---
     host: str = "127.0.0.1"
     port: int = 8765
+    app_voice: bool = True  # the desktop app listens for the wake word
 
     # --- integrations ---
     home_assistant_url: str = ""

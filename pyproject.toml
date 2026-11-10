@@ -40,8 +40,9 @@ voice = [
 ]
 vision = ["mss>=9.0", "pillow>=10.0", "opencv-python-headless>=4.9"]
 local = ["ddgs>=9.0"]
+app = ["pywebview>=5.0"]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4", "httpx>=0.27"]
-all = ["jarvis-ai[server,voice,vision,local,dev]"]
+all = ["jarvis-ai[server,voice,vision,local,app,dev]"]
 
 [project.scripts]
 jarvis = "jarvis.cli:main"
@@ -54,6 +55,7 @@ include = ["jarvis*"]
 
 [tool.setuptools.package-data]
 "jarvis.server" = ["static/*"]
+"jarvis.assets" = ["*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -12,7 +12,7 @@ set -euo pipefail
 REPO="https://github.com/antoniodifranco79-lab/jarvis.git"
 BRANCH="${JARVIS_BRANCH:-}"
 DIR="${JARVIS_HOME:-$HOME/jarvis}"
-EXTRAS="${JARVIS_EXTRAS:-server,voice,vision,local}"
+EXTRAS="${JARVIS_EXTRAS:-server,voice,vision,local,app}"
 
 say()  { printf '\033[1;36m[jarvis]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[jarvis]\033[0m %s\n' "$*"; }
@@ -82,12 +82,15 @@ if [ ! -f .env ]; then
   fi
 fi
 
+"$DIR/.venv/bin/jarvis" app --install-shortcut >/dev/null 2>&1 && say "launcher added to your applications menu" || warn "could not add an app launcher (run 'jarvis app --install-shortcut' later)"
+
 mkdir -p "$HOME/.local/bin"
 ln -sf "$DIR/.venv/bin/jarvis" "$HOME/.local/bin/jarvis"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) warn "add ~/.local/bin to your PATH to run 'jarvis' from anywhere";; esac
 
 say "installed. Next:"
 echo "    cd $DIR && jarvis doctor      # check the setup"
+echo "    jarvis app                    # the desktop app (window + voice)"
 echo "    jarvis                        # chat in the terminal"
 echo "    jarvis serve                  # HUD at http://127.0.0.1:8765"
 echo "    jarvis voice                  # hands-free with the wake word"

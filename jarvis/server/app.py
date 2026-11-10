@@ -24,6 +24,20 @@ from ..voice.tts import Speaker
 
 log = logging.getLogger(__name__)
 STATIC = Path(__file__).parent / "static"
+ASSETS = Path(__file__).parent.parent / "assets"
+MANIFEST = {
+    "name": "J.A.R.V.I.S.",
+    "short_name": "JARVIS",
+    "description": "Just A Rather Very Intelligent System",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#04080f",
+    "theme_color": "#04080f",
+    "icons": [
+        {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+        {"src": "/icon.png", "sizes": "512x512", "type": "image/png"},
+    ],
+}
 
 
 class AskBody(BaseModel):
@@ -128,7 +142,10 @@ class Hub:
             self.busy = False
 
 
-def create_app(settings: Settings | None = None, jarvis: Jarvis | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, jarvis: Jarvis | None = None, *, voice: bool = False
+) -> FastAPI:
+    """Build the HUD server. ``voice=True`` also runs the wake-word microphone loop on this machine."""
     settings = settings or get_settings()
     app = FastAPI(title="J.A.R.V.I.S.", version=__version__)
     state: dict[str, Any] = {}
@@ -139,11 +156,38 @@ def create_app(settings: Settings | None = None, jarvis: Jarvis | None = None) -
         await j.start()
         state["jarvis"] = j
         state["hub"] = Hub(j, Speaker(settings))
+        if voice:
+            from .voice import ServerVoice
+
+            state["voice"] = asyncio.create_task(
+                ServerVoice(state["hub"], settings).run(), name="jarvis-voice"
+            )
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:
+        task = state.get("voice")
+        if task:
+            task.cancel()
+            with contextlib.suppress(Exception):
+                await task
         if "jarvis" in state:
             await state["jarvis"].stop()
+
+    @app.get("/manifest.webmanifest")
+    async def manifest() -> JSONResponse:
+        return JSONResponse(MANIFEST, media_type="application/manifest+json")
+
+    @app.get("/icon.png")
+    async def icon() -> FileResponse:
+        return FileResponse(ASSETS / "icon.png", media_type="image/png")
+
+    @app.get("/icon-192.png")
+    async def icon_small() -> FileResponse:
+        return FileResponse(ASSETS / "icon-192.png", media_type="image/png")
+
+    @app.get("/favicon.ico")
+    async def favicon() -> FileResponse:
+        return FileResponse(ASSETS / "icon.ico", media_type="image/x-icon")
 
     @app.get("/")
     async def index() -> FileResponse:

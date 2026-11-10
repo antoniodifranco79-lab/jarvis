@@ -98,6 +98,20 @@ Esempi di cose da dirgli:
 
 Nel HUD: scrivi, oppure tieni premuto il microfono, oppure attiva la *wake mode* e di' "Jarvis, …". Le azioni che richiedono conferma compaiono con i pulsanti *allow* / *deny*.
 
+## App desktop
+
+```bash
+jarvis app                      # finestra nativa con il HUD, wake word attiva, icona nella barra
+jarvis app --install-shortcut   # aggiunge J.A.R.V.I.S. al menu applicazioni / Start / cartella Applicazioni
+jarvis app --no-voice           # senza microfono
+```
+
+L'installer aggiunge il collegamento da solo: dopo l'installazione cerca "J.A.R.V.I.S." tra le applicazioni (Linux e Windows) o in `~/Applications` (macOS). La finestra usa il componente web del sistema (`pywebview`: WebView2 su Windows, WebKit su macOS, WebKitGTK o Qt su Linux); se non è disponibile, si apre nel browser.
+
+Dal telefono: avvia `jarvis serve --host 0.0.0.0`, apri `http://IP-del-PC:8765` e usa "Aggiungi a schermata Home": il HUD è una web app installabile. Il microfono del browser funziona solo su connessioni sicure, quindi dal telefono si scrive o si usa la voce del PC.
+
+Pacchetto autonomo (senza Python installato): `bash scripts/build-app.sh` produce `dist/JARVIS` (`JARVIS.app` su macOS) con PyInstaller; il workflow `release.yml` lo costruisce per Linux, macOS e Windows a ogni tag `v*`. L'app autonoma legge la configurazione da `~/.jarvis/.env`.
+
 ## Configurazione
 
 Tutto si regola con variabili d'ambiente (o nel file `.env`), prefisso `JARVIS_`. Le principali:
@@ -187,7 +201,7 @@ curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/s
 
 or manually: `pip install -e ".[server,voice,vision]"`, copy `.env.example` to `.env`, set `ANTHROPIC_API_KEY`, run `jarvis doctor`.
 
-**Run**: `jarvis` (terminal chat) · `jarvis voice` (hands-free, say "Hey Jarvis") · `jarvis serve` (HUD at http://127.0.0.1:8765) · `jarvis ask "..."`.
+**Run**: `jarvis app` (desktop app: native window + wake word; `--install-shortcut` adds a launcher) · `jarvis` (terminal chat) · `jarvis voice` (hands-free) · `jarvis serve` (HUD at http://127.0.0.1:8765, installable as a web app) · `jarvis ask "..."`. Standalone builds: `scripts/build-app.sh` (PyInstaller) and the release workflow.
 
 **Tools**: date/time, weather, web search & fetch (Anthropic server tools), system diagnostics, shell (with approval), sandboxed files, reminders & timers, long-term memory, conversation search, calculator, RSS news, open URLs/apps, Home Assistant, screen & camera vision.
 

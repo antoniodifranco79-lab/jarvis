@@ -8,7 +8,7 @@ if (-not $Branch) {
   $Branch = if ($head) { $head.Matches[0].Groups[1].Value } else { "main" }
 }
 $Dir    = if ($env:JARVIS_HOME)   { $env:JARVIS_HOME }   else { Join-Path $HOME "jarvis" }
-$Extras = if ($env:JARVIS_EXTRAS) { $env:JARVIS_EXTRAS } else { "server,voice,vision,local" }
+$Extras = if ($env:JARVIS_EXTRAS) { $env:JARVIS_EXTRAS } else { "server,voice,vision,local,app" }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "git is required: https://git-scm.com/download/win" }
 $py = Get-Command py -ErrorAction SilentlyContinue
@@ -39,7 +39,9 @@ if (-not (Test-Path ".env")) {
     else { Write-Warning "Install Ollama from https://ollama.com/download then run: ollama pull qwen3:8b" }
   }
 }
+try { & ".\.venv\Scripts\jarvis.exe" app --install-shortcut | Out-Null; Write-Host "[jarvis] shortcut added to the Desktop and Start menu" } catch { Write-Warning "could not add a shortcut (run 'jarvis app --install-shortcut' later)" }
 Write-Host "[jarvis] installed. Next:"
+Write-Host "    double-click JARVIS on the Desktop, or: .\.venv\Scripts\jarvis.exe app"
 Write-Host "    cd $Dir; .\.venv\Scripts\jarvis.exe doctor"
 Write-Host "    .\.venv\Scripts\jarvis.exe serve     # HUD at http://127.0.0.1:8765"
 Write-Host "    .\.venv\Scripts\jarvis.exe voice     # hands-free"

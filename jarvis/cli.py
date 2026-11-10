@@ -145,7 +145,19 @@ def _serve(args: argparse.Namespace) -> None:
     host = args.host or settings.host
     port = args.port or settings.port
     console.print(Panel(f"[{JARVIS_STYLE}]J.A.R.V.I.S. HUD[/] → http://{host}:{port}", border_style="cyan"))
-    uvicorn.run(create_app(settings), host=host, port=port, log_level="info")
+    uvicorn.run(create_app(settings, voice=args.voice), host=host, port=port, log_level="info")
+
+
+def _app(args: argparse.Namespace) -> None:
+    from .desktop import install_shortcuts, run_app
+
+    settings = get_settings()
+    if args.install_shortcut:
+        for path in install_shortcuts():
+            console.print(f"[green]✓[/green] {path}")
+        console.print("Launcher installed: look for J.A.R.V.I.S. in your applications.")
+        return
+    run_app(settings, voice=settings.app_voice and not args.no_voice, browser=args.browser)
 
 
 def _doctor(_: argparse.Namespace) -> None:
@@ -292,7 +304,20 @@ def build_parser() -> argparse.ArgumentParser:
     serve = sub.add_parser("serve", help="start the HUD web interface")
     serve.add_argument("--host")
     serve.add_argument("--port", type=int)
+    serve.add_argument("--voice", action="store_true", help="also listen for the wake word on this machine")
     serve.set_defaults(func=_serve)
+
+    app = sub.add_parser("app", help="open J.A.R.V.I.S. as a desktop application (window + voice)")
+    app.add_argument("--no-voice", action="store_true", help="don't listen for the wake word")
+    app.add_argument(
+        "--browser", action="store_true", help="use the system browser instead of a native window"
+    )
+    app.add_argument(
+        "--install-shortcut",
+        action="store_true",
+        help="add a launcher to the applications menu / Start menu / Dock",
+    )
+    app.set_defaults(func=_app)
 
     doctor = sub.add_parser("doctor", help="check configuration and optional components")
     doctor.set_defaults(func=_doctor)

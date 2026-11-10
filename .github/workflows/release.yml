@@ -1,0 +1,36 @@
+name: Release builds
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y portaudio19-dev ffmpeg
+      - run: python -m pip install -e ".[server,voice,local,app]" pyinstaller
+      - run: pyinstaller packaging/jarvis.spec --noconfirm --clean
+      - name: Package
+        shell: bash
+        run: |
+          cd dist
+          if [ "${{ runner.os }}" = "macOS" ]; then zip -qr ../JARVIS-macos.zip JARVIS.app
+          elif [ "${{ runner.os }}" = "Windows" ]; then 7z a -r ../JARVIS-windows.zip JARVIS > /dev/null
+          else tar -czf ../JARVIS-linux.tar.gz JARVIS; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-${{ runner.os }}
+          path: JARVIS-*
+      - if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: JARVIS-*
