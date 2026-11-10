@@ -1,0 +1,13 @@
+services:
+  jarvis:
+    build: .
+    env_file: .env
+    ports:
+      - "8765:8765"
+    volumes:
+      - jarvis-data:/root/.jarvis
+      - jarvis-workspace:/root/jarvis-workspace
+    restart: unless-stopped
+volumes:
+  jarvis-data:
+  jarvis-workspace:
