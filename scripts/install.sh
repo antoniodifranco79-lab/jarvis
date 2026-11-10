@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # J.A.R.V.I.S. installer for Linux, macOS and WSL.
 #
-#   curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.sh | bash
 #
 # Environment overrides:
 #   JARVIS_HOME    where to install            (default: ~/jarvis)
-#   JARVIS_BRANCH  git branch to install       (default: main)
+#   JARVIS_BRANCH  git branch to install       (default: the repository's default branch)
 #   JARVIS_EXTRAS  pip extras                  (default: server,voice,vision)
 set -euo pipefail
 
 REPO="https://github.com/antoniodifranco79-lab/jarvis.git"
-BRANCH="${JARVIS_BRANCH:-main}"
+BRANCH="${JARVIS_BRANCH:-}"
 DIR="${JARVIS_HOME:-$HOME/jarvis}"
 EXTRAS="${JARVIS_EXTRAS:-server,voice,vision}"
 
@@ -27,6 +27,12 @@ for candidate in python3.13 python3.12 python3.11 python3.10 python3; do
 done
 [ -n "$PY" ] || die "Python 3.10 or newer is required."
 say "using $($PY --version) at $(command -v "$PY")"
+
+if [ -z "$BRANCH" ]; then
+  BRANCH="$(git ls-remote --symref "$REPO" HEAD 2>/dev/null | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')"
+  BRANCH="${BRANCH:-main}"
+fi
+say "branch: $BRANCH"
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
   warn "ffmpeg not found: speech playback needs it (apt install ffmpeg / brew install ffmpeg)."
@@ -56,12 +62,16 @@ fi
 
 if [ ! -f .env ]; then
   cp .env.example .env
-  if [ -t 0 ] || [ -r /dev/tty ]; then
+  KEY=""
+  if { exec 3< /dev/tty; } 2>/dev/null; then
     printf 'Anthropic API key (sk-ant-..., leave empty to add later): '
-    read -r KEY < /dev/tty || KEY=""
-    if [ -n "$KEY" ]; then
-      sed -i.bak "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$KEY|" .env && rm -f .env.bak
-    fi
+    read -r KEY <&3 || KEY=""
+    exec 3<&-
+  fi
+  if [ -n "$KEY" ]; then
+    sed -i.bak "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$KEY|" .env && rm -f .env.bak
+  else
+    warn "no key entered: add ANTHROPIC_API_KEY to $DIR/.env before the first conversation"
   fi
 fi
 

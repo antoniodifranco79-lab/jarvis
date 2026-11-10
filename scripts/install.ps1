@@ -1,8 +1,12 @@
 # J.A.R.V.I.S. installer for Windows (PowerShell 5+).
-#   irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/main/scripts/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.ps1 | iex
 $ErrorActionPreference = "Stop"
 $Repo   = "https://github.com/antoniodifranco79-lab/jarvis.git"
-$Branch = if ($env:JARVIS_BRANCH) { $env:JARVIS_BRANCH } else { "main" }
+$Branch = $env:JARVIS_BRANCH
+if (-not $Branch) {
+  $head = git ls-remote --symref $Repo HEAD 2>$null | Select-String '^ref: refs/heads/(\S+)'
+  $Branch = if ($head) { $head.Matches[0].Groups[1].Value } else { "main" }
+}
 $Dir    = if ($env:JARVIS_HOME)   { $env:JARVIS_HOME }   else { Join-Path $HOME "jarvis" }
 $Extras = if ($env:JARVIS_EXTRAS) { $env:JARVIS_EXTRAS } else { "server,voice,vision" }
 

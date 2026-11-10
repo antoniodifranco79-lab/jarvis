@@ -33,16 +33,16 @@ Serve Python 3.10+ e una chiave API Anthropic. Per la voce servono anche `ffmpeg
 **Linux / macOS / WSL**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.sh | bash
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
-irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.ps1 | iex
 ```
 
-L'installer clona il repository in `~/jarvis`, crea un ambiente virtuale, installa `jarvis-ai[server,voice,vision]`, crea il file `.env` e chiede la chiave API. (Se preferisci un ramo diverso da `main`: `JARVIS_BRANCH=nome-ramo` prima del comando.)
+L'installer clona il repository in `~/jarvis`, crea un ambiente virtuale, installa `jarvis-ai[server,voice,vision]`, crea il file `.env` e chiede la chiave API. (Per installare un ramo specifico: `JARVIS_BRANCH=nome-ramo` prima del comando.)
 
 **A mano**
 
@@ -152,8 +152,8 @@ docker compose up --build   # HUD in container (solo testo + voce nel browser)
 **Install**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/main/scripts/install.sh | bash
-# Windows: irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/main/scripts/install.ps1 | iex
+curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.sh | bash
+# Windows: irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.ps1 | iex
 ```
 
 or manually: `pip install -e ".[server,voice,vision]"`, copy `.env.example` to `.env`, set `ANTHROPIC_API_KEY`, run `jarvis doctor`.

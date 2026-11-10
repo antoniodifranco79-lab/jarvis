@@ -58,7 +58,7 @@ def register(registry: ToolRegistry, ctx: ToolContext) -> None:
             limit: Headlines per feed (1-15).
             feed_url: Optional specific RSS/Atom feed URL instead of the configured ones.
         """
-        urls = [feed_url] if feed_url else ctx.settings.news_feeds
+        urls = [feed_url] if feed_url else ctx.settings.news_feed_list
         if not urls:
             return ToolResult.error("No news feeds configured.")
         results = await asyncio.gather(

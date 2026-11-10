@@ -289,6 +289,12 @@ class Brain:
                 yield {"type": "error", "message": f"I can't talk to the Anthropic API: {exc}"}
                 break
             except Exception as exc:  # noqa: BLE001 - the SDK raises TypeError when no credentials exist
+                if "authentication" in str(exc).lower():
+                    yield {
+                        "type": "error",
+                        "message": "My API key is missing. Put ANTHROPIC_API_KEY in the .env file and restart me.",
+                    }
+                    break
                 log.exception("request failed")
                 yield {"type": "error", "message": f"I couldn't complete the request: {exc}"}
                 break
