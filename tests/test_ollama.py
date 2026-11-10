@@ -142,6 +142,7 @@ async def test_missing_model_is_explained(local_settings):
     jarvis = Jarvis(local_settings, client=client, memory=Memory(":memory:"))
     events = await collect(jarvis, "hi")
     assert events[0]["type"] == "error" and "ollama pull qwen3:8b" in events[0]["message"]
+    assert "ollama pull qwen3:8b" in await jarvis.brain.ask_text("hi again")  # ask_text surfaces the problem
 
 
 async def test_adapter_reports_models():

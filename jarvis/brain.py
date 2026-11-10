@@ -307,6 +307,10 @@ class Brain:
                         "message": "My API key is missing. Put ANTHROPIC_API_KEY in the .env file and restart me.",
                     }
                     break
+                if isinstance(exc, RuntimeError):  # a provider explained itself (e.g. Ollama not running)
+                    log.warning("request failed: %s", exc)
+                    yield {"type": "error", "message": str(exc)}
+                    break
                 log.exception("request failed")
                 yield {"type": "error", "message": f"I couldn't complete the request: {exc}"}
                 break
@@ -392,9 +396,10 @@ class Brain:
     async def ask_text(self, text: str, images: list[dict[str, Any]] | None = None) -> str:
         """Convenience: run a turn and return the final text."""
         final = ""
+        problem = ""
         async for event in self.ask(text, images):
             if event["type"] == "final":
                 final = event["text"]
-            elif event["type"] in ("error", "notice") and not final:
-                final = event["message"]
-        return final
+            elif event["type"] in ("error", "notice"):
+                problem = event["message"]
+        return final or problem
