@@ -44,6 +44,20 @@ def api_key_configured() -> bool:
     )
 
 
+def anthropic_credentials_available() -> bool:
+    """A key/token in the environment, or a profile from ``ant auth login`` on disk."""
+    if api_key_configured():
+        return True
+    config_dir = os.environ.get("ANTHROPIC_CONFIG_DIR")
+    roots = [Path(config_dir)] if config_dir else [Path.home() / ".config" / "anthropic"]
+    appdata = os.environ.get("APPDATA")
+    if appdata:
+        roots.append(Path(appdata) / "Anthropic")
+    return any(
+        (root / "credentials").is_dir() and any((root / "credentials").glob("*.json")) for root in roots
+    )
+
+
 class Settings(BaseSettings):
     """Every knob Jarvis exposes. All variables are prefixed with ``JARVIS_``.
 
@@ -53,7 +67,12 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="JARVIS_", extra="ignore")
 
     # --- brain ---
+    provider: Literal["auto", "anthropic", "ollama"] = "auto"
     model: str = "claude-opus-5-5"
+    ollama_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "qwen3:8b"
+    ollama_num_ctx: int = 16384
+    ollama_think: bool = False
     effort: Effort = "medium"
     max_tokens: int = 16000
     user_name: str = "Sir"
@@ -112,6 +131,17 @@ class Settings(BaseSettings):
     @property
     def db_path(self) -> Path:
         return self.data_dir / "jarvis.db"
+
+    @property
+    def resolved_provider(self) -> Literal["anthropic", "ollama"]:
+        """``auto`` means: Claude when any Anthropic credential is around, otherwise the local Ollama model."""
+        if self.provider != "auto":
+            return self.provider
+        return "anthropic" if anthropic_credentials_available() else "ollama"
+
+    @property
+    def active_model(self) -> str:
+        return self.model if self.resolved_provider == "anthropic" else self.ollama_model
 
     def ensure_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)

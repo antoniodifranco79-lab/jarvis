@@ -8,7 +8,7 @@ if (-not $Branch) {
   $Branch = if ($head) { $head.Matches[0].Groups[1].Value } else { "main" }
 }
 $Dir    = if ($env:JARVIS_HOME)   { $env:JARVIS_HOME }   else { Join-Path $HOME "jarvis" }
-$Extras = if ($env:JARVIS_EXTRAS) { $env:JARVIS_EXTRAS } else { "server,voice,vision" }
+$Extras = if ($env:JARVIS_EXTRAS) { $env:JARVIS_EXTRAS } else { "server,voice,vision,local" }
 
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "git is required: https://git-scm.com/download/win" }
 $py = Get-Command py -ErrorAction SilentlyContinue
@@ -33,6 +33,11 @@ if (-not (Test-Path ".env")) {
   Copy-Item ".env.example" ".env"
   $key = Read-Host "Anthropic API key (sk-ant-..., leave empty to add later)"
   if ($key) { (Get-Content .env) -replace '^ANTHROPIC_API_KEY=.*', "ANTHROPIC_API_KEY=$key" | Set-Content .env }
+  else {
+    Write-Host "[jarvis] no API key: Jarvis will use a free local model through Ollama."
+    if (Get-Command ollama -ErrorAction SilentlyContinue) { ollama pull qwen3:8b }
+    else { Write-Warning "Install Ollama from https://ollama.com/download then run: ollama pull qwen3:8b" }
+  }
 }
 Write-Host "[jarvis] installed. Next:"
 Write-Host "    cd $Dir; .\.venv\Scripts\jarvis.exe doctor"

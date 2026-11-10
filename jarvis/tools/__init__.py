@@ -33,6 +33,7 @@ def build_registry(ctx: ToolContext) -> ToolRegistry:
         system,
         vision,
         weather,
+        web_local,
     )
 
     registry = ToolRegistry()
@@ -48,6 +49,7 @@ def build_registry(ctx: ToolContext) -> ToolRegistry:
         apps,
         home,
         vision,
+        web_local,
     ):
         module.register(registry, ctx)
     return registry

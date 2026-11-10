@@ -108,6 +108,7 @@ def settings(tmp_path: Path) -> Settings:
         workspace=tmp_path / "ws",
         user_name="Sir",
         location="Milano",
+        provider="anthropic",
         _env_file=None,  # type: ignore[call-arg]
     )
 

@@ -167,7 +167,35 @@ def _doctor(_: argparse.Namespace) -> None:
         bool(os.environ.get("ANTHROPIC_API_KEY")),
         "" if os.environ.get("ANTHROPIC_API_KEY") else "export it or put it in .env",
     )
-    row("model", True, f"{settings.model} (effort {settings.effort})")
+    provider = settings.resolved_provider
+    row("provider", True, provider + (" (auto)" if settings.provider == "auto" else ""))
+    if provider == "anthropic":
+        row("model", True, f"{settings.model} (effort {settings.effort})")
+    else:
+        from .providers.ollama import OllamaClient
+
+        async def probe():
+            client = OllamaClient(settings.ollama_url)
+            up = await client.is_up()
+            return up, (await client.models()) if up else []
+
+        up, models = asyncio.run(probe())
+        row(
+            "Ollama server",
+            up,
+            settings.ollama_url
+            if up
+            else f"not running at {settings.ollama_url} (install from ollama.com, then 'ollama serve')",
+        )
+        have = any(
+            m == settings.ollama_model or m.split(":")[0] == settings.ollama_model.split(":")[0]
+            for m in models
+        )
+        row(
+            f"Ollama model {settings.ollama_model}",
+            have if up else False,
+            "" if have else f"run: ollama pull {settings.ollama_model}",
+        )
     row("data dir", True, str(settings.data_dir))
     row("workspace", True, str(settings.workspace))
     for module, label in (

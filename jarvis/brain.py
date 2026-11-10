@@ -27,6 +27,7 @@ from .config import Settings
 from .events import EventBus, State
 from .memory import Memory, Session, fingerprint
 from .persona import build_system_prompt
+from .providers import make_client
 from .tools import Approver, ToolRegistry
 from .tools.datetime_tool import current_time
 
@@ -91,11 +92,13 @@ class Brain:
         self.registry = registry
         self.mode = mode
         self.approver = approver
-        self.client = client or anthropic.AsyncAnthropic()
+        self.provider = settings.resolved_provider
+        self.model = settings.active_model
+        self.client = client or make_client(settings)
         self.system_prompt = build_system_prompt(settings, mode)
         self.server_tools = self._server_tools()
         tool_names = registry.names() + [t["name"] for t in self.server_tools]
-        self.fingerprint = fingerprint(self.system_prompt, settings.model, tool_names)
+        self.fingerprint = fingerprint(self.system_prompt, self.model, tool_names)
         self.session: Session | None = None
         self._lock = asyncio.Lock()
         self._pending_summary: str | None = None
@@ -103,6 +106,8 @@ class Brain:
     # ------------------------------------------------------------------ request shape
     def _server_tools(self) -> list[dict[str, Any]]:
         tools: list[dict[str, Any]] = []
+        if self.provider != "anthropic":  # local models get local web tools from the registry instead
+            return tools
         if self.settings.web_search:
             tools.append(
                 {
@@ -121,7 +126,7 @@ class Brain:
     def request_params(self) -> dict[str, Any]:
         s = self.settings
         params: dict[str, Any] = {
-            "model": s.model,
+            "model": self.model,
             "max_tokens": s.max_tokens,
             "system": [{"type": "text", "text": self.system_prompt, "cache_control": {"type": "ephemeral"}}],
             "tools": self.tools(),
@@ -130,7 +135,7 @@ class Brain:
             "cache_control": {"type": "ephemeral"},
         }
         betas: list[str] = []
-        if s.fallbacks and is_modern_model(s.model):
+        if s.fallbacks and self.provider == "anthropic" and is_modern_model(self.model):
             betas.append(FALLBACK_BETA)
             params["fallbacks"] = "default"
         if s.server_compaction:
@@ -149,12 +154,19 @@ class Brain:
             line += f" Pending reminders: {len(pending)} (next: '{nxt.message}' at {nxt.due_at.strftime('%H:%M')})."
         return line
 
+    @property
+    def token_budget(self) -> int:
+        budget = self.settings.session_token_budget
+        if self.provider == "ollama":  # a local model has a far smaller window
+            budget = min(budget, int(self.settings.ollama_num_ctx * 0.5))
+        return budget
+
     # ------------------------------------------------------------------ sessions
     async def ensure_session(self) -> Session:
         session, is_new = self.memory.resume_or_start(
             self.mode, self.fingerprint, self.settings.session_idle_hours
         )
-        if not is_new and self.memory.estimate_tokens(session.id) > self.settings.session_token_budget:
+        if not is_new and self.memory.estimate_tokens(session.id) > self.token_budget:
             summary = await self.summarize_session(session)
             session = self.memory.new_session(self.mode, self.fingerprint, summary)
             self._pending_summary = summary
@@ -179,7 +191,7 @@ class Brain:
         transcript = "\n".join(f"{t['role']}: {t['text']}" for t in turns)
         try:
             response = await self.client.messages.create(
-                model=self.settings.model,
+                model=self.model,
                 max_tokens=2000,
                 output_config={"effort": "low"},
                 system="Summarise this conversation between a user and their assistant in at most 15 bullet points. "
@@ -206,7 +218,7 @@ class Brain:
 
     async def _ask(self, text: str, images: list[dict[str, Any]]) -> AsyncIterator[dict[str, Any]]:
         session = await self.ensure_session()
-        use_system_role = is_modern_model(self.settings.model)
+        use_system_role = self.provider == "anthropic" and is_modern_model(self.model)
 
         content: list[dict[str, Any]] = []
         if self._pending_summary:

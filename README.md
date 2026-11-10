@@ -26,9 +26,31 @@ Il cervello è Claude (modello predefinito `claude-opus-5-5`), usato attraverso 
 | **Sicurezza** | Le azioni pericolose (comandi shell, lancio di applicazioni) richiedono conferma: in terminale, con la voce ("procedi?") o nel HUD. I file sono confinati in `~/jarvis-workspace`. |
 | **Affidabilità** | Validazione degli input dei tool, gestione di `max_tokens`/`refusal`/`pause_turn`, fallback server-side sui rifiuti, retry sugli errori dell'API, test offline con un client finto. |
 
+## Due cervelli: Claude, oppure un modello locale senza chiave API
+
+| | Claude (consigliato) | Modello locale con Ollama |
+|---|---|---|
+| Serve | una chiave API Anthropic (o l'accesso `ant auth login`), a consumo | solo [Ollama](https://ollama.com) installato sul PC; gratis, nessun account |
+| Qualità | la replica più fedele: ragiona, usa gli strumenti con precisione, ricerca web lato server | buona con `qwen3:8b`; più lenta e meno precisa, ricerca web locale via DuckDuckGo |
+| Privacy | le conversazioni passano per l'API Anthropic | tutto resta sul PC |
+| Hardware | qualsiasi | 8 GB di RAM per `qwen3:4b`, 16 GB per `qwen3:8b`, una GPU aiuta molto |
+
+Con `JARVIS_PROVIDER=auto` (default) Jarvis usa Claude se trova una chiave e altrimenti il modello locale. Per la modalità locale:
+
+```bash
+# 1. installa Ollama (Linux; su macOS/Windows: scarica da ollama.com)
+curl -fsSL https://ollama.com/install.sh | sh
+# 2. scarica un modello con supporto agli strumenti
+ollama pull qwen3:8b        # oppure qwen3:4b se il PC è piccolo, qwen3:14b se è grande
+# 3. lascia vuota ANTHROPIC_API_KEY nel file .env e avvia Jarvis
+jarvis doctor && jarvis
+```
+
+Nota: la sottoscrizione Claude (Pro/Max) non si può usare da applicazioni di terze parti come Jarvis; serve la chiave API o il modello locale.
+
 ## Installazione rapida
 
-Serve Python 3.10+ e una chiave API Anthropic. Per la voce servono anche `ffmpeg` e PortAudio.
+Serve Python 3.10+. Per la voce servono anche `ffmpeg` e PortAudio. Il cervello è Claude con una chiave API, oppure un modello locale gratuito (vedi sopra).
 
 **Linux / macOS / WSL**
 
@@ -42,7 +64,7 @@ curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/s
 irm https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install.ps1 | iex
 ```
 
-L'installer clona il repository in `~/jarvis`, crea un ambiente virtuale, installa `jarvis-ai[server,voice,vision]`, crea il file `.env` e chiede la chiave API. (Per installare un ramo specifico: `JARVIS_BRANCH=nome-ramo` prima del comando.)
+L'installer clona il repository in `~/jarvis`, crea un ambiente virtuale, installa `jarvis-ai[server,voice,vision,local]`, crea il file `.env` e chiede la chiave API (lasciala vuota per usare il modello locale). (Per installare un ramo specifico: `JARVIS_BRANCH=nome-ramo` prima del comando.)
 
 **A mano**
 
@@ -82,8 +104,12 @@ Tutto si regola con variabili d'ambiente (o nel file `.env`), prefisso `JARVIS_`
 
 | Variabile | Default | Note |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | | obbligatoria |
+| `ANTHROPIC_API_KEY` | | vuota = modello locale |
+| `JARVIS_PROVIDER` | `auto` | `auto`, `anthropic`, `ollama` |
 | `JARVIS_MODEL` | `claude-opus-5-5` | qualsiasi modello Claude attuale |
+| `JARVIS_OLLAMA_MODEL` | `qwen3:8b` | modello locale (deve supportare i tool) |
+| `JARVIS_OLLAMA_URL` | `http://127.0.0.1:11434` | server Ollama |
+| `JARVIS_OLLAMA_NUM_CTX` | `16384` | finestra di contesto del modello locale |
 | `JARVIS_EFFORT` | `medium` | `low` per risposte più rapide, `high`/`xhigh` per compiti difficili |
 | `JARVIS_USER_NAME` | `Sir` | come ti chiama: `Signore`, il tuo nome… |
 | `JARVIS_LANGUAGE` | `auto` | `auto` = risponde nella tua lingua; `it`/`en` per forzarla |
@@ -126,6 +152,7 @@ flowchart LR
 - **`jarvis/memory.py`**: SQLite con sessioni, messaggi nel formato esatto dell'API, fatti e promemoria.
 - **`jarvis/voice/`**: `wakeword.py` (openWakeWord), `audio.py` (registrazione fino al silenzio), `stt.py` (faster-whisper), `tts.py` (edge-tts / ElevenLabs / pyttsx3), `sentences.py` (spezza lo streaming in frasi da pronunciare), `loop.py` (il ciclo mani libere con conferme vocali).
 - **`jarvis/server/`**: FastAPI + WebSocket, audio sintetizzato inviato al browser, approvazioni, API REST (`/api/status`, `/api/ask`, `/api/reminders`, `/api/memory`).
+- **`jarvis/providers/ollama.py`**: adattatore che espone a `brain.py` la stessa interfaccia dell'SDK Anthropic ma parla con Ollama: i messaggi restano salvati in un solo formato, e `tools/web_local.py` fornisce ricerca e lettura web locali quando il cervello è il modello locale.
 
 ## Sviluppo
 
@@ -148,6 +175,8 @@ docker compose up --build   # HUD in container (solo testo + voce nel browser)
 ## English
 
 **J.A.R.V.I.S.** is a faithful personal-AI butler built on Claude: a written-for-character persona, a streaming tool-using brain, persistent memory, a voice stack (wake word, local Whisper, free neural British voice) and an arc-reactor HUD.
+
+**Two brains**: Claude through the Anthropic API (best), or a free local model through [Ollama](https://ollama.com) with no API key at all (`ollama pull qwen3:8b`, leave `ANTHROPIC_API_KEY` empty). `JARVIS_PROVIDER=auto` picks Claude when a key exists and the local model otherwise.
 
 **Install**
 

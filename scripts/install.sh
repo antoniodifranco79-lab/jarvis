@@ -12,7 +12,7 @@ set -euo pipefail
 REPO="https://github.com/antoniodifranco79-lab/jarvis.git"
 BRANCH="${JARVIS_BRANCH:-}"
 DIR="${JARVIS_HOME:-$HOME/jarvis}"
-EXTRAS="${JARVIS_EXTRAS:-server,voice,vision}"
+EXTRAS="${JARVIS_EXTRAS:-server,voice,vision,local}"
 
 say()  { printf '\033[1;36m[jarvis]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[jarvis]\033[0m %s\n' "$*"; }
@@ -71,7 +71,14 @@ if [ ! -f .env ]; then
   if [ -n "$KEY" ]; then
     sed -i.bak "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=$KEY|" .env && rm -f .env.bak
   else
-    warn "no key entered: add ANTHROPIC_API_KEY to $DIR/.env before the first conversation"
+    say "no API key: Jarvis will use a free local model through Ollama."
+    if command -v ollama >/dev/null 2>&1; then
+      say "Ollama found. Pulling the default model (qwen3:8b, about 5 GB)..."
+      ollama pull qwen3:8b || warn "could not pull qwen3:8b now; run 'ollama pull qwen3:8b' later"
+    else
+      warn "Ollama is not installed. Install it with:  curl -fsSL https://ollama.com/install.sh | sh"
+      warn "then run:  ollama pull qwen3:8b   (or qwen3:4b on a small machine)"
+    fi
   fi
 fi
 
