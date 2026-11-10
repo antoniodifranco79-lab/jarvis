@@ -3,6 +3,13 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (e.g. v1.0.0). Leave empty to only build artifacts."
+        required: false
+        default: ""
+permissions:
+  contents: write
 jobs:
   build:
     strategy:
@@ -31,7 +38,29 @@ jobs:
         with:
           name: JARVIS-${{ runner.os }}
           path: JARVIS-*
-      - if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          files: JARVIS-*
+          path: packages
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          name: "J.A.R.V.I.S. ${{ github.event.inputs.tag || github.ref_name }}"
+          files: packages/JARVIS-*
+          body: |
+            **J.A.R.V.I.S.** - Just A Rather Very Intelligent System. App desktop con voce, memoria, strumenti e HUD; cervello Claude (chiave API) oppure modello locale gratuito via Ollama.
+
+            **Installazione / Install**
+            - Serve [Ollama](https://ollama.com) per il modello locale (l'app lo avvia e scarica `qwen3:8b` da sola), oppure una chiave API Anthropic in `~/.jarvis/.env`.
+            - **Windows**: scompatta `JARVIS-windows.zip` e avvia `JARVIS\JARVIS.exe`. Se SmartScreen avvisa: "Ulteriori informazioni" > "Esegui comunque".
+            - **macOS**: scompatta `JARVIS-macos.zip`, trascina `JARVIS.app` in Applicazioni; al primo avvio clic destro > Apri (app non firmata), oppure `xattr -dr com.apple.quarantine /Applications/JARVIS.app`.
+            - **Linux**: `tar -xzf JARVIS-linux.tar.gz && ./JARVIS/JARVIS`. Per la voce: `sudo apt install libportaudio2 ffmpeg`.
+            - Configurazione (lingua, nome, voce, modello): file `~/.jarvis/.env`, vedi `.env.example` nel repository.
+
+            Sorgenti e documentazione: README del repository.
