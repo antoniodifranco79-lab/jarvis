@@ -414,7 +414,10 @@ if (!CONTACT.email && !CONTACT.phone) row("Nota", `<span class="muted">Email e t
 document.getElementById("brief").addEventListener("submit", (e) => {
   e.preventDefault();
   const v = (id) => document.getElementById(id).value.trim();
-  const text = `Ciao Antonio,\n\nsono ${v("f-nome") || "[nome e studio]"} (${v("f-tipo")}). In studio usiamo il computer in ${v("f-persone") || "[n]"} persone.\n\nVorrei risolvere: ${v("f-msg") || "[cosa vorresti risolvere]"}\n\nQuando possiamo fare la chiamata di 30 minuti?`;
+  // Origine del contatto: solo i parametri UTM/gclid del link con cui è arrivato, scritti nel messaggio. Niente cookie.
+  const q = new URLSearchParams(location.search);
+  const src = ["utm_source", "utm_medium", "utm_campaign", "gclid"].map((k) => q.get(k)).filter(Boolean).join(" / ");
+  const text = `Ciao Antonio,\n\nsono ${v("f-nome") || "[nome e studio]"} (${v("f-tipo")}). In studio usiamo il computer in ${v("f-persone") || "[n]"} persone.\n\nVorrei risolvere: ${v("f-msg") || "[cosa vorresti risolvere]"}\n\nQuando possiamo fare la chiamata di 30 minuti?${src ? `\n\n(Fonte: ${src})` : ""}`;
   const out = document.getElementById("briefOut");
   const subject = encodeURIComponent("Diagnosi AI gratuita: " + (v("f-nome") || "richiesta dal sito"));
   const mail = CONTACT.email ? `<p><a class="btn btn-primary" href="mailto:${CONTACT.email}?subject=${subject}&body=${encodeURIComponent(text)}">Apri nell'email</a></p>` : "";
