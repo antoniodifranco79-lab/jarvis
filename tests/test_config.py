@@ -19,7 +19,7 @@ def test_dotenv_is_loaded_with_inline_comments(tmp_path, monkeypatch):
     assert tmp_path / ".env" in loaded
     assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-test"
     assert api_key_configured()
-    settings = Settings()
+    settings = Settings.from_env()
     assert settings.model == "claude-opus-5-5"
     assert settings.user_name == "Signore"
     assert settings.news_feed_list == ["https://a.example/rss", "https://b.example/atom"]

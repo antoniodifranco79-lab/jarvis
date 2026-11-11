@@ -1,4 +1,4 @@
-"""FastAPI application: serves the HUD, streams brain events over WebSocket, speaks through edge-tts."""
+"""Starlette application: serves the HUD, streams brain events over WebSocket, speaks through edge-tts."""
 
 from __future__ import annotations
 
@@ -10,9 +10,11 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
+from starlette.applications import Starlette
+from starlette.requests import Request
+from starlette.responses import FileResponse, JSONResponse
+from starlette.routing import Route, WebSocketRoute
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .. import __version__
 from ..app import Jarvis
@@ -38,10 +40,6 @@ MANIFEST = {
         {"src": "/icon.png", "sizes": "512x512", "type": "image/png"},
     ],
 }
-
-
-class AskBody(BaseModel):
-    text: str
 
 
 class Hub:
@@ -144,13 +142,11 @@ class Hub:
 
 def create_app(
     settings: Settings | None = None, jarvis: Jarvis | None = None, *, voice: bool = False
-) -> FastAPI:
+) -> Starlette:
     """Build the HUD server. ``voice=True`` also runs the wake-word microphone loop on this machine."""
     settings = settings or get_settings()
-    app = FastAPI(title="J.A.R.V.I.S.", version=__version__)
     state: dict[str, Any] = {}
 
-    @app.on_event("startup")
     async def _startup() -> None:
         j = jarvis or Jarvis(settings, mode="voice")
         await j.start()
@@ -172,7 +168,6 @@ def create_app(
                 ServerVoice(state["hub"], settings).run(), name="jarvis-voice"
             )
 
-    @app.on_event("shutdown")
     async def _shutdown() -> None:
         for task in (state.get("voice"), state.get("brain_prep")):
             if task:
@@ -182,28 +177,22 @@ def create_app(
         if "jarvis" in state:
             await state["jarvis"].stop()
 
-    @app.get("/manifest.webmanifest")
-    async def manifest() -> JSONResponse:
+    async def manifest(request: Request) -> JSONResponse:
         return JSONResponse(MANIFEST, media_type="application/manifest+json")
 
-    @app.get("/icon.png")
-    async def icon() -> FileResponse:
+    async def icon(request: Request) -> FileResponse:
         return FileResponse(ASSETS / "icon.png", media_type="image/png")
 
-    @app.get("/icon-192.png")
-    async def icon_small() -> FileResponse:
+    async def icon_small(request: Request) -> FileResponse:
         return FileResponse(ASSETS / "icon-192.png", media_type="image/png")
 
-    @app.get("/favicon.ico")
-    async def favicon() -> FileResponse:
+    async def favicon(request: Request) -> FileResponse:
         return FileResponse(ASSETS / "icon.ico", media_type="image/x-icon")
 
-    @app.get("/")
-    async def index() -> FileResponse:
+    async def index(request: Request) -> FileResponse:
         return FileResponse(STATIC / "index.html")
 
-    @app.get("/api/status")
-    async def status() -> JSONResponse:
+    async def status(request: Request) -> JSONResponse:
         j: Jarvis = state["jarvis"]
         return JSONResponse(
             {
@@ -217,8 +206,7 @@ def create_app(
             }
         )
 
-    @app.get("/api/reminders")
-    async def reminders() -> JSONResponse:
+    async def reminders(request: Request) -> JSONResponse:
         j: Jarvis = state["jarvis"]
         return JSONResponse(
             [
@@ -227,16 +215,17 @@ def create_app(
             ]
         )
 
-    @app.get("/api/memory")
-    async def memory() -> JSONResponse:
+    async def memory(request: Request) -> JSONResponse:
         return JSONResponse(state["jarvis"].memory.all_facts())
 
-    @app.post("/api/ask")
-    async def ask(body: AskBody) -> JSONResponse:
+    async def ask(request: Request) -> JSONResponse:
         j: Jarvis = state["jarvis"]
-        return JSONResponse({"answer": await j.brain.ask_text(body.text)})
+        payload = await request.json()
+        text = str(payload.get("text", "")).strip() if isinstance(payload, dict) else ""
+        if not text:
+            return JSONResponse({"error": "text is required"}, status_code=400)
+        return JSONResponse({"answer": await j.brain.ask_text(text)})
 
-    @app.websocket("/ws")
     async def ws(websocket: WebSocket) -> None:
         await websocket.accept()
         hub: Hub = state["hub"]
@@ -275,4 +264,26 @@ def create_app(
         finally:
             hub.clients.discard(websocket)
 
-    return app
+    @contextlib.asynccontextmanager
+    async def lifespan(_app: Starlette):
+        await _startup()
+        try:
+            yield
+        finally:
+            await _shutdown()
+
+    return Starlette(
+        routes=[
+            Route("/", index),
+            Route("/manifest.webmanifest", manifest),
+            Route("/icon.png", icon),
+            Route("/icon-192.png", icon_small),
+            Route("/favicon.ico", favicon),
+            Route("/api/status", status),
+            Route("/api/reminders", reminders),
+            Route("/api/memory", memory),
+            Route("/api/ask", ask, methods=["POST"]),
+            WebSocketRoute("/ws", ws),
+        ],
+        lifespan=lifespan,
+    )

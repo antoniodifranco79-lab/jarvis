@@ -40,7 +40,6 @@ def local_settings(tmp_path) -> Settings:
         provider="ollama",
         ollama_model="qwen3:8b",
         user_name="Sir",
-        _env_file=None,
     )  # type: ignore[call-arg]
 
 
@@ -158,7 +157,7 @@ def test_auto_provider_falls_back_to_ollama(tmp_path, monkeypatch):
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     monkeypatch.setenv("ANTHROPIC_CONFIG_DIR", str(tmp_path / "nothing"))
     monkeypatch.delenv("APPDATA", raising=False)
-    s = Settings(data_dir=tmp_path, workspace=tmp_path, _env_file=None)  # type: ignore[call-arg]
+    s = Settings(data_dir=tmp_path, workspace=tmp_path)  # type: ignore[call-arg]
     assert s.resolved_provider == "ollama" and s.active_model == "qwen3:8b"
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-real")
     assert s.resolved_provider == "anthropic" and s.active_model == "claude-opus-5-5"

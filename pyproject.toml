@@ -18,19 +18,19 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-  "anthropic>=2.7.0",
   "httpx>=0.27",
-  "pydantic>=2.6",
-  "pydantic-settings>=2.2",
   "python-dotenv>=1.0",
   "psutil>=5.9",
   "rich>=13.7",
-  "jsonschema>=4.21",
-  "zstandard>=0.22",
+  "starlette>=0.37",
+  "uvicorn>=0.29",
+  "websockets>=12",
 ]
 
 [project.optional-dependencies]
-server = ["fastapi>=0.110", "uvicorn[standard]>=0.29", "websockets>=12", "edge-tts>=6.1"]
+claude = ["anthropic>=2.7.0"]
+tts = ["edge-tts>=6.1"]
+server = ["jarvis-ai[claude,tts]"]
 voice = [
   "edge-tts>=6.1",
   "sounddevice>=0.4.6",
@@ -42,8 +42,8 @@ voice = [
 ]
 vision = ["mss>=9.0", "pillow>=10.0", "opencv-python-headless>=4.9"]
 local = ["ddgs>=9.0"]
-app = ["pywebview>=5.0"]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4", "httpx>=0.27"]
+app = ["pywebview>=5.0", "zstandard>=0.22"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4", "anthropic>=2.7.0"]
 all = ["jarvis-ai[server,voice,vision,local,app,dev]"]
 
 [project.scripts]

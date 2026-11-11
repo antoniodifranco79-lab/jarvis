@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from conftest import FakeClient, text_message
-from fastapi.testclient import TestClient
+from starlette.testclient import TestClient
 
 from jarvis.app import Jarvis
 from jarvis.memory import Memory

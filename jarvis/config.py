@@ -1,14 +1,19 @@
-"""Runtime configuration, loaded from environment variables and an optional .env file."""
+"""Runtime configuration, loaded from environment variables and optional .env files.
+
+Pure standard library on purpose: Jarvis also runs on Android (Termux), where compiled
+dependencies such as pydantic-core cannot be built.
+"""
 
 from __future__ import annotations
 
+import dataclasses
 import os
+import typing
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
 from dotenv import find_dotenv, load_dotenv
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
 
@@ -16,6 +21,7 @@ DEFAULT_NEWS_FEEDS = (
     "https://feeds.bbci.co.uk/news/world/rss.xml,https://www.ansa.it/sito/notizie/topnews/topnews_rss.xml"
 )
 PLACEHOLDER_KEYS = {"", "sk-ant-...", "your-api-key"}
+ENV_PREFIX = "JARVIS_"
 
 
 def load_env_files() -> list[Path]:
@@ -58,13 +64,44 @@ def anthropic_credentials_available() -> bool:
     )
 
 
-class Settings(BaseSettings):
-    """Every knob Jarvis exposes. All variables are prefixed with ``JARVIS_``.
+class SettingsError(ValueError):
+    pass
 
-    ``ANTHROPIC_API_KEY`` is read directly by the Anthropic SDK and is not listed here.
-    """
 
-    model_config = SettingsConfigDict(env_prefix="JARVIS_", extra="ignore")
+def _coerce(name: str, annotation: Any, raw: str) -> Any:
+    """Turn an environment string into the field's type."""
+    origin = get_origin(annotation)
+    if origin in (Union, getattr(typing, "UnionType", Union)) or str(origin) == "<class 'types.UnionType'>":
+        args = [a for a in get_args(annotation) if a is not type(None)]
+        if raw.strip() == "" and len(args) < len(get_args(annotation)):
+            return None
+        return _coerce(name, args[0], raw)
+    if origin is Literal:
+        allowed = get_args(annotation)
+        value = raw.strip()
+        if value not in allowed:
+            raise SettingsError(f"{ENV_PREFIX}{name.upper()} must be one of {list(allowed)}, got {value!r}")
+        return value
+    if annotation is bool:
+        value = raw.strip().lower()
+        if value in ("1", "true", "yes", "on"):
+            return True
+        if value in ("0", "false", "no", "off", ""):
+            return False
+        raise SettingsError(f"{ENV_PREFIX}{name.upper()} must be true or false, got {raw!r}")
+    if annotation is int:
+        return int(raw.strip())
+    if annotation is float:
+        return float(raw.strip())
+    if annotation is Path:
+        return Path(raw.strip()).expanduser()
+    return raw
+
+
+@dataclass
+class Settings:
+    """Every knob Jarvis exposes. Environment variables are prefixed with ``JARVIS_``;
+    ``ANTHROPIC_API_KEY`` is read by the Anthropic SDK itself."""
 
     # --- brain ---
     provider: Literal["auto", "anthropic", "ollama"] = "auto"
@@ -92,8 +129,8 @@ class Settings(BaseSettings):
     tool_timeout: float = 60.0
 
     # --- storage ---
-    data_dir: Path = Field(default_factory=lambda: Path.home() / ".jarvis")
-    workspace: Path = Field(default_factory=lambda: Path.home() / "jarvis-workspace")
+    data_dir: Path = field(default_factory=lambda: Path.home() / ".jarvis")
+    workspace: Path = field(default_factory=lambda: Path.home() / "jarvis-workspace")
 
     # --- voice ---
     tts_engine: Literal["edge", "elevenlabs", "pyttsx3", "none"] = "edge"
@@ -120,14 +157,26 @@ class Settings(BaseSettings):
     home_assistant_token: str = ""
     news_feeds: str = DEFAULT_NEWS_FEEDS  # comma-separated
 
+    def __post_init__(self) -> None:
+        self.data_dir = Path(str(self.data_dir)).expanduser()
+        self.workspace = Path(str(self.workspace)).expanduser()
+
+    @classmethod
+    def from_env(cls, environ: dict[str, str] | None = None, **overrides: Any) -> Settings:
+        """Build settings from ``JARVIS_*`` variables (explicit keyword overrides win)."""
+        environ = os.environ if environ is None else environ
+        hints = get_type_hints(cls)
+        values: dict[str, Any] = {}
+        for f in dataclasses.fields(cls):
+            raw = environ.get(ENV_PREFIX + f.name.upper())
+            if raw is not None:
+                values[f.name] = _coerce(f.name, hints[f.name], raw)
+        values.update(overrides)
+        return cls(**values)
+
     @property
     def news_feed_list(self) -> list[str]:
         return [v.strip() for v in self.news_feeds.split(",") if v.strip()]
-
-    @field_validator("data_dir", "workspace", mode="before")
-    @classmethod
-    def _expand(cls, value):
-        return Path(str(value)).expanduser() if value else value
 
     @property
     def db_path(self) -> Path:
@@ -165,5 +214,5 @@ def get_settings(reload: bool = False) -> Settings:
     global _settings
     if _settings is None or reload:
         load_env_files()
-        _settings = Settings()
+        _settings = Settings.from_env()
     return _settings

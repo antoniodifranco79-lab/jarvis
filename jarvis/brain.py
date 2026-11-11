@@ -21,7 +21,10 @@ from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import Any
 
-import anthropic
+try:
+    import anthropic
+except ImportError:  # the Anthropic SDK is optional: local brains don't need it
+    anthropic = None  # type: ignore[assignment]
 
 from .config import Settings
 from .events import EventBus, State
@@ -32,6 +35,21 @@ from .tools import Approver, ToolRegistry
 from .tools.datetime_tool import current_time
 
 log = logging.getLogger(__name__)
+
+
+class _NeverRaised(Exception):
+    pass
+
+
+def _sdk_error(name: str) -> type[BaseException]:
+    return getattr(anthropic, name) if anthropic is not None else _NeverRaised
+
+
+AuthenticationError = _sdk_error("AuthenticationError")
+RateLimitError = _sdk_error("RateLimitError")
+APIConnectionError = _sdk_error("APIConnectionError")
+APIStatusError = _sdk_error("APIStatusError")
+AnthropicError = _sdk_error("AnthropicError")
 
 MAX_TOOL_ROUNDS = 12
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
@@ -273,31 +291,31 @@ class Brain:
                     }
                     break
                 continue
-            except anthropic.AuthenticationError:
+            except AuthenticationError:
                 yield {
                     "type": "error",
                     "message": "My API key appears to be missing or invalid. Set ANTHROPIC_API_KEY and restart me.",
                 }
                 break
-            except anthropic.RateLimitError:
+            except RateLimitError:
                 yield {
                     "type": "error",
                     "message": "The API is rate-limiting us. Give me a moment and ask again.",
                 }
                 break
-            except anthropic.APIConnectionError:
+            except APIConnectionError:
                 yield {
                     "type": "error",
                     "message": "I can't reach the Anthropic API. Check the network connection.",
                 }
                 break
-            except anthropic.APIStatusError as exc:
+            except APIStatusError as exc:
                 yield {
                     "type": "error",
                     "message": f"The API returned an error ({exc.status_code}): {exc.message}",
                 }
                 break
-            except anthropic.AnthropicError as exc:  # e.g. no credentials could be resolved
+            except AnthropicError as exc:  # e.g. no credentials could be resolved
                 yield {"type": "error", "message": f"I can't talk to the Anthropic API: {exc}"}
                 break
             except Exception as exc:  # noqa: BLE001 - the SDK raises TypeError when no credentials exist

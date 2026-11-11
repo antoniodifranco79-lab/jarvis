@@ -60,6 +60,19 @@ Dalla pagina [Releases](https://github.com/antoniodifranco79-lab/jarvis/releases
 
 Al primo avvio l'app scarica da sola il motore AI (Ollama, 0,2-1,6 GB a seconda del sistema) e il modello linguistico adatto alla memoria del PC (qwen3 da 1,7 a 8 miliardi di parametri, 1-5 GB), mostrando l'avanzamento nella finestra. Non serve installare nient'altro, né una chiave API.
 
+## Su tablet Android (Termux)
+
+Su Android non esistono installer, ma Jarvis gira lo stesso, con il modello sul tablet (consigliati 8 GB di RAM):
+
+1. Installa **Termux** da [F-Droid](https://f-droid.org/packages/com.termux/) (la versione sul Play Store è vecchia e non funziona) e, se vuoi un'icona di avvio, **Termux:Widget**.
+2. Apri Termux e incolla:
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/antoniodifranco79-lab/jarvis/HEAD/scripts/install-android.sh | bash
+   ```
+3. Alla fine Jarvis si apre in Chrome. Le volte successive: scrivi `jarvis-start` in Termux, oppure tocca il widget **JARVIS**. In Chrome, "Aggiungi a schermata Home" crea l'icona.
+
+Microfono e voce funzionano dal browser (Chrome). Niente chiavi: tutto resta sul tablet.
+
 ## Installazione da sorgenti
 
 Serve Python 3.10+. Per la voce servono anche `ffmpeg` e PortAudio. Il cervello è Claude con una chiave API, oppure un modello locale gratuito (vedi sopra).

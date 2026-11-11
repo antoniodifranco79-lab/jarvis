@@ -210,8 +210,8 @@ def _doctor(_: argparse.Namespace) -> None:
     row("data dir", True, str(settings.data_dir))
     row("workspace", True, str(settings.workspace))
     for module, label in (
-        ("anthropic", "anthropic SDK"),
-        ("fastapi", "HUD server (pip install 'jarvis-ai[server]')"),
+        ("anthropic", "Claude SDK (pip install 'jarvis-ai[claude]')"),
+        ("starlette", "HUD server"),
         ("edge_tts", "edge-tts voice"),
         ("sounddevice", "microphone/speaker (voice extra)"),
         ("faster_whisper", "speech-to-text (voice extra)"),
@@ -222,7 +222,7 @@ def _doctor(_: argparse.Namespace) -> None:
             __import__(module)
             row(label, True)
         except Exception:  # noqa: BLE001
-            row(label, None if module != "anthropic" else False)
+            row(label, None if module != "starlette" else False)
     from .voice.wakeword import openwakeword_available
 
     try:

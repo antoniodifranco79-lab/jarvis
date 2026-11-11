@@ -12,8 +12,6 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
-import jsonschema
-
 log = logging.getLogger(__name__)
 
 Approver = Callable[[str, dict[str, Any]], Awaitable[bool]]
@@ -73,11 +71,57 @@ class Tool:
 
     def validate(self, arguments: Any) -> str | None:
         """Return an error message when ``arguments`` doesn't satisfy the schema, else None."""
-        try:
-            jsonschema.validate(arguments, self.input_schema)
-        except jsonschema.ValidationError as exc:
-            return f"{exc.message} (at {'/'.join(str(p) for p in exc.absolute_path) or 'root'})"
-        return None
+        return validate_against(self.input_schema, arguments)
+
+
+_TYPES = {
+    "string": (str,),
+    "integer": (int,),
+    "number": (int, float),
+    "boolean": (bool,),
+    "object": (dict,),
+    "array": (list,),
+    "null": (type(None),),
+}
+
+
+def validate_against(schema: dict[str, Any], value: Any, path: str = "root") -> str | None:
+    """A small JSON-Schema checker for the subset tool schemas use (types, required, enum,
+    additionalProperties, items, anyOf). Returns the first problem found, else None."""
+    if "anyOf" in schema:
+        problems = [validate_against(sub, value, path) for sub in schema["anyOf"]]
+        return None if any(p is None for p in problems) else f"{path}: no alternative matched ({problems[0]})"
+    expected = schema.get("type")
+    if expected:
+        allowed = tuple(
+            t
+            for name in ([expected] if isinstance(expected, str) else expected)
+            for t in _TYPES.get(name, ())
+        )
+        if isinstance(value, bool) and bool not in allowed:
+            return f"{path}: expected {expected}, got boolean"
+        if not isinstance(value, allowed):
+            return f"{path}: expected {expected}, got {type(value).__name__}"
+    if "enum" in schema and value not in schema["enum"]:
+        return f"{path}: must be one of {schema['enum']}"
+    if isinstance(value, dict) and (schema.get("type") in (None, "object")):
+        props = schema.get("properties", {})
+        for key in schema.get("required", []):
+            if key not in value:
+                return f"{path}: missing required property '{key}'"
+        for key, item in value.items():
+            if key in props:
+                problem = validate_against(props[key], item, f"{path}/{key}")
+                if problem:
+                    return problem
+            elif schema.get("additionalProperties") is False:
+                return f"{path}: unexpected property '{key}'"
+    if isinstance(value, list) and "items" in schema:
+        for i, item in enumerate(value):
+            problem = validate_against(schema["items"], item, f"{path}/{i}")
+            if problem:
+                return problem
+    return None
 
 
 # ---------------------------------------------------------------- schema generation
