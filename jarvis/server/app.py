@@ -197,7 +197,7 @@ def create_app(
         return JSONResponse(
             {
                 "version": __version__,
-                "model": settings.model,
+                "model": j.brain.model,
                 "effort": settings.effort,
                 "state": j.bus.state.value,
                 "user_name": settings.user_name,
@@ -238,7 +238,7 @@ def create_app(
                 "greeting": j.greeting(),
                 "state": j.bus.state.value,
                 "user_name": settings.user_name,
-                "model": settings.model,
+                "model": j.brain.model,
                 "transcript": transcript,
                 "reminders": [
                     {"id": r.id, "message": r.message, "due_at": r.due_at.isoformat()}
