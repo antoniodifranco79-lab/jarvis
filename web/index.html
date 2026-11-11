@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#04080f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>J.A.R.V.I.S.</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root { --bg:#04080f; --bg-2:#081423; --fg:#d9edf9; --muted:#7693ab; --line:rgba(57,198,255,.18); --panel:rgba(10,28,46,.62); --accent:#39c6ff; --accent-soft:rgba(57,198,255,.14); --amber:#ffb547; --good:#52e39b; --bad:#ff6b7a;
+  --font-display:"Orbitron","Segoe UI",system-ui,sans-serif; --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --font-mono:"JetBrains Mono",Menlo,Consolas,monospace; color-scheme:dark; }
+* { box-sizing:border-box; } html, body { height:100%; }
+body { margin:0; background:radial-gradient(1200px 700px at 30% 40%, var(--bg-2), var(--bg) 70%); color:var(--fg); font-family:var(--font-body); font-size:16px; line-height:1.5;
+  padding-left:max(12px, env(safe-area-inset-left,0px)); padding-right:max(12px, env(safe-area-inset-right,0px)); padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+.app { height:100%; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto 1fr auto; gap:10px; padding-block:10px; }
+header { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.brand { display:flex; align-items:baseline; gap:10px; } .brand h1 { font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:.3em; margin:0; color:var(--accent); text-shadow:0 0 18px rgba(57,198,255,.45); }
+.brand small { font-family:var(--font-mono); font-size:.68rem; color:var(--muted); letter-spacing:.06em; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.chip { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; padding:4px 9px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:var(--accent-soft); white-space:nowrap; cursor:default; }
+.chip.btn { cursor:pointer; color:var(--accent); } .chip.btn:hover { border-color:var(--accent); }
+.chip.state { color:var(--accent); border-color:rgba(57,198,255,.5); }
+.chip.state[data-state="listening"] { color:var(--good); border-color:rgba(82,227,155,.5); background:rgba(82,227,155,.1); }
+.chip.state[data-state="tool"], .chip.state[data-state="loading"] { color:var(--amber); border-color:rgba(255,181,71,.5); background:rgba(255,181,71,.1); }
+.chip.state[data-state="speaking"] { color:#fff; border-color:rgba(255,255,255,.4); }
+main { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:12px; min-height:0; min-width:0; } main > * { min-width:0; }
+.reactor { position:relative; display:grid; place-items:center; min-height:220px; min-width:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); overflow:hidden; }
+.reactor canvas { width:100%; max-width:480px; aspect-ratio:1/1; height:auto; display:block; }
+.reactor .caption { position:absolute; left:8px; right:8px; bottom:10px; text-align:center; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.progress { position:absolute; left:16px; right:16px; top:12px; height:4px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; } .progress > i { display:block; height:100%; width:0; background:var(--accent); transition:width .3s; }
+.panel { display:grid; grid-template-rows:auto 1fr; min-height:0; min-width:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); }
+.panel-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); font-family:var(--font-mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
+.panel-head button { font:inherit; letter-spacing:inherit; text-transform:inherit; color:var(--accent); background:none; border:1px solid var(--line); border-radius:999px; padding:3px 10px; cursor:pointer; }
+.transcript { overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; min-height:0; }
+.turn { max-width:94%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; overflow-wrap:anywhere; min-width:0; }
+.turn.user { align-self:flex-end; background:rgba(57,198,255,.12); border:1px solid rgba(57,198,255,.25); border-bottom-right-radius:4px; }
+.turn.jarvis { align-self:flex-start; background:rgba(255,255,255,.04); border:1px solid var(--line); border-bottom-left-radius:4px; }
+.turn.jarvis.streaming::after { content:"▍"; color:var(--accent); animation:blink 1s steps(2) infinite; }
+.turn .who { display:block; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+.turn.system { align-self:center; font-family:var(--font-mono); font-size:.72rem; color:var(--muted); background:none; padding:2px 8px; text-align:center; }
+.turn.tool { align-self:flex-start; font-family:var(--font-mono); font-size:.72rem; color:var(--muted); background:none; padding:0 8px; } .turn.tool b { color:var(--amber); font-weight:500; }
+.turn.reminder { align-self:stretch; background:rgba(255,181,71,.1); border:1px solid rgba(255,181,71,.4); color:var(--amber); }
+footer form { display:flex; gap:8px; align-items:center; }
+footer input { flex:1; min-width:0; font:inherit; color:var(--fg); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:999px; padding:11px 16px; }
+footer input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); } footer input::placeholder { color:var(--muted); }
+.btn { width:46px; height:46px; flex:none; border-radius:50%; border:1px solid var(--line); background:var(--accent-soft); color:var(--accent); cursor:pointer; display:grid; place-items:center; }
+.btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.btn.mic.on { color:#fff; background:var(--good); border-color:var(--good); box-shadow:0 0 24px rgba(82,227,155,.5); } .btn.wake.on { color:#04080f; background:var(--accent); }
+.hint { font-family:var(--font-mono); font-size:.64rem; color:var(--muted); letter-spacing:.06em; text-align:center; margin-top:6px; }
+dialog { background:var(--bg-2); color:var(--fg); border:1px solid var(--line); border-radius:18px; padding:20px; max-width:min(92vw, 460px); width:100%; font-family:var(--font-body); }
+dialog::backdrop { background:rgba(0,0,0,.6); } dialog h2 { font-family:var(--font-display); font-size:.9rem; letter-spacing:.2em; color:var(--accent); margin:0 0 14px; }
+dialog label { display:grid; gap:4px; margin-bottom:12px; font-size:.85rem; color:var(--muted); }
+dialog input, dialog select { font:inherit; color:var(--fg); background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
+dialog .row { display:flex; gap:8px; justify-content:flex-end; } dialog button { font:inherit; padding:8px 16px; border-radius:999px; border:1px solid var(--line); background:var(--accent-soft); color:var(--accent); cursor:pointer; }
+.install { display:none; position:fixed; left:50%; bottom:max(84px, env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:5; font:600 .95rem var(--font-body); color:#04080f; background:var(--accent); border:none; border-radius:999px; padding:12px 22px; box-shadow:0 0 30px rgba(57,198,255,.5); cursor:pointer; }
+@keyframes blink { to { opacity:0; } }
+@media (max-width:760px) { main { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(200px,1fr); } .reactor { min-height:200px; } .reactor canvas { max-width:240px; } .turn { max-width:100%; } }
+@media (prefers-reduced-motion:reduce) { .turn.jarvis.streaming::after { animation:none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><h1>J.A.R.V.I.S.</h1><small id="model">avvio…</small></div>
+    <div class="chips">
+      <span class="chip" id="reminderChip" hidden>0 promemoria</span>
+      <span class="chip btn" id="settingsBtn" role="button" tabindex="0">impostazioni</span>
+      <span class="chip state" id="stateChip" data-state="idle">idle</span>
+    </div>
+  </header>
+  <main>
+    <section class="reactor" aria-label="Stato">
+      <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
+      <canvas id="reactor" width="480" height="480"></canvas>
+      <div class="caption" id="caption">avvio dei sistemi</div>
+    </section>
+    <section class="panel" aria-label="Conversazione">
+      <div class="panel-head"><span>trascrizione</span><button type="button" id="newSession">nuova sessione</button></div>
+      <div class="transcript" id="transcript"></div>
+    </section>
+  </main>
+  <footer>
+    <form id="form" autocomplete="off">
+      <button type="button" class="btn wake" id="wakeBtn" title="Ascolta sempre la parola Jarvis" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 12h2m14 0h2M12 3v2m0 14v2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></button>
+      <input id="input" placeholder="Dica qualcosa a Jarvis…" aria-label="Messaggio">
+      <button type="button" class="btn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button type="submit" class="btn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
+    </form>
+    <div class="hint" id="hint">scriva, o tocchi il microfono · in modalità ascolto dica "Jarvis, …"</div>
+  </footer>
+</div>
+<button class="install" id="installBtn">Aggiungi J.A.R.V.I.S. alla schermata Home</button>
+<dialog id="settings">
+  <h2>IMPOSTAZIONI</h2>
+  <form method="dialog">
+    <label>Come deve chiamarla <input id="setName" placeholder="Signore"></label>
+    <label>Città per il meteo <input id="setCity" placeholder="Milano"></label>
+    <label>Lingua <select id="setLang"><option value="it-IT">Italiano</option><option value="en-GB">English</option></select></label>
+    <label>Modello (più grande = più intelligente, più lento) <select id="setModel">
+      <option value="Qwen3-0.6B-q4f16_1-MLC">Qwen3 0.6B · leggerissimo (1 GB)</option>
+      <option value="Qwen3-1.7B-q4f16_1-MLC">Qwen3 1.7B · consigliato (2 GB)</option>
+      <option value="Qwen3-4B-q4f16_1-MLC">Qwen3 4B · migliore (3.5 GB)</option>
+    </select></label>
+    <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
+  </form>
+</dialog>
+<script type="module" src="app.js"></script>
+</body>
+</html>
