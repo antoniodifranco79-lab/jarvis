@@ -1,0 +1,18 @@
+[
+ {"id":"hook","label":"","title":"E SE I DINOSAURI\nTORNASSERO\nPER 10 ANNI?",
+  "narration":"E se domani mattina i dinosauri tornassero sulla Terra… e restassero per dieci anni?"},
+ {"id":"y1","label":"ANNO 1","title":"IL CAOS",
+  "narration":"Anno uno. Caos totale. Un T-Rex pesa quanto un camion e corre a trenta all'ora. Le città diventano trappole: eserciti in strada, milioni di persone in fuga."},
+ {"id":"y2","label":"ANNO 2","title":"LA FAME",
+  "narration":"Anno due. Il vero problema sono gli erbivori. Un brachiosauro mangia quattrocento chili di piante al giorno. Interi raccolti spariscono in una notte, e il prezzo del pane triplica."},
+ {"id":"y3","label":"ANNO 3","title":"CIELI CHIUSI",
+  "narration":"Anno tre. Gli pterosauri si prendono il cielo. Dieci metri di apertura alare: bastano pochi impatti e il traffico aereo mondiale si ferma."},
+ {"id":"y5","label":"ANNO 5","title":"CI ADATTIAMO",
+  "narration":"Anno cinque. L'umanità si adatta. Mura alte trenta metri intorno alle città, droni di sorveglianza… e un business da miliardi: il dino-turismo."},
+ {"id":"y7","label":"ANNO 7","title":"LA NATURA DECIDE",
+  "narration":"Anno sette. Ma la natura fa il suo corso. L'aria di oggi ha meno ossigeno, le piante sono diverse, i virus moderni per loro sono sconosciuti. I giganti iniziano a morire."},
+ {"id":"y10","label":"ANNO 10","title":"LA FINE",
+  "narration":"Anno dieci. Spariscono, uno dopo l'altro. Restano città ferite, campi diventati foreste… e un pianeta che ci ricorda chi comanda davvero."},
+ {"id":"cta","label":"","title":"TU SOPRAVVIVERESTI?",
+  "narration":"Tu saresti sopravvissuto? Scrivilo nei commenti, e segui per il prossimo: e se…"}
+]

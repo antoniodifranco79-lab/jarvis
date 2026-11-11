@@ -16,3 +16,8 @@ venv/
 .jarvis/
 jarvis-workspace/
 .DS_Store
+# shorts (artefatti di render)
+shorts/*/node_modules/
+shorts/*/frames/
+shorts/*/output/
+shorts/*/audio/_ca.pem
