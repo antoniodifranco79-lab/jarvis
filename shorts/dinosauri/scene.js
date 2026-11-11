@@ -2,6 +2,8 @@
 import { THREE, rng, clamp, lerp, smooth, easeOut, easeIn, easeInOut, V3, mat, box, sphere, cyl, cone, group,
   windowTexture, building, tree, deadTree, car, bus, human, trex, brachio, ptero, heli, drone, plane, skeleton, softTexture, sky } from './scene_lib.js';
 
+const LANG = new URLSearchParams(location.search).get('lang') || 'it';
+const AUDIO_DIR = LANG === 'it' ? './audio' : `./audio_${LANG}`;
 const W = 1080, H = 1920, GAP = 0.45, LEAD = 0.25; // pausa fra scene; la voce parte LEAD s dopo il taglio
 const $ = (id) => document.getElementById(id);
 
@@ -178,7 +180,7 @@ SCENES.push({ env: { skyTop: '#05070f', skyBottom: '#1b2437', fog: '#141a28', fo
   shots: [{ t: [0, 1], from: [[2, 2.2, 4], [0, 6, -14]], to: [[1, 2.4, 0], [0, 6.5, -14]], shake: 0.35, fov: [55, 58] }] });
 
 // ---------- timeline ----------
-const [script, timing] = await Promise.all([fetch('./script.json').then(r => r.json()), fetch('./audio/timing.json').then(r => r.json())]);
+const [script, timing] = await Promise.all([fetch(LANG === 'it' ? './script.json' : `./script.${LANG}.json`).then(r => r.json()), fetch(`${AUDIO_DIR}/timing.json`).then(r => r.json())]);
 let cursor = 0; const TL = [];
 timing.forEach((tm, i) => { const dur = LEAD + tm.duration + GAP; TL.push({ i, start: cursor, dur, audioAt: cursor + LEAD, words: tm.words.map(w => ({ w: w.w, t: cursor + LEAD + w.t, e: cursor + LEAD + w.t + w.d })), meta: script[i] }); cursor += dur; });
 const TOTAL = cursor + 0.6;
@@ -186,7 +188,13 @@ const TOTAL = cursor + 0.6;
 TL.forEach(S => { const chunks = []; let cur = null; S.words.forEach((w, k) => { if (!cur || cur.words.length >= 3 || w.t - cur.end > 0.5) { cur = { words: [], start: w.t, end: w.e }; chunks.push(cur); } cur.words.push(w); cur.end = w.e; }); S.chunks = chunks; });
 
 const YEARS = { hook: 0, y1: 1, y2: 2, y3: 3, y5: 5, y7: 7, y10: 10, cta: 10 };
-const FACTS = { y1: 'T-REX: <b>8 TONNELLATE</b> · <b>30 KM/H</b>', y2: '1 BRACHIOSAURO = <b>400 KG</b> DI PIANTE AL GIORNO', y3: 'QUETZALCOATLUS: <b>10 METRI</b> DI APERTURA ALARE', y5: 'MURA ALTE <b>30 M</b>: COME UN PALAZZO DI 10 PIANI', y7: 'OSSIGENO: OGGI <b>21%</b> · AI LORO TEMPI FINO AL <b>30%</b>', y10: 'DOPO 10 ANNI RESTANO SOLO <b>LE OSSA</b>' };
+const I18N = {
+  it: { facts: { y1: 'T-REX: <b>8 TONNELLATE</b> · <b>30 KM/H</b>', y2: '1 BRACHIOSAURO = <b>400 KG</b> DI PIANTE AL GIORNO', y3: 'QUETZALCOATLUS: <b>10 METRI</b> DI APERTURA ALARE', y5: 'MURA ALTE <b>30 M</b>: COME UN PALAZZO DI 10 PIANI', y7: 'OSSIGENO: OGGI <b>21%</b> · AI LORO TEMPI FINO AL <b>30%</b>', y10: 'DOPO 10 ANNI RESTANO SOLO <b>LE OSSA</b>' },
+        cta: ['COMMENTA 👇 LA TUA STRATEGIA', 'SEGUI ➜ PER IL PROSSIMO "E SE…"'] },
+  en: { facts: { y1: 'T-REX: <b>8 TONS</b> · <b>20 MPH</b>', y2: '1 BRACHIOSAURUS = <b>900 LBS</b> OF PLANTS A DAY', y3: 'QUETZALCOATLUS: <b>33 FT</b> WINGSPAN', y5: '<b>100 FT</b> WALLS: AS TALL AS A 10-STORY BUILDING', y7: 'OXYGEN: TODAY <b>21%</b> · BACK THEN UP TO <b>30%</b>', y10: 'AFTER 10 YEARS ONLY <b>THE BONES</b> REMAIN' },
+        cta: ['COMMENT 👇 YOUR STRATEGY', 'FOLLOW ➜ FOR THE NEXT "WHAT IF…"'] } };
+const FACTS = (I18N[LANG] || I18N.it).facts;
+{ const c = (I18N[LANG] || I18N.it).cta; const el = document.getElementById('cta2'); el.children[0].textContent = c[0]; el.children[1].textContent = c[1]; }
 
 // costruzione scene
 const skyMesh = sky('#000', '#000'); scene.add(skyMesh);

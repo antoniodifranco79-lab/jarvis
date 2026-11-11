@@ -6,19 +6,21 @@ Legge audio/timeline.json (scritto da render.js) per posizionare ogni traccia vo
 import json, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+LANG = os.environ.get("SHORT_LANG", "it")
+AUDIO = os.path.join(HERE, "audio" if LANG == "it" else f"audio_{LANG}")
 video, out = sys.argv[1], sys.argv[2]
-tl = json.load(open(os.path.join(HERE, "audio", "timeline.json")))
+tl = json.load(open(os.path.join(AUDIO, "timeline.json")))
 total = tl["total"]
 cuts = [s["start"] for s in tl["scenes"] if s["start"] > 0]
 
 # 1) musica della durata giusta, con bass hit sui cambi scena
-subprocess.check_call([sys.executable, "-I", os.path.join(HERE, "music.py"), f"{total:.2f}", json.dumps(cuts)], cwd=HERE)
+subprocess.check_call([sys.executable, "-I", os.path.join(HERE, "music.py"), f"{total:.2f}", json.dumps(cuts), os.path.join(AUDIO, "music.wav")], cwd=HERE)
 
 # 2) filtro ffmpeg: ogni voce ritardata al suo istante, sommate; musica abbassata sotto la voce (sidechain)
-inputs = ["-i", os.path.join(HERE, "audio", "music.wav")]
+inputs = ["-i", os.path.join(AUDIO, "music.wav")]
 parts = []
 for i, s in enumerate(tl["scenes"]):
-    inputs += ["-i", os.path.join(HERE, "audio", f"scene{s['i']:02d}.mp3")]
+    inputs += ["-i", os.path.join(AUDIO, f"scene{s['i']:02d}.mp3")]
     ms = int(round(s["audioAt"] * 1000))
     parts.append(f"[{i+2}:a]aresample=44100,aformat=channel_layouts=stereo,adelay={ms}|{ms},apad=whole_dur={total:.2f}[v{i}]")
 n = len(tl["scenes"])

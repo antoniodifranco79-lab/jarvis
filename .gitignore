@@ -20,4 +20,5 @@ jarvis-workspace/
 shorts/*/node_modules/
 shorts/*/frames/
 shorts/*/output/
-shorts/*/audio/_ca.pem
+shorts/*/_ca.pem
+shorts/*/audio*/music.wav

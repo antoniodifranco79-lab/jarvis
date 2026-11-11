@@ -10,6 +10,7 @@ from scipy.signal import lfilter
 SR = 44100
 dur = float(sys.argv[1])
 cuts = json.loads(sys.argv[2]) if len(sys.argv) > 2 else []
+OUT = sys.argv[3] if len(sys.argv) > 3 else "audio/music.wav"
 n = int(SR * dur)
 t = np.arange(n) / SR
 out = np.zeros(n)
@@ -131,7 +132,7 @@ out = np.tanh(out * 0.9) * 0.85
 
 stereo = np.stack([out, out], axis=1)
 pcm = (stereo * 32767).astype(np.int16)
-with wave.open("audio/music.wav", "wb") as w:
+with wave.open(OUT, "wb") as w:
     w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR)
     w.writeframes(pcm.tobytes())
-print("music.wav", round(dur, 1), "s", "cuts", cuts)
+print(OUT, round(dur, 1), "s", "cuts", cuts)
