@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Antonio Di Franco · AI privata per studi professionali</title>
+<meta name="description" content="Installo assistenti AI che girano sui computer dello studio, senza cloud: i documenti dei clienti non escono mai. Formazione AI Act inclusa. Diagnosi gratuita di 30 minuti.">
+<meta name="theme-color" content="#0b1220">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Antonio Di Franco · AI privata per studi professionali e PMI">
+<meta property="og:description" content="L'intelligenza artificiale nel tuo studio. I dati restano nel tuo studio. Installazione, formazione AI Act, supporto mensile.">
+<meta property="og:locale" content="it_IT">
+<link rel="icon" href="app/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="app/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"Person","name":"Antonio Di Franco","jobTitle":"Consulente AI per studi professionali e PMI","url":"https://antoniodifranco79-lab.github.io/jarvis/","sameAs":["https://github.com/antoniodifranco79-lab"],"knowsAbout":["intelligenza artificiale locale","GDPR","AI Act","assistenti vocali","automazione per studi professionali"]},
+ {"@type":"ProfessionalService","name":"Antonio Di Franco · AI privata","description":"Installazione di assistenti AI locali per studi professionali e PMI, formazione AI Act, supporto mensile.","url":"https://antoniodifranco79-lab.github.io/jarvis/","areaServed":"IT","priceRange":"€490 - €2400","founder":{"@type":"Person","name":"Antonio Di Franco"}}
+]}
+</script>
+<style>
+/* Layout: una colonna di lettura (max 1080px) con bande piene a tutta larghezza; il blu reattore di JARVIS diventa un teal sobrio da studio professionale. */
+:root {
+  --bg:#f5f7fa; --bg-2:#ffffff; --bg-3:#e9eef5; --fg:#0f1a2b; --fg-2:#45546b; --line:#d5dde8;
+  --accent:#0f6b86; --accent-2:#0a5068; --accent-soft:#dcf0f6; --amber:#b86a00; --amber-soft:#fff1dc; --good:#1f7a4f; --on-accent:#ffffff;
+  --font-display:"Manrope","Segoe UI",system-ui,sans-serif; --font-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif; --font-mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --radius:14px; --shadow:0 10px 30px rgba(15,26,43,.08); color-scheme:light;
+}
+@media (prefers-color-scheme:dark) { :root:not([data-theme="light"]) {
+  --bg:#0b1220; --bg-2:#111a2b; --bg-3:#17233a; --fg:#e6edf6; --fg-2:#a4b2c6; --line:#263349;
+  --accent:#4fc3e6; --accent-2:#8ad8f0; --accent-soft:#12324a; --amber:#f2b35b; --amber-soft:#3a2a10; --good:#5fd39a; --on-accent:#0b1220; --shadow:0 10px 30px rgba(0,0,0,.35); color-scheme:dark; } }
+:root[data-theme="dark"] {
+  --bg:#0b1220; --bg-2:#111a2b; --bg-3:#17233a; --fg:#e6edf6; --fg-2:#a4b2c6; --line:#263349;
+  --accent:#4fc3e6; --accent-2:#8ad8f0; --accent-soft:#12324a; --amber:#f2b35b; --amber-soft:#3a2a10; --good:#5fd39a; --on-accent:#0b1220; --shadow:0 10px 30px rgba(0,0,0,.35); color-scheme:dark; }
+
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+@media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *, *::before, *::after { animation:none !important; transition:none !important; } }
+body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--font-body); font-size:17px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+a { color:var(--accent); text-decoration-thickness:1px; text-underline-offset:3px; }
+a:hover { color:var(--accent-2); }
+:focus-visible { outline:3px solid var(--accent); outline-offset:3px; border-radius:4px; }
+h1,h2,h3 { font-family:var(--font-display); line-height:1.12; letter-spacing:-.015em; margin:0; text-wrap:balance; }
+h1 { font-size:clamp(2rem, 5.2vw, 3.4rem); font-weight:800; }
+h2 { font-size:clamp(1.5rem, 3.2vw, 2.2rem); font-weight:800; }
+h3 { font-size:1.2rem; font-weight:700; }
+p { margin:0; }
+.wrap { max-width:1080px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); }
+.narrow { max-width:66ch; }
+.eyebrow { font-family:var(--font-mono); font-size:.74rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin-bottom:12px; display:block; }
+.muted { color:var(--fg-2); }
+section { padding-block:72px; }
+.band { background:var(--bg-2); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.stack { display:grid; gap:18px; }
+.btn { display:inline-flex; align-items:center; gap:10px; font:600 1rem var(--font-body); padding:14px 22px; border-radius:999px; border:1px solid transparent; cursor:pointer; text-decoration:none; transition:transform .15s ease, background .15s ease; }
+.btn:hover { transform:translateY(-1px); }
+.btn-primary { background:var(--accent); color:var(--on-accent); } .btn-primary:hover { background:var(--accent-2); color:var(--on-accent); }
+.btn-ghost { background:transparent; color:var(--fg); border-color:var(--line); } .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+.btn svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+
+/* nav */
+header.top { position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+body::before { content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:30; background:var(--bg); }
+.nav { display:flex; align-items:center; justify-content:space-between; gap:14px; padding-block:12px; }
+.logo { display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:800; color:var(--fg); text-decoration:none; letter-spacing:-.01em; }
+.logo i { width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); display:inline-block; }
+.nav nav { display:flex; gap:4px 18px; flex-wrap:wrap; justify-content:flex-end; font-size:.95rem; }
+.nav nav a { color:var(--fg-2); text-decoration:none; } .nav nav a:hover { color:var(--accent); }
+@media (max-width:640px) { .nav nav .hide-sm { display:none; } }
+
+/* hero */
+.hero { padding-block:64px 56px; }
+.hero-grid { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,.9fr); gap:40px; align-items:center; }
+.hero-grid > * { min-width:0; }
+.hero .lede { font-size:1.2rem; color:var(--fg-2); max-width:58ch; }
+.cta-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:8px; }
+.cta-note { font-size:.9rem; color:var(--fg-2); }
+.reactor { position:relative; aspect-ratio:1/1; max-width:360px; width:100%; margin:0 auto; display:grid; place-items:center; }
+.reactor .ring { position:absolute; inset:0; border-radius:50%; border:1px solid var(--line); }
+.reactor .ring.r2 { inset:14%; border:2px dashed var(--accent); opacity:.55; animation:spin 40s linear infinite; }
+.reactor .ring.r3 { inset:30%; background:radial-gradient(circle at 50% 50%, var(--accent-soft), transparent 70%); border:none; }
+.reactor .core { position:relative; width:42%; aspect-ratio:1/1; border-radius:50%; background:var(--bg-2); border:1px solid var(--line); box-shadow:var(--shadow); display:grid; place-items:center; text-align:center; padding:10px; }
+.reactor .core b { font-family:var(--font-mono); font-size:.72rem; letter-spacing:.14em; color:var(--accent); display:block; }
+.reactor .core small { font-size:.72rem; color:var(--fg-2); display:block; line-height:1.3; margin-top:4px; }
+.reactor .tag { position:absolute; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.08em; color:var(--fg-2); background:var(--bg-2); border:1px solid var(--line); border-radius:999px; padding:5px 10px; white-space:nowrap; }
+.reactor .tag.t1 { top:4%; left:50%; transform:translateX(-50%); } .reactor .tag.t2 { bottom:10%; left:0; } .reactor .tag.t3 { bottom:10%; right:0; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* facts */
+.facts { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; }
+.fact { border-left:3px solid var(--accent); padding:4px 0 4px 18px; min-width:0; }
+.fact b { display:block; font-family:var(--font-display); font-size:2rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
+.fact span { color:var(--fg-2); font-size:.95rem; display:block; margin-top:6px; }
+.fact a { font-size:.8rem; }
+@media (max-width:760px) { .facts { grid-template-columns:1fr; } .hero-grid { grid-template-columns:1fr; } .reactor { max-width:260px; } }
+
+/* problem */
+.two { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:40px; align-items:start; }
+.two > * { min-width:0; }
+.quote { border:1px solid var(--line); background:var(--bg-2); border-radius:var(--radius); padding:22px 24px; box-shadow:var(--shadow); }
+.quote p { font-style:italic; font-size:1.05rem; } .quote footer { margin-top:10px; font-family:var(--font-mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--fg-2); }
+.checks { list-style:none; margin:18px 0 0; padding:0; display:grid; gap:10px; }
+.checks li { display:flex; gap:12px; align-items:flex-start; } .checks li svg { width:22px; height:22px; flex:none; margin-top:2px; fill:none; stroke:var(--good); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+@media (max-width:760px) { .two { grid-template-columns:1fr; } }
+
+/* services */
+.plans { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:18px; margin-top:34px; }
+.plan { background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius); padding:26px 24px; display:grid; grid-template-rows:auto auto auto 1fr auto; gap:14px; min-width:0; }
+.plan.featured { border-color:var(--accent); box-shadow:var(--shadow); position:relative; }
+.plan.featured::before { content:"Il più richiesto"; position:absolute; top:-12px; left:22px; font:500 .68rem var(--font-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--on-accent); background:var(--accent); padding:4px 10px; border-radius:999px; }
+.plan .who { font-family:var(--font-mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-2); }
+.price { font-family:var(--font-display); font-size:2rem; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1.1; }
+.price small { font:500 .9rem var(--font-body); color:var(--fg-2); letter-spacing:0; }
+.plan ul { margin:0; padding:0; list-style:none; display:grid; gap:9px; font-size:.97rem; }
+.plan ul li { padding-left:22px; position:relative; } .plan ul li::before { content:""; position:absolute; left:0; top:.55em; width:12px; height:2px; background:var(--accent); }
+.plan .outcome { background:var(--accent-soft); border-radius:10px; padding:10px 12px; font-size:.92rem; }
+.fine { font-size:.88rem; color:var(--fg-2); margin-top:16px; }
+@media (max-width:900px) { .plans { grid-template-columns:1fr; } }
+
+/* steps */
+.steps { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:18px; margin-top:34px; counter-reset:step; }
+.step { min-width:0; padding-top:14px; border-top:2px solid var(--line); position:relative; }
+.step::before { counter-increment:step; content:counter(step, decimal-leading-zero); font-family:var(--font-mono); font-size:.78rem; letter-spacing:.12em; color:var(--accent); display:block; margin-bottom:8px; }
+.step h3 { font-size:1.05rem; margin-bottom:6px; } .step p { font-size:.95rem; color:var(--fg-2); } .step .when { display:block; margin-top:8px; font-family:var(--font-mono); font-size:.72rem; letter-spacing:.08em; color:var(--fg-2); }
+@media (max-width:760px) { .steps { grid-template-columns:1fr 1fr; } } @media (max-width:460px) { .steps { grid-template-columns:1fr; } }
+
+/* jarvis */
+.jarvis { background:linear-gradient(180deg, var(--bg-3), var(--bg)); }
+.chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+.chip { font-family:var(--font-mono); font-size:.72rem; letter-spacing:.06em; padding:6px 11px; border:1px solid var(--line); border-radius:999px; background:var(--bg-2); color:var(--fg-2); }
+.terminal { background:#0a1322; color:#cfe6f3; border-radius:var(--radius); padding:18px 20px; font-family:var(--font-mono); font-size:.82rem; line-height:1.7; border:1px solid #1f3147; box-shadow:var(--shadow); overflow-x:auto; white-space:pre-wrap; }
+.terminal .u { color:#8ad8f0; } .terminal .j { color:#e6edf6; } .terminal .t { color:#f2b35b; } .terminal .c { color:#6b8299; }
+
+/* about */
+.about-grid { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr); gap:40px; align-items:start; }
+.about-grid > * { min-width:0; }
+.principles { display:grid; gap:14px; margin-top:8px; }
+.principle { border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; background:var(--bg-2); }
+.principle h3 { font-size:1rem; margin-bottom:4px; } .principle p { font-size:.95rem; color:var(--fg-2); }
+@media (max-width:760px) { .about-grid { grid-template-columns:1fr; } }
+
+/* faq */
+details { border-top:1px solid var(--line); padding:14px 0; } details:last-of-type { border-bottom:1px solid var(--line); }
+summary { cursor:pointer; font-family:var(--font-display); font-weight:700; font-size:1.05rem; list-style:none; display:flex; justify-content:space-between; gap:14px; }
+summary::-webkit-details-marker { display:none; } summary::after { content:"+"; color:var(--accent); font-weight:600; flex:none; } details[open] summary::after { content:"–"; }
+details p { margin-top:10px; color:var(--fg-2); max-width:66ch; }
+
+/* contact */
+.contact-card { background:var(--bg-2); border:1px solid var(--line); border-radius:var(--radius); padding:28px; box-shadow:var(--shadow); display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr); gap:28px; }
+.contact-card > * { min-width:0; }
+.contact-list { display:grid; gap:12px; margin-top:14px; }
+.contact-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; font-size:.98rem; }
+.contact-row .k { font-family:var(--font-mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--fg-2); min-width:84px; }
+.contact-row code { font-family:var(--font-mono); font-size:.9rem; background:var(--bg-3); padding:4px 8px; border-radius:6px; user-select:all; overflow-wrap:anywhere; }
+.copy { font:500 .8rem var(--font-body); padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--fg); cursor:pointer; } .copy:hover { border-color:var(--accent); color:var(--accent); }
+form.brief { display:grid; gap:12px; }
+form.brief label { display:grid; gap:5px; font-size:.9rem; color:var(--fg-2); }
+form.brief input, form.brief select, form.brief textarea { font:inherit; font-size:1rem; color:var(--fg); background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px; width:100%; }
+form.brief textarea { min-height:96px; resize:vertical; }
+.brief-out { display:none; margin-top:10px; background:var(--amber-soft); border:1px solid var(--amber); border-radius:10px; padding:12px; font-size:.92rem; }
+.brief-out.show { display:block; }
+.brief-out pre { white-space:pre-wrap; font:inherit; margin:8px 0 0; user-select:all; }
+@media (max-width:760px) { .contact-card { grid-template-columns:1fr; } }
+
+footer.site { padding-block:34px; border-top:1px solid var(--line); font-size:.9rem; color:var(--fg-2); }
+footer.site .wrap { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+footer.site a { color:var(--fg-2); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap nav">
+    <a class="logo" href="#top"><i aria-hidden="true"></i>Antonio Di Franco</a>
+    <nav aria-label="Sezioni">
+      <a href="#servizi">Servizi</a>
+      <a href="#come" class="hide-sm">Come funziona</a>
+      <a href="#jarvis">J.A.R.V.I.S.</a>
+      <a href="#chi" class="hide-sm">Chi sono</a>
+      <a href="#contatti">Contatti</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="stack">
+      <span class="eyebrow">AI privata per studi professionali e PMI</span>
+      <h1>L'intelligenza artificiale nel tuo studio. I dati restano nel tuo studio.</h1>
+      <p class="lede">Installo assistenti AI che girano sui computer dello studio, senza cloud e senza abbonamenti per utente. I fascicoli dei clienti non escono mai dalla stanza. Il team impara a usarli come richiede l'AI Act.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#contatti">Prenota una diagnosi gratuita di 30 minuti <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="app/">Prova J.A.R.V.I.S. nel browser</a>
+      </div>
+      <p class="cta-note">Per commercialisti, avvocati, notai, consulenti del lavoro, studi tecnici e PMI che trattano dati sensibili. Lavoro in italiano, in presenza o da remoto.</p>
+    </div>
+    <div class="reactor" aria-hidden="true">
+      <div class="ring"></div><div class="ring r2"></div><div class="ring r3"></div>
+      <div class="core"><b>LOCALE</b><small>modello, memoria e documenti sul vostro PC</small></div>
+      <span class="tag t1">0 dati in cloud</span>
+      <span class="tag t2">GDPR · segreto professionale</span>
+      <span class="tag t3">AI Act art. 4</span>
+    </div>
+  </div>
+</section>
+
+<section class="band" aria-label="Il contesto">
+  <div class="wrap facts">
+    <div class="fact"><b>37–47%</b><span>degli studi professionali italiani usa già l'AI. Nei grandi studi è il 62%.</span><a href="https://www.teleborsa.it/AMP/News/2026/07/02/professionisti-cresce-la-digitalizzazione-l-ia-traina-gli-investimenti-negli-studi-187.html" rel="noopener">Osservatorio Politecnico di Milano</a></div>
+    <div class="fact"><b>40%</b><span>degli studi non ha nessuna misura privacy specifica per l'AI. Tra i piccoli studi è il 52%.</span><a href="https://www.fiscoetasse.com/new-rassegna-stampa/2257-luso-dellintelligenza-artificiale-negli-studi-legali-vantaggi-e-criticita.html" rel="noopener">Rassegna FiscoeTasse</a></div>
+    <div class="fact"><b>&lt;20%</b><span>delle imprese ha avviato l'alfabetizzazione AI obbligatoria. L'articolo 4 dell'AI Act è in vigore dal 2 febbraio 2025.</span><a href="https://www.quotidiano.net/economia/ai-act-e-imprese-italiane-in-ritardo-meno-del-20-ha-avviato-la-formazione-obbligatoria-130f5131" rel="noopener">Quotidiano Nazionale</a></div>
+  </div>
+</section>
+
+<section id="problema">
+  <div class="wrap two">
+    <div class="stack">
+      <span class="eyebrow">Il problema</span>
+      <h2>In studio l'AI si usa già. Solo che nessuno sa dove finiscono i dati.</h2>
+      <p class="muted">Una praticante incolla un bilancio in ChatGPT per riassumerlo. Un collaboratore carica un contratto su un servizio gratuito per tradurlo. Nessuno lo fa in malafede: lo fa perché funziona. Ma ogni volta un documento coperto da segreto professionale esce dallo studio, verso server di cui non avete un contratto.</p>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Con un modello che gira in locale, il documento non lascia il computer. Niente trasferimento, niente DPA da negoziare, niente "il fornitore potrebbe addestrare sui vostri dati".</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>L'AI Act (Regolamento UE 2024/1689, art. 4) chiede che chi usa sistemi di AI abbia una formazione adeguata. La Legge 132/2025 lo recepisce in Italia. La formazione la faccio io, documentata.</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Nessun canone per utente: il modello è open source, il software è open source. Pagate il lavoro, non le licenze.</span></li>
+      </ul>
+    </div>
+    <div class="stack">
+      <div class="quote">
+        <p>"Il problema non è più se usare ChatGPT, Claude e Gemini negli studi legali, notarili e commerciali, ma come farlo senza violare il GDPR e il segreto professionale."</p>
+        <footer>Diritto.it, giugno 2026</footer>
+      </div>
+      <div class="quote">
+        <p>"Senza un contratto con il fornitore, gli obblighi di GDPR e AI Act ricadono interamente sullo studio."</p>
+        <footer>NT+ Diritto, Il Sole 24 Ore</footer>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="servizi" class="band">
+  <div class="wrap">
+    <span class="eyebrow">Servizi</span>
+    <h2>Tre modi per iniziare, tutti con un prezzo scritto qui.</h2>
+    <p class="muted narrow" style="margin-top:12px">Niente preventivi a sorpresa. Si parte dalla diagnosi, si installa quando ha senso, si resta insieme solo se conviene.</p>
+    <div class="plans">
+      <article class="plan">
+        <span class="who">Per chi vuole mettersi in regola subito</span>
+        <h3>Diagnosi &amp; Policy AI</h3>
+        <div class="price">€490 <small>una tantum</small></div>
+        <ul>
+          <li>2 ore in studio (o in video): come usate l'AI oggi, dove escono i dati</li>
+          <li>Policy d'uso dell'AI scritta su misura, pronta da firmare</li>
+          <li>Sessione di alfabetizzazione AI di 90 minuti per tutto il team, con attestato</li>
+          <li>Report con priorità e costi reali dei passi successivi</li>
+        </ul>
+        <p class="outcome">Risultato: obbligo dell'art. 4 AI Act coperto e documentato in una settimana.</p>
+      </article>
+      <article class="plan featured">
+        <span class="who">Per chi vuole l'AI senza mandare fuori i dati</span>
+        <h3>J.A.R.V.I.S. Privato</h3>
+        <div class="price">€2.400 <small>installazione</small><br><small>poi €190/mese per aggiornamenti e assistenza</small></div>
+        <ul>
+          <li>Assistente AI installato sui PC o sul server dello studio: funziona anche senza internet</li>
+          <li>Chat con i documenti dello studio in una cartella protetta, riassunti, bozze, calcoli, promemoria, voce</li>
+          <li>Memoria a lungo termine: ricorda procedure, scadenze, preferenze dello studio</li>
+          <li>Mezza giornata di formazione pratica per il team (vale come alfabetizzazione AI Act)</li>
+          <li>Aggiornamenti del modello e del software, assistenza entro un giorno lavorativo</li>
+        </ul>
+        <p class="outcome">Risultato: in una giornata il team lavora con l'AI e nessun dato lascia lo studio.</p>
+      </article>
+      <article class="plan">
+        <span class="who">Per chi vuole automatizzare, un processo al mese</span>
+        <h3>Partner AI</h3>
+        <div class="price">€790<small>/mese</small></div>
+        <ul>
+          <li>Tutto quanto incluso in J.A.R.V.I.S. Privato</li>
+          <li>Ogni mese un flusso di lavoro automatizzato: smistamento mail, prime bozze, controlli su documenti, report ricorrenti</li>
+          <li>Assistenza prioritaria, anche in giornata</li>
+          <li>Richiamo formativo trimestrale e aggiornamento della policy quando cambia la norma</li>
+        </ul>
+        <p class="outcome">Risultato: un referente AI di studio, senza assumere nessuno.</p>
+      </article>
+    </div>
+    <p class="fine">Prezzi IVA esclusa. Installazione fino a 5 postazioni; oltre, si quota in diagnosi. I canoni si disdicono con 30 giorni di preavviso, senza penali. Se dopo la diagnosi decidete di non proseguire, il report resta vostro.</p>
+  </div>
+</section>
+
+<section id="come">
+  <div class="wrap">
+    <span class="eyebrow">Come funziona</span>
+    <h2>Dalla prima chiamata allo studio operativo in due settimane.</h2>
+    <div class="steps">
+      <div class="step"><h3>Chiamata di 30 minuti</h3><p>Mi raccontate come lavorate e cosa vi preoccupa. Vi dico subito se ha senso proseguire e con quale pacchetto.</p><span class="when">Gratuita · entro 3 giorni</span></div>
+      <div class="step"><h3>Diagnosi</h3><p>Due ore con il team. Mappo strumenti, dati, PC disponibili. Consegno policy e report.</p><span class="when">Settimana 1</span></div>
+      <div class="step"><h3>Installazione e formazione</h3><p>Una giornata in studio: installo, collego la cartella documenti, formo il team sui casi vostri, non su esempi finti.</p><span class="when">Settimana 2</span></div>
+      <div class="step"><h3>Supporto mensile</h3><p>Aggiornamenti, risposte alle domande, nuovi flussi quando servono. Un referente, non un ticket.</p><span class="when">Dal mese 1 in avanti</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="jarvis" class="jarvis">
+  <div class="wrap two">
+    <div class="stack">
+      <span class="eyebrow">Lo strumento</span>
+      <h2>J.A.R.V.I.S.: l'assistente che installo è open source e lo potete vedere ora.</h2>
+      <p class="muted">L'ho costruito io. Gira su Windows, macOS e Linux con un modello linguistico locale (Qwen3 via Ollama), oppure con Claude se lo studio preferisce la qualità del cloud sotto contratto. Voce, memoria, promemoria, lettura e scrittura di file in una cartella protetta, controllo della casa e dell'ufficio. Le azioni rischiose chiedono conferma. Non finge mai di aver fatto qualcosa che non ha fatto.</p>
+      <div class="chips">
+        <span class="chip">100% locale</span><span class="chip">senza chiave API</span><span class="chip">voce in italiano</span><span class="chip">memoria SQLite</span><span class="chip">file in sandbox</span><span class="chip">licenza MIT</span><span class="chip">Windows · macOS · Linux · browser</span>
+      </div>
+      <div class="cta-row" style="margin-top:18px">
+        <a class="btn btn-primary" href="app/">Apri la demo nel browser</a>
+        <a class="btn btn-ghost" href="https://github.com/antoniodifranco79-lab/jarvis" rel="noopener">Codice sorgente su GitHub</a>
+      </div>
+      <p class="cta-note">La demo scarica un modello di 1-3 GB una volta sola e poi funziona anche offline. Serve Chrome aggiornato con WebGPU.</p>
+    </div>
+    <div class="terminal" aria-label="Esempio di conversazione">
+<span class="c"># esempio reale in studio, tutto in locale</span>
+<span class="u">Tu ›</span> Jarvis, riassumi il contratto di locazione nella cartella Rossi e segnala le clausole sul recesso.
+<span class="t">[strumento: read_file · ~/jarvis-workspace/Rossi/locazione.pdf]</span>
+<span class="j">Jarvis ›</span> Contratto 4+4 a uso abitativo, canone 850 euro mensili. Recesso del conduttore con preavviso di sei mesi per gravi motivi (art. 7). Manca la clausola sul deposito cauzionale: in genere è prevista, Signore.
+<span class="u">Tu ›</span> Ricordami venerdì alle 9 di chiamare l'avvocato Bianchi.
+<span class="t">[strumento: set_reminder · ven 09:00]</span>
+<span class="j">Jarvis ›</span> Fatto. Venerdì alle nove le ricordo di chiamare l'avvocato Bianchi.
+<span class="c"># nessun dato ha lasciato il computer</span></div>
+  </div>
+</section>
+
+<section id="chi" class="band">
+  <div class="wrap about-grid">
+    <div class="stack">
+      <span class="eyebrow">Chi sono</span>
+      <h2>Antonio Di Franco</h2>
+      <p class="muted">Costruisco software e sistemi di intelligenza artificiale che le persone possono usare senza fidarsi ciecamente di nessuno, me compreso. J.A.R.V.I.S. è nato così: un assistente che gira sul proprio computer, con il codice aperto perché chiunque possa verificare cosa fa con i dati.</p>
+      <p class="muted">Lavoro con studi professionali e piccole imprese perché sono quelli che oggi rischiano di più: usano l'AI tanto quanto le grandi aziende, ma senza un ufficio legale e senza un reparto IT. Il mio lavoro è dare loro entrambe le cose per una giornata al mese.</p>
+    </div>
+    <div class="principles">
+      <div class="principle"><h3>I dati restano dove sono</h3><p>Se un processo si può fare in locale, si fa in locale. Il cloud si usa solo con un contratto firmato e per ciò che serve davvero.</p></div>
+      <div class="principle"><h3>Nessuna promessa magica</h3><p>Un modello locale è più lento e meno brillante di quelli da miliardi di dollari. Vi dico in diagnosi cosa farà bene e cosa no, prima che paghiate.</p></div>
+      <div class="principle"><h3>Prima le persone, poi gli strumenti</h3><p>La formazione non è una formalità per l'AI Act: è il motivo per cui dopo tre mesi lo strumento viene ancora usato.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <span class="eyebrow">Domande frequenti</span>
+    <h2>Quello che chiedono tutti alla prima chiamata.</h2>
+    <div style="margin-top:28px">
+      <details><summary>Serve un server o un computer speciale?</summary><p>No. Un PC con 16 GB di RAM fa girare un modello da 8 miliardi di parametri a velocità accettabile; con 8 GB si usa un modello più piccolo. Una scheda video aiuta molto. Se lo studio ha un PC in più, diventa il "cervello" condiviso di tutti.</p></details>
+      <details><summary>Quanto costa il modello linguistico?</summary><p>Zero. I modelli locali (Qwen3, Llama, Gemma) sono gratuiti e open source. Pagate il mio lavoro di installazione, formazione e assistenza, non licenze per utente.</p></details>
+      <details><summary>Funziona senza internet?</summary><p>Sì. Modello, memoria e documenti stanno sul computer. Internet serve solo per il meteo, le notizie o la ricerca web, se li volete.</p></details>
+      <details><summary>E se vogliamo la qualità di Claude o GPT?</summary><p>Si può: Jarvis usa anche Claude tramite API con un contratto commerciale che esclude l'addestramento sui vostri dati. In diagnosi decidiamo insieme quali attività restano in locale e quali, se volete, vanno in cloud.</p></details>
+      <details><summary>La formazione vale per l'AI Act?</summary><p>L'articolo 4 chiede competenze adeguate al contesto d'uso, non un corso standard. La sessione è progettata sui vostri strumenti e casi, e rilascio un attestato con programma e presenze da conservare come documentazione.</p></details>
+      <details><summary>Cosa succede se non siamo soddisfatti?</summary><p>I canoni si interrompono con 30 giorni di preavviso. Il software resta installato e vostro: è open source, nessun blocco.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="contatti" class="band">
+  <div class="wrap">
+    <span class="eyebrow">Contatti</span>
+    <h2>Prenota la diagnosi gratuita di 30 minuti.</h2>
+    <p class="muted narrow" style="margin-top:12px">Scrivimi due righe su come lavora lo studio. Rispondo entro un giorno lavorativo con tre proposte di orario.</p>
+    <div class="contact-card" style="margin-top:28px">
+      <div>
+        <h3>Canali diretti</h3>
+        <div class="contact-list" id="contactList"></div>
+        <p class="muted" style="margin-top:18px; font-size:.92rem">Il sito non usa cookie né tracker. Quello che mi scrivi resta tra noi.</p>
+      </div>
+      <form class="brief" id="brief">
+        <label>Nome e studio<input id="f-nome" name="nome" autocomplete="name" placeholder="Maria Rossi, Studio Rossi &amp; Associati"></label>
+        <label>Tipo di attività
+          <select id="f-tipo" name="tipo">
+            <option>Commercialista</option><option>Avvocato</option><option>Notaio</option><option>Consulente del lavoro</option><option>Studio tecnico</option><option>PMI</option><option>Altro</option>
+          </select>
+        </label>
+        <label>Quante persone usano il computer in studio<input id="f-persone" name="persone" inputmode="numeric" placeholder="es. 6"></label>
+        <label>Cosa vorresti risolvere<textarea id="f-msg" name="messaggio" placeholder="Es. i collaboratori usano ChatGPT con i dati dei clienti e vorrei un'alternativa sicura"></textarea></label>
+        <button class="btn btn-primary" type="submit">Prepara il messaggio</button>
+        <div class="brief-out" id="briefOut"></div>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>© 2026 Antonio Di Franco · AI privata per studi professionali e PMI</span>
+    <span><a href="https://github.com/antoniodifranco79-lab/jarvis" rel="noopener">GitHub</a> · <a href="app/">Demo J.A.R.V.I.S.</a> · <a href="#top">Torna su</a></span>
+  </div>
+</footer>
+
+<script>
+// Canali di contatto: compila i campi vuoti (email, telefono, LinkedIn) e il sito li mostra da solo.
+const CONTACT = {
+  email: "",          // es. "nome@dominio.it"
+  phone: "",          // es. "+39 333 1234567" (mostrato anche come WhatsApp)
+  linkedin: "",       // es. "https://www.linkedin.com/in/..."
+  github: "https://github.com/antoniodifranco79-lab",
+};
+const list = document.getElementById("contactList");
+function row(k, html) { const d = document.createElement("div"); d.className = "contact-row"; d.innerHTML = `<span class="k">${k}</span>${html}`; list.appendChild(d); return d; }
+function copyBtn(text) { const b = document.createElement("button"); b.type = "button"; b.className = "copy"; b.textContent = "Copia"; b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(text); b.textContent = "Copiato"; } catch { b.textContent = "Seleziona e copia"; } setTimeout(() => (b.textContent = "Copia"), 1800); }); return b; }
+if (CONTACT.email) { const r = row("Email", `<a href="mailto:${CONTACT.email}">${CONTACT.email}</a>`); r.appendChild(copyBtn(CONTACT.email)); }
+if (CONTACT.phone) { const digits = CONTACT.phone.replace(/[^\d+]/g, ""); const r = row("Telefono", `<code>${CONTACT.phone}</code> <a href="https://wa.me/${digits.replace("+", "")}" rel="noopener">WhatsApp</a>`); r.appendChild(copyBtn(CONTACT.phone)); }
+if (CONTACT.linkedin) row("LinkedIn", `<a href="${CONTACT.linkedin}" rel="noopener">${CONTACT.linkedin.replace(/^https?:\/\/(www\.)?/, "")}</a>`);
+if (CONTACT.github) row("GitHub", `<a href="${CONTACT.github}" rel="noopener">${CONTACT.github.replace(/^https?:\/\//, "")}</a>`);
+if (!CONTACT.email && !CONTACT.phone) row("Nota", `<span class="muted">Email e telefono in arrivo: nel frattempo scrivi su GitHub.</span>`);
+
+// Il modulo non invia nulla a server esterni: compone il testo da incollare nell'email o in WhatsApp.
+document.getElementById("brief").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = (id) => document.getElementById(id).value.trim();
+  const text = `Ciao Antonio,\n\nsono ${v("f-nome") || "[nome e studio]"} (${v("f-tipo")}). In studio usiamo il computer in ${v("f-persone") || "[n]"} persone.\n\nVorrei risolvere: ${v("f-msg") || "[cosa vorresti risolvere]"}\n\nQuando possiamo fare la chiamata di 30 minuti?`;
+  const out = document.getElementById("briefOut");
+  const subject = encodeURIComponent("Diagnosi AI gratuita: " + (v("f-nome") || "richiesta dal sito"));
+  const mail = CONTACT.email ? `<p><a class="btn btn-primary" href="mailto:${CONTACT.email}?subject=${subject}&body=${encodeURIComponent(text)}">Apri nell'email</a></p>` : "";
+  out.innerHTML = `<b>Messaggio pronto.</b> ${CONTACT.email ? "Aprilo nella tua email oppure copialo." : "Copialo e inviamelo sul canale che preferisci."}${mail}<pre>${text.replace(/</g, "&lt;")}</pre>`;
+  out.classList.add("show");
+  out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+</script>
+</body>
+</html>

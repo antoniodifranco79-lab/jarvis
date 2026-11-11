@@ -1,8 +1,12 @@
-name: Web app (GitHub Pages)
+name: Sito e web app (GitHub Pages)
+# Pubblica su https://<utente>.github.io/jarvis/ :
+#   /      -> sito personale (cartella site/)
+#   /app/  -> J.A.R.V.I.S. web app (cartella web/)
+# Prerequisito, una sola volta: Settings > Pages > Source = "GitHub Actions".
 on:
   push:
     branches: ["**"]
-    paths: ["web/**", ".github/workflows/pages.yml"]
+    paths: ["site/**", "web/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,11 +23,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Assemble site (root) + app (/app)
+        run: |
+          rm -rf _site && mkdir -p _site/app
+          cp -r site/. _site/
+          cp -r web/. _site/app/
+          touch _site/.nojekyll
+          find _site -type f | sort
       - uses: actions/configure-pages@v5
         with:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: web
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
