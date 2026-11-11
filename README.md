@@ -60,6 +60,12 @@ Dalla pagina [Releases](https://github.com/antoniodifranco79-lab/jarvis/releases
 
 Al primo avvio l'app scarica da sola il motore AI (Ollama, 0,2-1,6 GB a seconda del sistema) e il modello linguistico adatto alla memoria del PC (qwen3 da 1,7 a 8 miliardi di parametri, 1-5 GB), mostrando l'avanzamento nella finestra. Non serve installare nient'altro, né una chiave API.
 
+## Nel browser, senza installare nulla (tablet e Chromebook)
+
+La cartella `web/` è J.A.R.V.I.S. in versione web app: stessa interfaccia, voce dal browser, promemoria, meteo, calcoli, memoria, Wikipedia, e il modello linguistico (Qwen3 via WebLLM) che gira **dentro Chrome** grazie a WebGPU. Niente account, niente chiavi: al primo avvio scarica il modello (1-3 GB, una volta sola) e poi funziona anche offline.
+
+Si pubblica con GitHub Pages (workflow `pages.yml`; in Settings > Pages scegliere come sorgente "GitHub Actions"): l'indirizzo diventa `https://<utente>.github.io/jarvis/`. Da Chrome su Android: "Aggiungi a schermata Home". Richiede Chrome aggiornato e Android 12 o più recente per WebGPU; senza WebGPU restano attivi gli strumenti.
+
 ## Su tablet Android (Termux)
 
 Su Android non esistono installer, ma Jarvis gira lo stesso, con il modello sul tablet (consigliati 8 GB di RAM):
