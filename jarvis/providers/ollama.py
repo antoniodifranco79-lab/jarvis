@@ -12,10 +12,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import shutil
-import subprocess
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -329,33 +328,44 @@ class OllamaClient:
 
 
 async def ensure_ready(
-    base_url: str, model: str, notify: Callable[[str], Awaitable[None]], *, start_timeout: float = 30.0
+    base_url: str,
+    model: str,
+    notify: Callable[[str], Awaitable[None]],
+    *,
+    data_dir: Path | None = None,
+    start_timeout: float = 45.0,
 ) -> bool:
-    """Make the local brain usable: start ``ollama serve`` if needed and pull the model if missing.
+    """Make the local brain usable with no help from the user: find or download the engine, start it,
+    and pull the model if it's missing. Returns True when Ollama answers and the model is present."""
+    from ..config import get_settings
+    from ..engine import download_engine, find_ollama, start_engine
 
-    Returns True when Ollama answers and the model is present."""
+    data_dir = data_dir or get_settings().data_dir
     client = OllamaClient(base_url)
     if not await client.is_up():
-        exe = shutil.which("ollama")
-        if not exe:
-            await notify("Ollama isn't installed. Get it from ollama.com, start it, and ask me again.")
-            return False
+        binary = find_ollama(data_dir)
+        if binary is None:
+            try:
+                binary = await download_engine(data_dir, notify)
+            except Exception as exc:  # noqa: BLE001
+                await notify(
+                    f"I couldn't download the AI engine ({exc}). Check the connection and restart me."
+                )
+                return False
         try:
-            subprocess.Popen(
-                [exe, "serve"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True
-            )
+            start_engine(binary, data_dir, host=base_url.split("//", 1)[-1])
         except OSError as exc:
-            await notify(f"Couldn't start Ollama: {exc}")
+            await notify(f"Couldn't start the AI engine: {exc}")
             return False
         deadline = asyncio.get_running_loop().time() + start_timeout
         while not await client.is_up():
             if asyncio.get_running_loop().time() > deadline:
-                await notify("Ollama didn't start in time. Run 'ollama serve' yourself and ask me again.")
+                await notify("The AI engine didn't start in time. Restart me and try again.")
                 return False
             await asyncio.sleep(0.5)
-        await notify("Ollama started.")
+        await notify("AI engine online.")
     if not client.has_model(await client.models(), model):
-        await notify(f"The {model} model isn't downloaded yet. Fetching it now; this takes a few minutes.")
+        await notify(f"First start: downloading the {model} language model. A few minutes, only once.")
         try:
             await client.pull(model, notify)
         except OllamaError as exc:

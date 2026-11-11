@@ -205,7 +205,8 @@ async def test_ensure_ready_pulls_missing_model(monkeypatch):
     )
 
 
-async def test_ensure_ready_without_ollama_installed(monkeypatch):
+async def test_ensure_ready_without_engine_and_offline(monkeypatch, tmp_path):
+    from jarvis import engine
     from jarvis.providers import ollama as mod
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -218,14 +219,19 @@ async def test_ensure_ready_without_ollama_installed(monkeypatch):
         real_init(self, base_url, **kw)
 
     monkeypatch.setattr(mod.OllamaClient, "__init__", patched_init)
-    monkeypatch.setattr(mod.shutil, "which", lambda name: None)
+    monkeypatch.setattr(engine, "find_ollama", lambda data_dir, system=None: None)
+
+    async def failing_download(data_dir, notify, *, system=None):
+        raise RuntimeError("offline")
+
+    monkeypatch.setattr(engine, "download_engine", failing_download)
     notices: list[str] = []
 
     async def notify(msg: str) -> None:
         notices.append(msg)
 
-    assert not await mod.ensure_ready("http://ollama.test", "qwen3:8b", notify)
-    assert "isn't installed" in notices[0]
+    assert not await mod.ensure_ready("http://ollama.test", "qwen3:8b", notify, data_dir=tmp_path)
+    assert "couldn't download" in notices[-1].lower()
 
 
 def test_has_model():

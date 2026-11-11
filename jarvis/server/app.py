@@ -163,7 +163,7 @@ def create_app(
                 await j.bus.publish("notice", message=message)
 
             state["brain_prep"] = asyncio.create_task(
-                ensure_ready(settings.ollama_url, settings.ollama_model, notify), name="jarvis-ollama"
+                ensure_ready(settings.ollama_url, settings.local_model, notify), name="jarvis-ollama"
             )
         if voice:
             from .voice import ServerVoice

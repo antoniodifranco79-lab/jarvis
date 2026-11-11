@@ -79,6 +79,10 @@ def open_window(url: str) -> bool:
 
 
 def run_app(settings: Settings, *, voice: bool = True, browser: bool = False) -> None:
+    try:
+        ensure_desktop_shortcut()
+    except Exception as exc:  # noqa: BLE001 - cosmetic
+        log.debug("desktop shortcut skipped: %s", exc)
     server, thread, url = start_server(settings, voice=voice)
     try:
         if browser or not open_window(url):
@@ -105,19 +109,59 @@ def python_for_launcher() -> Path:
     return exe
 
 
+def is_frozen() -> bool:
+    return bool(getattr(sys, "frozen", False))
+
+
+def launch_command() -> tuple[Path, str]:
+    """(executable, arguments) that open the app: the frozen binary itself, or python -m jarvis app."""
+    if is_frozen():
+        return Path(sys.executable), ""
+    return python_for_launcher(), "-m jarvis app"
+
+
+def ensure_desktop_shortcut(home: Path | None = None) -> Path | None:
+    """Linux: put a launcher on the user's Desktop once (the installers do this on Windows and macOS)."""
+    if platform.system() != "Linux":
+        return None
+    home = home or Path.home()
+    desktop = home / "Desktop"
+    try:
+        out = subprocess.run(["xdg-user-dir", "DESKTOP"], capture_output=True, text=True, timeout=5)
+        if out.returncode == 0 and out.stdout.strip():
+            desktop = Path(out.stdout.strip())
+    except (OSError, subprocess.SubprocessError):
+        pass
+    if not desktop.is_dir():
+        return None
+    entry = desktop / "jarvis.desktop"
+    if entry.exists():
+        return entry
+    exe, args = launch_command()
+    icon = ASSETS / "icon.png"
+    entry.write_text(
+        "[Desktop Entry]\nType=Application\nName=J.A.R.V.I.S.\nComment=Just A Rather Very Intelligent System\n"
+        f'Exec="{exe}" {args}\nIcon={icon}\nTerminal=false\nCategories=Utility;AudioVideo;\n',
+        encoding="utf-8",
+    )
+    entry.chmod(0o755)
+    subprocess.run(["gio", "set", str(entry), "metadata::trusted", "true"], check=False, capture_output=True)
+    return entry
+
+
 def install_shortcuts(home: Path | None = None, system: str | None = None) -> list[Path]:
     """Create an app launcher for the current OS. Returns the files written."""
     home = home or Path.home()
     system = system or platform.system()
-    python = python_for_launcher()
+    exe, args = launch_command()
     if system == "Darwin":
-        return [_macos_bundle(home / "Applications" / "JARVIS.app", python)]
+        return [_macos_bundle(home / "Applications" / "JARVIS.app", exe, args)]
     if system == "Windows":
-        return _windows_shortcuts(home, python)
-    return _linux_desktop_entry(home, python)
+        return _windows_shortcuts(home, exe, args)
+    return _linux_desktop_entry(home, exe, args)
 
 
-def _linux_desktop_entry(home: Path, python: Path) -> list[Path]:
+def _linux_desktop_entry(home: Path, exe: Path, args: str) -> list[Path]:
     apps = home / ".local" / "share" / "applications"
     icons = home / ".local" / "share" / "icons" / "hicolor" / "512x512" / "apps"
     apps.mkdir(parents=True, exist_ok=True)
@@ -130,7 +174,7 @@ def _linux_desktop_entry(home: Path, python: Path) -> list[Path]:
         "Type=Application\n"
         f"Name={APP_NAME}\n"
         "Comment=Just A Rather Very Intelligent System\n"
-        f'Exec="{python}" -m jarvis app\n'
+        f'Exec="{exe}" {args}\n'
         f"Path={REPO_ROOT}\n"
         f"Icon={icon}\n"
         "Terminal=false\n"
@@ -145,12 +189,12 @@ def _linux_desktop_entry(home: Path, python: Path) -> list[Path]:
     return [entry, icon]
 
 
-def _macos_bundle(bundle: Path, python: Path) -> Path:
+def _macos_bundle(bundle: Path, exe: Path, args: str) -> Path:
     (bundle / "Contents" / "MacOS").mkdir(parents=True, exist_ok=True)
     (bundle / "Contents" / "Resources").mkdir(parents=True, exist_ok=True)
     shutil.copyfile(ASSETS / "icon.icns", bundle / "Contents" / "Resources" / "icon.icns")
     launcher = bundle / "Contents" / "MacOS" / "jarvis"
-    launcher.write_text(f'#!/bin/sh\ncd "{REPO_ROOT}"\nexec "{python}" -m jarvis app\n', encoding="utf-8")
+    launcher.write_text(f'#!/bin/sh\ncd "{REPO_ROOT}"\nexec "{exe}" {args}\n', encoding="utf-8")
     launcher.chmod(0o755)
     (bundle / "Contents" / "Info.plist").write_text(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -174,13 +218,13 @@ def _macos_bundle(bundle: Path, python: Path) -> Path:
     return bundle
 
 
-def _windows_shortcuts(home: Path, python: Path) -> list[Path]:
+def _windows_shortcuts(home: Path, exe: Path, args: str) -> list[Path]:
     desktop = home / "Desktop" / "JARVIS.lnk"
     start = home / "AppData" / "Roaming" / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "JARVIS.lnk"
     icon = ASSETS / "icon.ico"
     script = "\n".join(
         f'$s = (New-Object -ComObject WScript.Shell).CreateShortcut("{target}"); '
-        f'$s.TargetPath = "{python}"; $s.Arguments = "-m jarvis app"; $s.WorkingDirectory = "{REPO_ROOT}"; '
+        f'$s.TargetPath = "{exe}"; $s.Arguments = "{args}"; $s.WorkingDirectory = "{REPO_ROOT}"; '
         f'$s.IconLocation = "{icon}"; $s.Description = "Just A Rather Very Intelligent System"; $s.Save()'
         for target in (desktop, start)
     )

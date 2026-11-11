@@ -26,6 +26,7 @@ dependencies = [
   "psutil>=5.9",
   "rich>=13.7",
   "jsonschema>=4.21",
+  "zstandard>=0.22",
 ]
 
 [project.optional-dependencies]

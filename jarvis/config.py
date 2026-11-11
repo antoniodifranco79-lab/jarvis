@@ -70,7 +70,7 @@ class Settings(BaseSettings):
     provider: Literal["auto", "anthropic", "ollama"] = "auto"
     model: str = "claude-opus-5-5"
     ollama_url: str = "http://127.0.0.1:11434"
-    ollama_model: str = "qwen3:8b"
+    ollama_model: str = "auto"  # auto = pick a Qwen3 size from the machine's RAM
     ollama_num_ctx: int = 16384
     ollama_think: bool = False
     effort: Effort = "medium"
@@ -141,8 +141,16 @@ class Settings(BaseSettings):
         return "anthropic" if anthropic_credentials_available() else "ollama"
 
     @property
+    def local_model(self) -> str:
+        if self.ollama_model.strip().lower() in ("", "auto"):
+            from .engine import recommended_model
+
+            return recommended_model()
+        return self.ollama_model
+
+    @property
     def active_model(self) -> str:
-        return self.model if self.resolved_provider == "anthropic" else self.ollama_model
+        return self.model if self.resolved_provider == "anthropic" else self.local_model
 
     def ensure_dirs(self) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)

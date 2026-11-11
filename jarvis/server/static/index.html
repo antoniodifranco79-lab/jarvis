@@ -256,7 +256,7 @@ footer input::placeholder { color: var(--muted); }
       case "speak": enqueueAudio({ text: m.text }); break;
       case "approval_request": showApproval(m.id, m.tool, m.input); break;
       case "reminder": addTurn("reminder", "⏰ " + m.message); fetch("/api/reminders").then(r => r.json()).then(updateReminders).catch(() => {}); break;
-      case "notice": case "error": endStream(); addTurn("system", m.message); break;
+      case "notice": case "error": endStream(); addTurn("system", m.message); if (app.state === "idle") caption.textContent = m.message.toLowerCase().slice(0, 60); break;
       case "session": if (m.new && transcript.querySelector(".turn.user")) addTurn("system", "— new session —"); break;
     }
   };

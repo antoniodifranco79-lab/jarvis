@@ -48,7 +48,19 @@ jarvis doctor && jarvis
 
 Nota: la sottoscrizione Claude (Pro/Max) non si può usare da applicazioni di terze parti come Jarvis; serve la chiave API o il modello locale.
 
-## Installazione rapida
+## Installazione con un click (consigliata)
+
+Dalla pagina [Releases](https://github.com/antoniodifranco79-lab/jarvis/releases/latest) scarica l'installer per il tuo sistema:
+
+| Sistema | File | Poi |
+|---|---|---|
+| Windows | `JARVIS-Setup-<versione>-win64.exe` | installazione guidata, icona sul desktop e nel menu Start |
+| macOS | `JARVIS-<versione>-macos.dmg` | trascina J.A.R.V.I.S. in Applicazioni |
+| Ubuntu / Debian | `jarvis_<versione>_amd64.deb` | doppio clic, Installa: compare nel menu e sul desktop |
+
+Al primo avvio l'app scarica da sola il motore AI (Ollama, 0,2-1,6 GB a seconda del sistema) e il modello linguistico adatto alla memoria del PC (qwen3 da 1,7 a 8 miliardi di parametri, 1-5 GB), mostrando l'avanzamento nella finestra. Non serve installare nient'altro, né una chiave API.
+
+## Installazione da sorgenti
 
 Serve Python 3.10+. Per la voce servono anche `ffmpeg` e PortAudio. Il cervello è Claude con una chiave API, oppure un modello locale gratuito (vedi sopra).
 

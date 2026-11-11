@@ -27,17 +27,38 @@ jobs:
       - run: python -m pip install -e ".[server,voice,local,app]" pyinstaller
       - run: python -m pip install --no-deps openwakeword
       - run: pyinstaller packaging/jarvis.spec --noconfirm --clean
-      - name: Package
+      - name: Version
+        id: ver
+        shell: bash
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+      - name: Windows installer (Inno Setup)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:JARVIS_VERSION = "${{ steps.ver.outputs.version }}"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" packaging\windows\jarvis.iss
+      - name: macOS disk image
+        if: runner.os == 'macOS'
+        run: bash packaging/macos/build-dmg.sh "${{ steps.ver.outputs.version }}"
+      - name: Debian package
+        if: runner.os == 'Linux'
+        run: bash packaging/linux/build-deb.sh "${{ steps.ver.outputs.version }}"
+      - name: Portable archives
         shell: bash
         run: |
           cd dist
-          if [ "${{ runner.os }}" = "macOS" ]; then zip -qr ../JARVIS-macos.zip JARVIS.app
-          elif [ "${{ runner.os }}" = "Windows" ]; then 7z a -r ../JARVIS-windows.zip JARVIS > /dev/null
-          else tar -czf ../JARVIS-linux.tar.gz JARVIS; fi
+          if [ "${{ runner.os }}" = "macOS" ]; then zip -qr ../JARVIS-macos-portable.zip JARVIS.app
+          elif [ "${{ runner.os }}" = "Windows" ]; then 7z a -r ../JARVIS-windows-portable.zip JARVIS > /dev/null
+          else tar -czf ../JARVIS-linux-portable.tar.gz JARVIS; fi
+          mv JARVIS-Setup-*.exe JARVIS-*.dmg jarvis_*.deb .. 2>/dev/null || true
       - uses: actions/upload-artifact@v4
         with:
           name: JARVIS-${{ runner.os }}
-          path: JARVIS-*
+          path: |
+            JARVIS-*
+            jarvis_*.deb
   release:
     needs: build
     if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.tag != ''
@@ -52,15 +73,16 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           target_commitish: ${{ github.sha }}
           name: "J.A.R.V.I.S. ${{ github.event.inputs.tag || github.ref_name }}"
-          files: packages/JARVIS-*
+          files: |
+            packages/JARVIS-*
+            packages/jarvis_*.deb
           body: |
-            **J.A.R.V.I.S.** - Just A Rather Very Intelligent System. App desktop con voce, memoria, strumenti e HUD; cervello Claude (chiave API) oppure modello locale gratuito via Ollama.
+            **J.A.R.V.I.S.** - Just A Rather Very Intelligent System. Scarica, installa, avvia: non serve altro.
 
-            **Installazione / Install**
-            - Serve [Ollama](https://ollama.com) per il modello locale (l'app lo avvia e scarica `qwen3:8b` da sola), oppure una chiave API Anthropic in `~/.jarvis/.env`.
-            - **Windows**: scompatta `JARVIS-windows.zip` e avvia `JARVIS\JARVIS.exe`. Se SmartScreen avvisa: "Ulteriori informazioni" > "Esegui comunque".
-            - **macOS**: scompatta `JARVIS-macos.zip`, trascina `JARVIS.app` in Applicazioni; al primo avvio clic destro > Apri (app non firmata), oppure `xattr -dr com.apple.quarantine /Applications/JARVIS.app`.
-            - **Linux**: `tar -xzf JARVIS-linux.tar.gz && ./JARVIS/JARVIS`. Per la voce: `sudo apt install libportaudio2 ffmpeg`.
-            - Configurazione (lingua, nome, voce, modello): file `~/.jarvis/.env`, vedi `.env.example` nel repository.
+            Al primo avvio l'app scarica da sola il motore AI e il modello linguistico (qualche GB, una volta sola) mostrando l'avanzamento nella finestra. Poi funziona offline, gratis, senza chiavi.
 
-            Sorgenti e documentazione: README del repository.
+            **Windows**: `JARVIS-Setup-*-win64.exe`, installazione guidata con icona sul desktop. Se SmartScreen avvisa: "Ulteriori informazioni" > "Esegui comunque" (app non firmata).
+            **macOS**: `JARVIS-*-macos.dmg`, trascina J.A.R.V.I.S. in Applicazioni. Al primo avvio clic destro > Apri.
+            **Linux (Ubuntu/Debian)**: `jarvis_*_amd64.deb`, doppio clic > Installa. Compare nel menu applicazioni e sul desktop.
+
+            Versioni portabili (senza installazione) negli archivi `*-portable.*`. Preferisci Claude al modello locale? Metti la chiave API in `~/.jarvis/.env`.

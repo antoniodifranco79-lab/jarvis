@@ -200,13 +200,12 @@ def _doctor(_: argparse.Namespace) -> None:
             else f"not running at {settings.ollama_url} (install from ollama.com, then 'ollama serve')",
         )
         have = any(
-            m == settings.ollama_model or m.split(":")[0] == settings.ollama_model.split(":")[0]
-            for m in models
+            m == settings.local_model or m.split(":")[0] == settings.local_model.split(":")[0] for m in models
         )
         row(
-            f"Ollama model {settings.ollama_model}",
+            f"Ollama model {settings.local_model}",
             have if up else False,
-            "" if have else f"run: ollama pull {settings.ollama_model}",
+            "" if have else f"run: ollama pull {settings.local_model}",
         )
     row("data dir", True, str(settings.data_dir))
     row("workspace", True, str(settings.workspace))
