@@ -20,9 +20,10 @@ const store = {
   get(key, fallback) { try { const v = localStorage.getItem("jarvis." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem("jarvis." + key, JSON.stringify(value)); } catch {} },
 };
-const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "", provider: "local", claudeModel: "claude-opus-5-5", voiceIt: "", voiceEn: "", voiceRate: 1, voiceGender: "male" }, store.get("settings", {}));
+const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "", provider: "local", claudeModel: "claude-opus-5-5", voiceIt: "", voiceEn: "", voiceRate: 1, voiceGender: "male", puterModel: "" }, store.get("settings", {}));
 const claudeKey = { get: () => store.get("claudeKey", ""), set: (k) => store.set("claudeKey", k) };
 const usingClaude = () => settings.provider === "claude";
+const usingPuter = () => settings.provider === "puter";
 const library = new Library();
 const knowledge = new Knowledge();
 let facts = store.get("facts", []);          // long-term memory: strings
@@ -90,7 +91,7 @@ const parseDelay = (t) => { const m = /(?:tra|in|fra)\s+(\d+|un|una|uno|mezz'?)\
 const parseClock = (t) => { const m = /alle\s+(\d{1,2})(?:[:.](\d{2}))?/i.exec(t); if (!m) return null; const d = new Date(); d.setHours(parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0, 0, 0); if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); return d.getTime(); };
 
 /** Fast intent routing: the hands act first, the model phrases the answer. Returns {tool, result, direct} or null. */
-const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Conoscenza: "impara che …" mi insegna qualcosa, "cosa hai imparato" mostra ciò che so; con Claude posso anche studiare un argomento sul web e memorizzarlo. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude, anche con ricerca sul web" : " con il modello che gira su questo dispositivo, gratis e senza chiave"}. Dica "studia" e un argomento per farmi imparare da Wikipedia.`;
+const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Ricerca: "ricerca approfondita su …" legge più fonti e scrive un rapporto con le citazioni. Conoscenza: "impara che …" mi insegna qualcosa, "cosa hai imparato" mostra ciò che so; con Claude posso anche studiare un argomento sul web e memorizzarlo. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude" : settings.provider === "puter" ? " con i modelli di punta tramite Puter" : " con il modello che gira su questo dispositivo, gratis e senza chiave; per la potenza massima scelga Puter nelle impostazioni"}. Dica "studia" e un argomento per farmi imparare da Wikipedia.`;
 async function route(text) {
   const t = text.toLowerCase().trim();
   if (/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/.test(t)) return { tool: "aiuto", result: "", direct: HELP() };
@@ -122,6 +123,32 @@ async function route(text) {
   const calc = /^(quanto fa|calcola|calculate|what is|quanto è)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (calc) { const v = calculate(calc[2]); if (v != null) return { tool: "calcolatrice", result: `${calc[2]} = ${v}`, direct: `Fa ${String(v).replace(".", ",")}, ${settings.name}.` }; }
   const who = /^(chi è|chi era|cos'è|cosa è|che cos'è|who is|what is)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (who) { const r = await wikipedia(who[2], /^who|^what/i.test(who[1]) ? "en" : "it").catch(() => null); if (r) return { tool: "wikipedia", result: r, direct: r }; }
   return null;
+}
+
+// Ricerca approfondita: più voci di Wikipedia (italiano e inglese), poi un rapporto con fonti numerate dal cervello attivo.
+async function deepResearch(topic) {
+  setState("tool", "ricerca"); addTool("ricerca approfondita", topic);
+  const search = async (lang, n) => { try { const j = await (await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&srlimit=${n}&format=json&origin=*`)).json(); return (j.query?.search || []).map((h) => ({ lang, title: h.title })); } catch { return []; } };
+  const [it, en] = await Promise.all([search("it", 5), search("en", 3)]);
+  const picks = [...it.slice(0, 3), ...en.slice(0, 1)];
+  const read = await Promise.all(picks.map((pk) => TOOLS.leggi_wikipedia({ titolo: pk.title, lingua: pk.lang }).catch(() => null)));
+  const passages = read.map((r, i) => (r && r.sources ? { doc: r.sources[0].doc + (picks[i].lang === "en" ? " (en)" : ""), page: null, text: r.text.split("\n\n").slice(1).join("\n\n").slice(0, 3500), url: (/\(fonte: (\S+)\)/.exec(r.text) || [])[1] || "" } : null)).filter(Boolean).map((p, i) => ({ ...p, n: i + 1 }));
+  if (!passages.length) { const a = `Non trovo fonti su "${topic}", ${settings.name}.`; addTurn("jarvis", a, "jarvis"); speak(a); return a; }
+  addTool("fonti", passages.map((p) => p.doc).join(" · ").slice(0, 160));
+  const brief = `Ricerca approfondita su "${topic}". Usa solo le fonti numerate qui sotto. Scrivi un rapporto: una sintesi di due o tre frasi, poi da quattro a sette punti chiave con date e numeri esatti, ciascuno citato come [n]; chiudi con ciò che resta incerto. Poi salva i punti chiave nella conoscenza con impara (titolo: "${topic}", fonte: le voci di Wikipedia).`;
+  const withSources = brief + "\n\n" + passages.map((p) => `[${p.n}] ${p.doc}${p.url ? " (" + p.url + ")" : ""}\n${p.text}`).join("\n\n");
+  let answer;
+  if (usingPuter() && puterMod?.isSignedIn()) answer = await askPuter(withSources);
+  else if (usingClaude() && claudeKey.get()) answer = await askClaude(withSources);
+  else if (agentCapable()) answer = await askLocal(brief, "", passages, 1400);
+  else {
+    for (const p of passages) await knowledge.learn({ title: p.doc.replace(/^Wikipedia: /, ""), content: p.text.slice(0, 1800), source: p.url || "Wikipedia", origin: "claude" });
+    renderKnowledge();
+    answer = `Ho letto ${passages.length} voci su "${topic}" e le ho salvate nella conoscenza, ${settings.name}. Con un cervello più grande ne scriverei anche il rapporto; intanto le trova qui sotto.`;
+    const el = addTurn("jarvis", answer, "jarvis"); addSources(el, passages); speak(answer); return answer;
+  }
+  const last = [...transcript.querySelectorAll(".turn.jarvis")].pop(); if (last && !last.querySelector(".sources")) addSources(last, passages);
+  return answer;
 }
 
 // Studio senza modello: Wikipedia, voce più pertinente, scheda di conoscenza con la fonte.
@@ -214,6 +241,29 @@ function streamRenderer() {
     },
   };
 }
+// ---------------------------------------------------------------- Puter: potenza massima senza chiave (account Puter gratuito)
+let puterMod = null, puterSession = null;
+const loadPuterBrain = async () => (puterMod ||= await import("./puterbrain.js"));
+const cloudSystem = () => `Sei J.A.R.V.I.S., l'assistente personale di ${settings.name}: calmo, preciso, educato, con un'ironia britannica leggera e asciutta. Chiami l'utente "${settings.name}" e rispondi nella sua lingua (di solito italiano).
+Le risposte vengono anche lette ad alta voce: vai dritto al punto, di solito da una a quattro frasi; per rapporti, confronti e procedure usa un breve elenco con "- ". Niente tabelle, titoli o grassetti.
+Lavori con strumenti: usali con decisione, in parallelo quando sono indipendenti.
+- Documenti dell'utente: search_documents o read_document, poi rispondi solo da quei testi citando [1], [2].
+- IVA, fatture, scadenze, codici fiscali e IBAN: sempre gli strumenti di calcolo, numeri riportati esattamente.
+- Studiare e verificare: cerca_wikipedia e leggi_wikipedia (anche in inglese con lingua "en"), poi salva ciò che conta con impara (titolo breve, contenuto sintetico con date e numeri, fonte). Quando l'utente ti insegna qualcosa di utile, usa impara; per ciò che hai già studiato, cerca_conoscenza.
+- Ogni messaggio inizia con [Contesto] (data, ora, fatti, documenti, conoscenze pertinenti): usalo senza ripeterlo.
+Non inventare mai fatti, numeri, norme o risultati: se non sai, usa uno strumento o dillo. Su temi legali, fiscali e medici sii accurato e ricorda di verificare con la fonte ufficiale quando la decisione è importante.`;
+async function getPuterSession() {
+  const m = await loadPuterBrain();
+  return (puterSession ||= new m.PuterSession({ getModel: () => settings.puterModel, setModel: (id) => { settings.puterModel = id; store.set("settings", settings); showBrain(); }, getName: () => settings.name, store, tools: TOOLS, system: cloudSystem }));
+}
+async function askPuter(text) {
+  const session = await getPuterSession(); TOOLS._n = 0;
+  const view = streamRenderer();
+  const res = await session.ask(text, contextLine(text), view);
+  view.finish(res.answer, res.sources);
+  return res.answer;
+}
+
 async function askClaude(text) {
   const session = await getClaudeSession(); TOOLS._n = 0;
   const view = streamRenderer();
@@ -332,11 +382,15 @@ Regole:
 - Per studiare un argomento: cerca_wikipedia, poi leggi_wikipedia, poi salva i punti chiave con impara (titolo breve, contenuto sintetico, fonte). Quando l'utente ti insegna qualcosa di utile, usa impara.
 - Ogni messaggio dell'utente inizia con [Contesto] (data, ora, fatti, documenti, conoscenze pertinenti): usalo senza ripeterlo. Se c'è un [Risultato strumento] o ci sono [Passaggi], usali.
 ${app.model && /0\.6B|-cpu$/.test(app.model) ? "" : toolsBlock()}`;
-async function askLocal(text, toolResult, passages = []) {
-  const ctxText = passages.map((p) => `[${p.n}] (${cite(p)})\n${p.text.slice(0, passages.length === 1 ? 2400 : 700)}`).join("\n\n");
+/** Domande che meritano ragionamento: spiegazioni, analisi, confronti, calcoli, piani; oppure molto lunghe. */
+const isComplex = (t) => t.length > 180 || /\b(perch[eé]|come mai|spiega|analizza|confronta|differenz|ragiona|dimostra|calcola|risolvi|strategi|pianifica|valuta|pro e contro|conviene|quale scegliere|ottimizza|rapporto)\b/i.test(t) || /\d+\s*[-+*/^x]\s*\d+/.test(t);
+async function askLocal(text, toolResult, passages = [], maxChars = 700) {
+  const ctxText = passages.map((p) => `[${p.n}] (${cite(p)})\n${p.text.slice(0, passages.length === 1 ? 2400 : maxChars)}`).join("\n\n");
   const userContent = `[Contesto] ${contextLine(text)}\n\n` + (toolResult ? `[Risultato strumento] ${toolResult}\n\n` : "") + (ctxText ? `[Passaggi]\n${ctxText}\n\n` : "") + text;
   const view = streamRenderer(); TOOLS._n = passages.length;
-  const res = await runLocalAgent({ engine: app.engine, system: localSystem(), history: history.slice(-6), userContent, tools: TOOLS, think: settings.think,
+  const think = settings.think || (isComplex(text) && /4B|8B/.test(app.model || ""));
+  if (think) caption.textContent = "ragiono a fondo…";
+  const res = await runLocalAgent({ engine: app.engine, system: localSystem(), history: history.slice(-6), userContent, tools: TOOLS, think,
     onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B|-cpu$/.test(app.model || "") ? 0 : 4, isAborted: () => app.aborted });
   view.finish(res.answer, [...passages, ...res.sources]);
   return res.answer;
@@ -347,6 +401,13 @@ async function ask(text, opts = {}) {
   if (!opts.queued) addTurn("user", text, "lei"); setState("thinking");
   try {
     let answer;
+    const deep = /^(?:ricerca approfondita(?: su)?|approfondisci|fai una ricerca(?: approfondita)? su|ricerca su)\s+(.+?)[?.!]*$/i.exec(text);
+    if (deep) { answer = await deepResearch(deep[1].trim()); history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history); return; }
+    if (usingPuter() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
+      setState("thinking"); answer = await askPuter(text);
+      history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
+      return;
+    }
     if (usingClaude() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
       setState("thinking"); answer = await askClaude(text);
       history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
@@ -411,8 +472,8 @@ window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; document.body.classList.remove("dropping"); if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
 
 // ---------------------------------------------------------------- input: text, microphone, wake mode
-$("form").addEventListener("submit", (e) => { e.preventDefault(); voice.stop(); if (busy) { app.aborted = true; if (claudeSession) claudeSession.abort(); if (app.engine) { try { app.engine.interruptGenerate(); } catch {} } return; } ask(input.value); });
-$("newSession").onclick = () => { history = []; store.set("history", history); store.set("claudeHistory", []); if (claudeSession) claudeSession.reset(); transcript.innerHTML = ""; addTurn("system", "— nuova sessione —"); };
+$("form").addEventListener("submit", (e) => { e.preventDefault(); voice.stop(); if (busy) { app.aborted = true; if (claudeSession) claudeSession.abort(); if (puterSession) puterSession.abort(); if (app.engine) { try { app.engine.interruptGenerate(); } catch {} } return; } ask(input.value); });
+$("newSession").onclick = () => { history = []; store.set("history", history); store.set("claudeHistory", []); if (claudeSession) claudeSession.reset(); if (puterSession) puterSession.reset(); transcript.innerHTML = ""; addTurn("system", "— nuova sessione —"); };
 $("exportBtn").onclick = () => {
   const lines = [...transcript.querySelectorAll(".turn")].map((el) => { const who = el.querySelector(".who")?.textContent; const body = el.querySelector(".body")?.textContent ?? el.textContent; const src = [...el.querySelectorAll(".sources summary")].map((s) => "   fonte " + s.textContent).join("\n"); return (who ? who.toUpperCase() + ": " : "") + body + (src ? "\n" + src : ""); });
   const blob = new Blob([`J.A.R.V.I.S. · conversazione del ${fmtDate()}\n\n` + lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
@@ -435,7 +496,18 @@ $("wakeBtn").onclick = () => { app.wake = !app.wake; $("wakeBtn").classList.togg
 
 // ---------------------------------------------------------------- settings dialog
 const dlg = $("settings");
-const syncProviderUI = () => { const c = $("setProvider").value === "claude"; $("claudeFields").hidden = !c; $("localFields").hidden = c; };
+const syncProviderUI = () => { const v = $("setProvider").value; $("claudeFields").hidden = v !== "claude"; $("puterFields").hidden = v !== "puter"; $("localFields").hidden = v !== "local"; if (v === "puter") refreshPuterFields(); };
+async function refreshPuterFields() {
+  $("puterStatus").textContent = "Collego Puter…";
+  try {
+    const m = await loadPuterBrain(); await m.loadPuter();
+    const signed = m.isSignedIn(); $("puterSignIn").textContent = signed ? "Account Puter collegato" : "Accedi con Puter (gratis)"; $("puterSignIn").disabled = signed;
+    $("puterStatus").textContent = signed ? "Pronto: J.A.R.V.I.S. usa i modelli di punta con il credito gratuito del suo account Puter." : "Serve un account Puter gratuito: nessuna chiave API. Le domande e i passaggi usati passano da Puter e dal fornitore del modello.";
+    const sel = $("setPuterModel"); if (sel.options.length <= 1 && signed) { try { const list = (await window.puter.ai.listModels()).map((x) => String(x.id)).filter((id) => /claude|gpt-5|gemini|grok|deepseek|qwen/i.test(id)).sort(); for (const id of list.slice(0, 80)) { const o = document.createElement("option"); o.value = id; o.textContent = m.prettyModel(id); sel.appendChild(o); } } catch {} }
+    sel.value = [...sel.options].some((o) => o.value === settings.puterModel) ? settings.puterModel : "";
+  } catch (e) { $("puterStatus").textContent = "Non riesco a caricare Puter: " + (e.message || e); }
+}
+$("puterSignIn").onclick = async () => { try { const m = await loadPuterBrain(); await m.signIn(); } catch (e) { $("puterStatus").textContent = "Accesso non riuscito: " + (e.message || e); } refreshPuterFields(); };
 function openSettings(focus) {
   $("setName").value = settings.name; $("setCity").value = settings.city; $("setLang").value = settings.lang; $("setModel").value = settings.model.replace(/-q4f(16|32)_1-MLC$/, ""); $("setThink").checked = !!settings.think;
   $("setProvider").value = settings.provider || "claude"; $("setKey").value = claudeKey.get(); $("setClaudeModel").value = settings.claudeModel || "claude-opus-5-5"; $("keyStatus").textContent = claudeKey.get() ? "Chiave salvata su questo dispositivo." : "";
@@ -464,6 +536,7 @@ $("setSave").onclick = async (e) => {
   const prev = { model: settings.model, provider: settings.provider };
   settings.name = $("setName").value.trim() || "Signore"; settings.city = $("setCity").value.trim(); settings.lang = $("setLang").value; settings.model = $("setModel").value; settings.think = $("setThink").checked;
   settings.provider = $("setProvider").value; settings.claudeModel = $("setClaudeModel").value; readVoiceFields();
+  if (settings.provider === "puter") settings.puterModel = $("setPuterModel").value;
   if (settings.model !== prev.model) settings.lastModel = "";
   if (settings.provider === "claude") {
     const key = $("setKey").value.trim();
@@ -481,6 +554,7 @@ $("setSave").onclick = async (e) => {
 };
 $("setForgetKey").onclick = () => { claudeKey.set(""); $("setKey").value = ""; $("keyStatus").textContent = "Chiave cancellata da questo dispositivo."; };
 function showBrain() {
+  if (usingPuter()) { $("model").textContent = (settings.puterModel ? (puterMod ? puterMod.prettyModel(settings.puterModel) : settings.puterModel) : "Potenza massima") + " · Puter"; refreshTele?.(); return; }
   if (usingClaude()) { $("model").textContent = (claudeMod?.CLAUDE_MODELS[settings.claudeModel] || "Claude") + (claudeKey.get() ? "" : " · manca la chiave"); }
 }
 
@@ -517,7 +591,7 @@ $("kImportFile").onchange = async () => { const f = $("kImportFile").files[0]; $
 // ---------------------------------------------------------------- telemetry: real values from this device
 const tele = { fps: 0, frames: 0, since: performance.now(), batt: null, gpu: "" };
 const setBar = (id, pct, warn) => { const el = $(id); if (!el) return; el.style.width = Math.max(0, Math.min(100, pct)) + "%"; el.classList.toggle("warn", !!warn); };
-const brainLabel = () => (usingClaude() ? (claudeMod?.CLAUDE_MODELS?.[settings.claudeModel] || "Claude") : settings.provider === "local" ? ($("model").textContent || "locale") : "da scegliere");
+const brainLabel = () => (usingPuter() ? $("model").textContent : usingClaude() ? (claudeMod?.CLAUDE_MODELS?.[settings.claudeModel] || "Claude") : settings.provider === "local" ? ($("model").textContent || "locale") : "da scegliere");
 refreshTele = () => {
   const now = new Date(), hh = String(now.getHours()).padStart(2, "0"), mm = String(now.getMinutes()).padStart(2, "0"), ss = String(now.getSeconds()).padStart(2, "0");
   $("tClock").textContent = `${hh}:${mm}:${ss}`; $("tClockBig").textContent = `${hh}:${mm}`; $("tDate").textContent = now.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
@@ -560,5 +634,9 @@ const hour = new Date().getHours();
 addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, o trascini qui un documento.`, "jarvis");
 library.load().then(() => { renderDocs(); refreshTele(); });
 knowledge.load().then(renderKnowledge);
-if (usingClaude() && claudeKey.get()) { loadClaude().then(showBrain).catch(() => notice("Non riesco a caricare il collegamento con Claude: controlli la connessione.")); $("model").textContent = "Claude"; notice("Cervello: Claude di Anthropic."); }
+if (usingPuter()) {
+  $("model").textContent = "Potenza massima · Puter";
+  loadPuterBrain().then((m) => m.loadPuter().then(() => { showBrain(); if (m.isSignedIn()) notice("Cervello: potenza massima con Puter, i modelli di punta senza chiave."); else booted.then(() => { notice("Per la potenza massima colleghi un account Puter gratuito dalle impostazioni."); openSettings(); }); })).catch(() => { notice("Non raggiungo Puter: passo al cervello locale."); settings.provider = "local"; store.set("settings", settings); loadEngine(); });
+}
+else if (usingClaude() && claudeKey.get()) { loadClaude().then(showBrain).catch(() => notice("Non riesco a caricare il collegamento con Claude: controlli la connessione.")); $("model").textContent = "Claude"; notice("Cervello: Claude di Anthropic."); }
 else { if (usingClaude()) { settings.provider = "local"; store.set("settings", settings); } loadEngine(); }

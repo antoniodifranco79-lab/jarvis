@@ -150,8 +150,15 @@ body.dropping .dropzone { display: grid; }
     <label>Lingua <select id="setLang"><option value="it-IT">Italiano</option><option value="en-GB">English</option></select></label>
     <label>Cervello <select id="setProvider">
       <option value="local">Locale su questo dispositivo · gratuito, senza chiave, privato</option>
-      <option value="claude">Claude di Anthropic · avanzato, serve una chiave API a pagamento</option>
+      <option value="puter">Potenza massima · Claude e modelli di punta, gratis con un account Puter, senza chiave</option>
+      <option value="claude">Claude di Anthropic · con la propria chiave API a pagamento</option>
     </select></label>
+    <div id="puterFields" hidden>
+      <div class="row left"><button type="button" id="puterSignIn">Accedi con Puter (gratis)</button></div>
+      <p class="dlg-note" id="puterStatus" aria-live="polite"></p>
+      <label>Modello <select id="setPuterModel"><option value="">Automatico · il più potente disponibile (Claude)</option></select></label>
+      <p class="dlg-note">Puter è un servizio esterno: l'uso è conteggiato sul suo account Puter, con un credito gratuito incluso. Senza account, scelga il cervello locale.</p>
+    </div>
     <div id="claudeFields">
       <label>Chiave API di Claude <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
       <p class="dlg-note" id="keyStatus" aria-live="polite"></p>
