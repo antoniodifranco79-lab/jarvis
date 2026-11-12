@@ -1,7 +1,7 @@
 // Strumenti da studio professionale: calcoli deterministici, verificabili, senza rete.
 // Ogni funzione restituisce testo pronto da mostrare; il modello linguistico può solo riformularlo.
 
-const eur = (n) => n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+const eur = (n) => n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: "always" }) + " €";
 // Numeri all'italiana: "1.000" = mille, "1.250,50" = milleduecentocinquanta e 50, "1250.5" = decimale all'inglese.
 export const num = (s) => { if (s == null) return NaN; let t = String(s).replace(/[€\s]/g, "").replace(/[.,]$/, ""); if (t.includes(",")) t = t.replace(/\./g, "").replace(",", "."); else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ""); return parseFloat(t); };
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;

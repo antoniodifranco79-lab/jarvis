@@ -15,3 +15,8 @@ test("impara, aggiorna, ritrova, dimentica, esporta e importa", async () => {
   await assert.rejects(k.learn({ title: "", content: "x" }), /servono titolo e contenuto/);
   await assert.rejects(k2.import("{\"x\":1}"), /file non valido/);
 });
+
+test("cancellazione completa", async () => {
+  const k = new Knowledge(); await k.learn({ title: "a", content: "uno" }); await k.learn({ title: "b", content: "due" });
+  await k.clearAll(); assert.equal(k.size, 0); assert.deepEqual(k.search("uno"), []);
+});

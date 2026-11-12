@@ -49,6 +49,26 @@ body.dropping .dropzone { display: grid; }
 .turn .acts button { font: 0.62rem var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--holo); background: rgba(86, 214, 255, 0.06); border: 1px solid var(--line); padding: 4px 10px; cursor: pointer; }
 .turn .acts button:hover, .turn .acts button:focus-visible { background: rgba(86, 214, 255, 0.18); outline: none; }
 .turn a.dl { color: var(--holo); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
+.suggest { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.suggest:empty { display: none; }
+.suggest button { font: 0.62rem var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--holo); background: rgba(86, 214, 255, 0.05); border: 1px solid var(--line); padding: 5px 10px; cursor: pointer; }
+.suggest button:hover, .suggest button:focus-visible { background: rgba(86, 214, 255, 0.18); outline: none; }
+.turn .body.rich p { margin: 0 0 6px; } .turn .body.rich p:last-child { margin-bottom: 0; }
+.turn .body.rich ul, .turn .body.rich ol { margin: 4px 0 8px; padding-left: 20px; white-space: normal; } .turn .body.rich li { margin: 2px 0; }
+.turn .body.rich .h { display: block; color: var(--holo); margin: 6px 0 2px; }
+.turn .body.rich a { color: var(--holo); } .turn .body.rich code { font-family: var(--font-mono); font-size: 0.9em; color: var(--holo-2, #b4f2ff); }
+.turn .body.rich .cite { color: var(--amber); font-family: var(--font-mono); font-size: 0.72em; }
+.turn .body.rich { white-space: normal; }
+.docs-list .dacts { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.docs-list .dacts button { grid-column: auto; grid-row: auto; }
+#tplFields { display: grid; gap: 2px; max-height: 42vh; overflow: auto; }
+dialog.holo textarea { min-height: 70px; }
+.lock { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(2, 7, 13, 0.97); }
+.lock[hidden] { display: none; }
+.lock-box { display: grid; gap: 12px; text-align: center; padding: 28px; border: 1px solid var(--line); min-width: min(320px, 90vw); }
+.lock-box .title { font-family: var(--font-display); letter-spacing: 0.3em; color: var(--holo); font-size: 1.4rem; }
+.lock-box input { font-size: 1.4rem; text-align: center; letter-spacing: 0.4em; padding: 10px; background: rgba(86, 214, 255, 0.06); border: 1px solid var(--line); color: var(--fg); }
+.lock-box button { font: 600 0.9rem var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; padding: 10px; background: var(--holo); color: #02070d; border: 0; cursor: pointer; }
 @media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(320px, 44vw); } .left { display: none; } .strip { display: flex; } }
 @media (max-width: 760px) {
   body.hud { font-size: 16px; }
@@ -76,7 +96,8 @@ body.dropping .dropzone { display: grid; }
   <header class="hud-top">
     <div class="brand"><div class="sigil" aria-hidden="true"></div><div><h1>J.A.R.V.I.S.</h1><small id="model">avvio…</small></div></div>
     <div class="chips">
-      <span class="chip" id="reminderChip" hidden>0 promemoria</span>
+      <span class="chip act" id="reminderChip" role="button" tabindex="0" title="Promemoria attivi" hidden>0 promemoria</span>
+      <span class="chip act" id="tplChip" role="button" tabindex="0" title="Modelli di documento pronti">modelli</span>
       <span class="chip act" id="docsChip" role="button" tabindex="0" title="Documenti caricati su questo dispositivo">documenti</span>
       <span class="chip act" id="knowledgeChip" role="button" tabindex="0" title="Ciò che J.A.R.V.I.S. ha imparato">conoscenza</span>
       <span class="chip act" id="settingsBtn" role="button" tabindex="0">impostazioni</span>
@@ -128,11 +149,12 @@ body.dropping .dropzone { display: grid; }
       <div class="caption" id="caption">avvio dei sistemi</div>
     </section>
     <section class="right frame" aria-label="Conversazione">
-      <div class="frame-title"><span>trascrizione</span><span class="acts"><button type="button" class="ghost" id="exportBtn" title="Scarica la conversazione come testo">esporta</button><button type="button" class="ghost" id="newSession">nuova sessione</button></span></div>
+      <div class="frame-title"><span>trascrizione</span><span class="acts"><button type="button" class="ghost" id="exportBtn" title="Scarica la conversazione in Word">esporta</button><button type="button" class="ghost" id="newSession">nuova sessione</button></span></div>
       <div class="transcript" id="transcript"></div>
     </section>
   </main>
   <footer>
+    <div class="suggest" id="suggest" aria-label="Suggerimenti"></div>
     <form id="form" class="cmd" autocomplete="off">
       <button type="button" class="hbtn wake" id="wakeBtn" title="Ascolta sempre la parola Jarvis" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 12h2m14 0h2M12 3v2m0 14v2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></button>
       <button type="button" class="hbtn" id="attachBtn" title="Aggiungi documenti (PDF, Word, testo)"><svg viewBox="0 0 24 24"><path d="M21 11.5 12.4 20a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"/></svg></button>
@@ -141,7 +163,7 @@ body.dropping .dropzone { display: grid; }
       <button type="button" class="hbtn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <button type="submit" class="hbtn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
-    <div class="hint" id="hint">gratis e senza chiave · "aiuto" per i comandi · "studia …" per farlo imparare · graffetta per i documenti</div>
+    <div class="hint" id="hint">"aiuto" per i comandi · "modelli" per lettere e atti pronti · graffetta per i documenti · ↑ richiama le domande · Esc ferma la voce</div>
   </footer>
 </div>
 <div class="hud-scan" aria-hidden="true"></div>
@@ -194,6 +216,37 @@ body.dropping .dropzone { display: grid; }
       <p class="dlg-note" id="voiceTip" hidden>Su questo browser non trovo voci neurali. Per la voce più realistica apra J.A.R.V.I.S. con Microsoft Edge (voci "Natural") o con Chrome su Android.</p>
     </fieldset>
     <label class="check"><input type="checkbox" id="setThink"> Ragionamento approfondito: più lento, più preciso su domande difficili</label>
+    <fieldset class="voicebox">
+      <legend>Studio</legend>
+      <label>Nome dello studio o dell'azienda <input id="setStudio" placeholder="Studio Rossi &amp; Associati"></label>
+      <label>Firma nei documenti <input id="setSigner" placeholder="Dott. Mario Rossi"></label>
+      <p class="dlg-note">Compaiono in fondo a modelli, lettere e quietanze.</p>
+    </fieldset>
+    <fieldset class="voicebox">
+      <legend>Abbonamento</legend>
+      <label>Piano <select id="setPlan"><option value="">Non indicato</option><option value="Essenziale">Essenziale · fino a 3 postazioni</option><option value="Studio">Studio · fino a 10 postazioni</option><option value="Partner">Partner · fino a 25 postazioni</option></select></label>
+      <label>Fatturazione <select id="setBilling"><option value="annuale">Annuale</option><option value="mensile">Mensile</option></select></label>
+      <label>Prossimo rinnovo <input id="setRenewal" type="date"></label>
+      <div class="row left"><button type="button" id="assistBtn">Chiedi assistenza su WhatsApp</button></div>
+      <p class="dlg-note" id="planNote">Aggiornamenti e assistenza sono inclusi nell'abbonamento. Il messaggio di assistenza contiene solo versione, cervello e browser: nessun documento.</p>
+    </fieldset>
+    <fieldset class="voicebox">
+      <legend>Aspetto e abitudini</legend>
+      <label>Dimensione del testo <select id="setTextSize"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.15">Grande</option><option value="1.3">Molto grande</option></select></label>
+      <label class="check"><input type="checkbox" id="setBriefing"> Briefing del giorno alla prima apertura (promemoria e scadenze)</label>
+      <label class="check"><input type="checkbox" id="setSound"> Suono quando scatta un promemoria</label>
+    </fieldset>
+    <fieldset class="voicebox">
+      <legend>Privacy e dati</legend>
+      <label class="check"><input type="checkbox" id="setPrivate"> Modalità privata: la conversazione non viene salvata su questo dispositivo</label>
+      <label>PIN di blocco (4-8 cifre) <input id="setPin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="lasci vuoto per non cambiarlo"></label>
+      <div class="row left"><button type="button" id="pinClear">Togli il PIN</button><button type="button" id="lockNow">Blocca ora</button></div>
+      <p class="dlg-note" id="pinNote"></p>
+      <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+      <div class="row left"><button type="button" id="backupBtn">Backup completo</button><button type="button" id="restoreBtn">Ripristina backup</button><button type="button" id="wipeBtn">Cancella tutti i dati</button></div>
+      <p class="dlg-note">Il backup contiene impostazioni, memoria, promemoria, conoscenza, cronologia e documenti, in un file che resta suo. La chiave di Claude e il PIN non vengono inclusi.</p>
+    </fieldset>
+    <p class="dlg-note" id="aboutLine"></p>
     <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
   </form>
 </dialog>
@@ -217,6 +270,28 @@ body.dropping .dropzone { display: grid; }
   <input type="file" id="kImportFile" accept=".json,application/json" hidden>
   <div class="row"><button type="button" id="kImport">Importa</button><button type="button" id="kExport">Esporta</button><button type="button" id="kClose">Chiudi</button></div>
 </dialog>
+<dialog class="holo" id="remDialog">
+  <h2>PROMEMORIA</h2>
+  <p class="dlg-note">Scattano con voce, suono e notifica mentre J.A.R.V.I.S. è aperto; quelli persi mentre era chiuso compaiono alla riapertura. Per averli anche sul telefono, li esporti nel calendario.</p>
+  <ul id="remList" class="k-list"></ul>
+  <div class="row"><button type="button" id="remIcs">Esporta nel calendario</button><button type="button" id="fiscalIcs">Scadenze fiscali nel calendario</button><button type="button" id="remClose">Chiudi</button></div>
+</dialog>
+<dialog class="holo" id="tplDialog">
+  <h2>MODELLI</h2>
+  <p class="dlg-note">Lettere e atti tipici dello studio, compilati sul dispositivo anche senza intelligenza artificiale. Sono bozze: le rilegga e le adatti al caso prima dell'invio.</p>
+  <label>Modello <select id="tplSelect"></select></label>
+  <div id="tplFields"></div>
+  <div class="row"><button type="button" id="tplShow">Mostra nel testo</button><button type="button" id="tplWord">Scarica Word</button><button type="button" id="tplClose">Chiudi</button></div>
+</dialog>
+<div class="lock" id="lock" hidden>
+  <form id="lockForm" class="lock-box">
+    <div class="title">J.A.R.V.I.S.</div>
+    <p>Sistema bloccato. Inserisca il PIN.</p>
+    <input id="lockPin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-label="PIN">
+    <button type="submit">Sblocca</button>
+    <p class="dlg-note" id="lockMsg" aria-live="polite"></p>
+  </form>
+</div>
 <div class="dropzone" aria-hidden="true"><span>Rilasci qui i documenti · restano su questo dispositivo</span></div>
 <script src="hud/reactor.js"></script>
 <script type="module" src="app.js"></script>

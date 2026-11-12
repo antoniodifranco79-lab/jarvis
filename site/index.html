@@ -18,7 +18,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
  {"@type":"Person","name":"Leonardo Di Franco","jobTitle":"Consulente AI per studi professionali e PMI","telephone":"+39 379 166 7781","url":"https://antoniodifranco79-lab.github.io/jarvis/","sameAs":["https://github.com/antoniodifranco79-lab"],"knowsAbout":["intelligenza artificiale locale","GDPR","AI Act","assistenti vocali","automazione per studi professionali"]},
- {"@type":"ProfessionalService","name":"Leonardo Di Franco · AI privata","description":"Installazione di assistenti AI locali per studi professionali e PMI, formazione AI Act, supporto mensile.","url":"https://antoniodifranco79-lab.github.io/jarvis/","areaServed":"IT","priceRange":"€490 - €2400","telephone":"+39 379 166 7781","founder":{"@type":"Person","name":"Leonardo Di Franco"}}
+ {"@type":"ProfessionalService","name":"Leonardo Di Franco · AI privata","description":"Assistenti AI locali per studi professionali e PMI in abbonamento mensile o annuale: installazione, formazione AI Act, aggiornamenti e assistenza inclusi.","url":"https://antoniodifranco79-lab.github.io/jarvis/","areaServed":"IT","priceRange":"€149 - €590 al mese","telephone":"+39 379 166 7781","founder":{"@type":"Person","name":"Leonardo Di Franco"},"hasOfferCatalog":{"@type":"OfferCatalog","name":"Abbonamenti J.A.R.V.I.S.","itemListElement":[{"@type":"Offer","name":"Essenziale mensile","price":"149","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"149","priceCurrency":"EUR","unitCode":"MON","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Essenziale annuale","price":"1490","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"1490","priceCurrency":"EUR","unitCode":"ANN","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Studio mensile","price":"290","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"290","priceCurrency":"EUR","unitCode":"MON","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Studio annuale","price":"2900","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"2900","priceCurrency":"EUR","unitCode":"ANN","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Partner mensile","price":"590","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"590","priceCurrency":"EUR","unitCode":"MON","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Partner annuale","price":"5900","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"5900","priceCurrency":"EUR","unitCode":"ANN","valueAddedTaxIncluded":false}}]}}
 ]}
 </script>
 <style>
@@ -126,8 +126,14 @@ header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; 
 .checks svg { width: 22px; height: 22px; flex: none; margin-top: 3px; fill: none; stroke: var(--good); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(109, 255, 201, 0.6)); }
 
 /* offer */
+.billing { display: inline-flex; margin-top: 26px; border: 1px solid var(--line-2); background: rgba(86, 214, 255, 0.05); clip-path: var(--cut); }
+.billing button { font: 700 0.95rem var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--holo); background: none; border: 0; padding: 11px 20px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.billing button[aria-pressed="true"] { background: var(--holo); color: var(--on-holo); box-shadow: 0 0 22px rgba(86, 214, 255, 0.45); }
+.billing button:focus-visible { outline: 2px solid var(--holo-2); outline-offset: -4px; }
+.billing .save { font: 600 0.66rem var(--font-mono); letter-spacing: 0.12em; padding: 3px 7px; background: var(--amber); color: var(--on-holo); }
+.plan .bill { margin: -6px 0 0; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.04em; color: var(--good); min-height: 2.4em; }
 .plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 36px; }
-.plan { display: grid; grid-template-rows: auto auto auto 1fr auto; gap: 14px; padding: 26px 22px 22px; }
+.plan { display: grid; grid-template-rows: auto auto auto auto 1fr auto; gap: 14px; padding: 26px 22px 22px; }
 .plan.featured { border-color: rgba(255, 176, 72, 0.6); box-shadow: 0 0 40px rgba(255, 176, 72, 0.12), inset 0 0 40px rgba(255, 176, 72, 0.05); }
 .plan.featured::before, .plan.featured::after { border-color: var(--amber); filter: drop-shadow(0 0 6px rgba(255, 176, 72, 0.8)); }
 .plan .badge { position: absolute; top: -12px; left: 22px; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--on-holo); background: var(--amber); padding: 4px 10px; box-shadow: 0 0 16px rgba(255, 176, 72, 0.6); }
@@ -268,50 +274,56 @@ footer.site .wrap { display: flex; justify-content: space-between; gap: 12px; fl
 
 <section id="servizi">
   <div class="wrap">
-    <span class="tag">Servizi</span>
-    <h2 style="margin-top:12px">Tre modi per iniziare, tutti con un prezzo scritto qui.</h2>
-    <p class="muted narrow" style="margin-top:12px">Niente preventivi a sorpresa. Si parte dalla diagnosi, si installa quando ha senso, si resta insieme solo se conviene.</p>
+    <span class="tag">Abbonamenti</span>
+    <h2 style="margin-top:12px">Un abbonamento, mensile o annuale. Tutto incluso, prezzi scritti qui.</h2>
+    <p class="muted narrow" style="margin-top:12px">Niente licenze per utente e niente preventivi a sorpresa: installazione, formazione AI Act, aggiornamenti e assistenza sono dentro il canone. Con l'annuale due mesi sono gratis e l'attivazione è inclusa.</p>
+    <div class="billing" role="group" aria-label="Scegli la fatturazione">
+      <button type="button" data-billing="m" aria-pressed="false">Mensile</button>
+      <button type="button" data-billing="y" aria-pressed="true">Annuale <span class="save">2 mesi gratis</span></button>
+    </div>
     <div class="plans">
       <article class="plan panel">
-        <span class="who">Per chi vuole mettersi in regola subito</span>
-        <h3>Diagnosi &amp; Policy AI</h3>
-        <div class="price">€490 <small>una tantum</small></div>
+        <span class="who">Professionista o studio fino a 3 persone</span>
+        <h3>Essenziale</h3>
+        <div class="price"><span data-m="€149" data-y="€1.490">€1.490</span><small data-m="/mese" data-y="/anno">/anno</small></div>
+        <p class="bill" data-m="+ €290 di attivazione una tantum · disdetta con 30 giorni" data-y="pari a €124 al mese · attivazione inclusa · risparmi €588">pari a €124 al mese · attivazione inclusa · risparmi €588</p>
         <ul>
-          <li>2 ore in studio (o in video): come usate l'AI oggi, dove escono i dati</li>
-          <li>Policy d'uso dell'AI scritta su misura, pronta da firmare</li>
-          <li>Sessione di alfabetizzazione AI di 90 minuti per tutto il team, con attestato</li>
-          <li>Report con priorità e costi reali dei passi successivi</li>
+          <li>J.A.R.V.I.S. installato fino a 3 postazioni: funziona anche senza internet</li>
+          <li>Chat con i documenti, riassunti di documenti interi, bozze in Word, calcoli da studio, scadenze, promemoria, voce</li>
+          <li>Policy d'uso dell'AI su misura e 90 minuti di alfabetizzazione AI Act con attestato</li>
+          <li>Aggiornamenti del modello e del software, assistenza su WhatsApp entro 2 giorni lavorativi</li>
         </ul>
-        <p class="outcome">Risultato: obbligo dell'art. 4 AI Act coperto e documentato in una settimana.</p>
+        <p class="outcome">Per iniziare: obbligo AI Act coperto e l'assistente al lavoro in una settimana.</p>
       </article>
       <article class="plan panel featured">
-        <span class="badge">Il più richiesto</span>
-        <span class="who">Per chi vuole l'AI senza mandare fuori i dati</span>
-        <h3>J.A.R.V.I.S. Privato</h3>
-        <div class="price">€2.400 <small>installazione</small><br><small>poi €190/mese per aggiornamenti e assistenza</small></div>
+        <span class="badge">Il più scelto</span>
+        <span class="who">Studi e PMI fino a 10 persone</span>
+        <h3>Studio</h3>
+        <div class="price"><span data-m="€290" data-y="€2.900">€2.900</span><small data-m="/mese" data-y="/anno">/anno</small></div>
+        <p class="bill" data-m="+ €290 di attivazione una tantum · disdetta con 30 giorni" data-y="pari a €242 al mese · attivazione inclusa · risparmi €870">pari a €242 al mese · attivazione inclusa · risparmi €870</p>
         <ul>
-          <li>Assistente AI installato sui PC o sul server dello studio: funziona anche senza internet</li>
-          <li>Chat con i documenti dello studio, riassunti, bozze, calcoli, promemoria, voce</li>
-          <li>Base di conoscenza che cresce: impara procedure, clienti e scadenze dello studio</li>
-          <li>Mezza giornata di formazione pratica per il team (vale come alfabetizzazione AI Act)</li>
-          <li>Aggiornamenti del modello e del software, assistenza entro un giorno lavorativo</li>
+          <li>Tutto di Essenziale, fino a 10 postazioni, con un PC dello studio come "cervello" condiviso</li>
+          <li>Base di conoscenza configurata con procedure, clienti e modelli dello studio</li>
+          <li>Mezza giornata di formazione pratica sui vostri casi, non su esempi finti</li>
+          <li>Assistenza entro un giorno lavorativo e revisione trimestrale di come lo usate</li>
         </ul>
-        <p class="outcome">Risultato: in una giornata il team lavora con l'AI e nessun dato lascia lo studio.</p>
+        <p class="outcome">Il team lavora con l'AI ogni giorno e nessun documento lascia lo studio.</p>
       </article>
       <article class="plan panel">
-        <span class="who">Per chi vuole automatizzare, un processo al mese</span>
-        <h3>Partner AI</h3>
-        <div class="price">€790<small>/mese</small></div>
+        <span class="who">Fino a 25 persone, con automazioni</span>
+        <h3>Partner</h3>
+        <div class="price"><span data-m="€590" data-y="€5.900">€5.900</span><small data-m="/mese" data-y="/anno">/anno</small></div>
+        <p class="bill" data-m="+ €290 di attivazione una tantum · disdetta con 30 giorni" data-y="pari a €492 al mese · attivazione inclusa · risparmi €1.470">pari a €492 al mese · attivazione inclusa · risparmi €1.470</p>
         <ul>
-          <li>Tutto quanto incluso in J.A.R.V.I.S. Privato</li>
+          <li>Tutto di Studio, fino a 25 postazioni</li>
           <li>Ogni mese un flusso di lavoro automatizzato: smistamento mail, prime bozze, controlli su documenti, report ricorrenti</li>
           <li>Assistenza prioritaria, anche in giornata</li>
-          <li>Richiamo formativo trimestrale e aggiornamento della policy quando cambia la norma</li>
+          <li>Richiamo formativo trimestrale e policy aggiornata quando cambia la norma</li>
         </ul>
-        <p class="outcome">Risultato: un referente AI di studio, senza assumere nessuno.</p>
+        <p class="outcome">Un referente AI di studio, senza assumere nessuno.</p>
       </article>
     </div>
-    <p class="fine">Prezzi IVA esclusa. Installazione fino a 5 postazioni; oltre, si quota in diagnosi. I canoni si disdicono con 30 giorni di preavviso, senza penali. Se dopo la diagnosi decidete di non proseguire, il report resta vostro.</p>
+    <p class="fine">Prezzi IVA esclusa. Mensile: si paga mese per mese e si disdice con 30 giorni di preavviso, senza penali. Annuale: si paga in anticipo, in un'unica soluzione o in due rate semestrali, e vale 12 mesi al prezzo di 10. Postazioni oltre il piano: 12 € al mese l'una. Si cambia piano quando si vuole: la differenza si calcola a giorni. La prima chiamata di 30 minuti è sempre gratuita.</p>
   </div>
 </section>
 
@@ -320,10 +332,10 @@ footer.site .wrap { display: flex; justify-content: space-between; gap: 12px; fl
     <span class="tag">Come funziona</span>
     <h2 style="margin-top:12px">Dalla prima chiamata allo studio operativo in due settimane.</h2>
     <div class="steps">
-      <div class="step"><span class="n"></span><h3>Chiamata di 30 minuti</h3><p>Mi raccontate come lavorate e cosa vi preoccupa. Vi dico subito se ha senso proseguire e con quale pacchetto.</p><span class="when">Gratuita · entro 3 giorni</span></div>
-      <div class="step"><span class="n"></span><h3>Diagnosi</h3><p>Due ore con il team. Mappo strumenti, dati, PC disponibili. Consegno policy e report.</p><span class="when">Settimana 1</span></div>
+      <div class="step"><span class="n"></span><h3>Chiamata di 30 minuti</h3><p>Mi raccontate come lavorate e cosa vi preoccupa. Vi dico subito se ha senso proseguire e quale abbonamento vi serve.</p><span class="when">Gratuita · entro 3 giorni</span></div>
+      <div class="step"><span class="n"></span><h3>Diagnosi e policy</h3><p>Due ore con il team, incluse nell'abbonamento. Mappo strumenti, dati, PC disponibili. Consegno policy e report.</p><span class="when">Settimana 1</span></div>
       <div class="step"><span class="n"></span><h3>Installazione e formazione</h3><p>Una giornata in studio: installo, collego la cartella documenti, formo il team sui casi vostri, non su esempi finti.</p><span class="when">Settimana 2</span></div>
-      <div class="step"><span class="n"></span><h3>Supporto mensile</h3><p>Aggiornamenti, risposte alle domande, nuovi flussi quando servono. Un referente, non un ticket.</p><span class="when">Dal mese 1 in avanti</span></div>
+      <div class="step"><span class="n"></span><h3>Abbonamento attivo</h3><p>Aggiornamenti, risposte alle domande, nuovi flussi quando servono. Un referente, non un ticket. Mensile o annuale, come preferite.</p><span class="when">Dal mese 1 in avanti</span></div>
     </div>
   </div>
 </section>
@@ -384,13 +396,14 @@ footer.site .wrap { display: flex; justify-content: space-between; gap: 12px; fl
     <h2 style="margin-top:12px">Quello che chiedono tutti alla prima chiamata.</h2>
     <div class="faq">
       <details class="q"><summary>Serve un server o un computer speciale?</summary><p>No. Un PC con 16 GB di RAM fa girare un modello da 8 miliardi di parametri a velocità accettabile; con 8 GB si usa un modello più piccolo. Una scheda video aiuta molto. Se lo studio ha un PC in più, diventa il "cervello" condiviso di tutti.</p></details>
-      <details class="q"><summary>Quanto costa il modello linguistico?</summary><p>Zero. I modelli locali (Qwen3, Llama, Gemma) sono gratuiti e open source. Pagate il mio lavoro di installazione, formazione e assistenza, non licenze per utente.</p></details>
+      <details class="q"><summary>Quanto costa il modello linguistico?</summary><p>Zero. I modelli locali (Qwen3, Llama, Gemma) sono gratuiti e open source. L'abbonamento paga il mio lavoro di installazione, formazione, aggiornamento e assistenza, non licenze per utente.</p></details>
       <details class="q"><summary>Funziona senza internet?</summary><p>Sì. Modello, memoria e documenti stanno sul computer. Internet serve solo per il meteo, le notizie o la ricerca web, se li volete.</p></details>
       <details class="q"><summary>E se vogliamo la qualità di Claude o GPT?</summary><p>Si può: Jarvis usa anche Claude tramite API con un contratto commerciale che esclude l'addestramento sui vostri dati. In diagnosi decidiamo insieme quali attività restano in locale e quali, se volete, vanno in cloud.</p></details>
       <details class="q"><summary>Impara davvero le cose del nostro studio?</summary><p>Sì. Ogni volta che gli insegnate una procedura, un cliente o una regola, o che studia un argomento sul web, salva una scheda nella base di conoscenza dello studio, con la fonte. Le schede sono file di testo che potete leggere e correggere.</p></details>
       <details class="q"><summary>La formazione vale per l'AI Act?</summary><p>L'articolo 4 chiede competenze adeguate al contesto d'uso, non un corso standard. La sessione è progettata sui vostri strumenti e casi, e rilascio un attestato con programma e presenze da conservare come documentazione.</p></details>
-      <details class="q"><summary>Esistono contributi pubblici?</summary><p>Spesso sì. Molte Camere di Commercio finanziano l'intelligenza artificiale con il Voucher Doppia Transizione 2026: a Roma, per esempio, il contributo è il 70% su una spesa minima di 3.000 €. La formazione dei dipendenti può essere finanziata dai fondi interprofessionali, come Fondoprofessioni per gli studi. Requisiti e scadenze cambiano da provincia a provincia: li verifico con voi in diagnosi, prima di iniziare.</p></details>
-      <details class="q"><summary>Cosa succede se non siamo soddisfatti?</summary><p>I canoni si interrompono con 30 giorni di preavviso. Il software resta installato e vostro: è open source, nessun blocco.</p></details>
+      <details class="q"><summary>Esistono contributi pubblici?</summary><p>Spesso sì. Molte Camere di Commercio finanziano l'intelligenza artificiale con il Voucher Doppia Transizione 2026: a Roma, per esempio, il contributo è il 70% su una spesa minima di 3.000 €, che l'abbonamento annuale Partner supera da solo. La formazione dei dipendenti può essere finanziata dai fondi interprofessionali, come Fondoprofessioni per gli studi. Requisiti e scadenze cambiano da provincia a provincia: li verifico con voi in diagnosi, prima di iniziare.</p></details>
+      <details class="q"><summary>Meglio mensile o annuale?</summary><p>Il mensile è per chi vuole provare: si paga mese per mese, con 290 € di attivazione, e si disdice con 30 giorni di preavviso. L'annuale costa come 10 mesi, l'attivazione è inclusa e si può pagare in due rate semestrali. Si passa dal mensile all'annuale quando volete, scalando quanto già pagato.</p></details>
+      <details class="q"><summary>Cosa succede se non siamo soddisfatti?</summary><p>Il mensile si interrompe con 30 giorni di preavviso; l'annuale non si rinnova se lo disdite entro 30 giorni dalla scadenza. Il software resta installato e vostro: è open source, nessun blocco.</p></details>
     </div>
   </div>
 </section>
@@ -567,6 +580,20 @@ footer.site .wrap { display: flex; justify-content: space-between; gap: 12px; fl
   const clock = document.getElementById("hudClock"), pad = (n) => String(n).padStart(2, "0");
   const tick = () => { const d = new Date(); clock.textContent = `SISTEMI ONLINE · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
   tick(); setInterval(tick, 1000);
+})();
+</script>
+<script>
+// Abbonamenti: mensile o annuale. Il testo di ogni prezzo è nei data-m / data-y; senza JavaScript resta l'annuale.
+(() => {
+  const btns = document.querySelectorAll(".billing button");
+  const set = (k) => {
+    btns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.billing === k)));
+    document.querySelectorAll("#servizi [data-m]").forEach((el) => { el.textContent = el.dataset[k]; });
+    try { localStorage.setItem("billing", k); } catch {}
+  };
+  btns.forEach((b) => b.addEventListener("click", () => set(b.dataset.billing)));
+  let saved = null; try { saved = localStorage.getItem("billing"); } catch {}
+  if (saved === "m" || saved === "y") set(saved);
 })();
 </script>
 <script>

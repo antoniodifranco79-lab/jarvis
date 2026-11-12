@@ -27,3 +27,18 @@ test("Library: aggiunge, cerca, trova per nome, testo completo", async () => {
 test("file senza testo: errore chiaro", async () => {
   await assert.rejects(new Library().add(file("vuoto.txt", "  ")), /non contiene testo leggibile/);
 });
+
+test("ricerca di una frase esatta tra virgolette", async () => {
+  const lib = new Library();
+  await lib.add(file("a.txt", "Il conduttore può recedere con preavviso di sei mesi.\n\nIl locatore può recedere con preavviso di tre mesi per necessità."));
+  await lib.add(file("b.txt", "Mesi di preavviso: sei, salvo diverso accordo tra le parti del contratto."));
+  const hits = lib.search('"preavviso di sei mesi"');
+  assert.ok(hits.length >= 1); assert.ok(hits.every((h) => /preavviso di sei mesi/.test(h.text)), hits.map((h) => h.text).join(" | "));
+});
+
+test("ripristino di documenti da backup", async () => {
+  const a = new Library(); await a.add(file("x.txt", "Il fatturato del 2025 è di un milione di euro."));
+  const b = new Library(); assert.equal(await b.importDocs(JSON.parse(JSON.stringify(a.docs))), 1);
+  assert.equal(b.size, 1); assert.match(b.search("fatturato 2025")[0].text, /milione/);
+  assert.equal(await b.importDocs([{ name: "rotto" }, null]), 0);
+});

@@ -8,7 +8,7 @@ Sito: `https://antoniodifranco79-lab.github.io/jarvis/` (cartella `site/`). Demo
 
 ## 1. L'idea in una frase
 
-Installo nello studio un assistente AI che gira sui computer dello studio (niente cloud), formo il team come richiede l'AI Act e resto come referente mensile. Il cliente paga lavoro e assistenza, non licenze per utente.
+Installo nello studio un assistente AI che gira sui computer dello studio (niente cloud), formo il team come richiede l'AI Act e resto come referente. Il cliente paga un abbonamento mensile o annuale che comprende installazione, formazione, aggiornamenti e assistenza, non licenze per utente.
 
 ## 2. Perché questa e non un'altra
 
@@ -17,7 +17,7 @@ Installo nello studio un assistente AI che gira sui computer dello studio (nient
 | SaaS "Jarvis Pro" in abbonamento | Serve infrastruttura, supporto 24/7, marketing a volume. Fatturato lento, costi subito. |
 | Corsi online sull'AI | Mercato affollato, prezzi in caduta, nessun vantaggio competitivo. |
 | Sviluppo software su commessa | Vendibile, ma ogni progetto riparte da zero e il prezzo lo fa il cliente. |
-| **Installazione + formazione + canone per studi** | Usa il prodotto già costruito, vende un bisogno normativo con scadenza, crea ricavo ricorrente. Zero costi di licenza da rivendere. |
+| **Abbonamento "tutto incluso" per studi (installazione, formazione, assistenza)** | Usa il prodotto già costruito, vende un bisogno normativo con scadenza, crea ricavo ricorrente fin dal primo cliente. Zero costi di licenza da rivendere, e nessuna infrastruttura cloud: il software gira dal cliente. |
 
 ## 3. Il mercato (dati raccolti l'11 novembre 2026)
 
@@ -32,50 +32,56 @@ Installo nello studio un assistente AI che gira sui computer dello studio (nient
 
 Lettura: il bisogno è dichiarato (privacy + obbligo formativo), la spesa è prevista (61% investe), l'offerta attuale è fatta di software cloud e corsi generici. Nessuno vende "l'AI che resta in studio" chiavi in mano a prezzo fisso.
 
-## 4. Offerta e prezzi (come sul sito)
+## 4. Offerta e prezzi (come sul sito): solo abbonamenti
 
-| Pacchetto | Prezzo | Cosa include | Ore di lavoro stimate |
-|---|---|---|---|
-| Diagnosi & Policy AI | 490 € | 2 h di audit, policy scritta, 90 min di formazione con attestato, report | 6 h |
-| J.A.R.V.I.S. Privato | 2.400 € + 190 €/mese | installazione fino a 5 postazioni, cartella documenti protetta, mezza giornata di formazione, aggiornamenti e assistenza | 14 h + 1,5 h/mese |
-| Partner AI | 790 €/mese | tutto il precedente + un flusso automatizzato al mese, assistenza prioritaria, richiamo trimestrale | 6 h/mese |
+Niente più prezzi una tantum: tutto è un abbonamento, **mensile o annuale**. L'annuale costa come 10 mesi e include l'attivazione; il mensile ha 290 € di attivazione e si disdice con 30 giorni di preavviso. Diagnosi, policy e formazione AI Act sono incluse in ogni piano.
 
-Tariffa oraria implicita: 80-170 €/h. Tutti IVA esclusa. Disdetta con 30 giorni di preavviso.
+| Piano | Mensile | Annuale (2 mesi gratis) | Per chi | Cosa include | Ore di lavoro stimate |
+|---|---|---|---|---|---|
+| Essenziale | 149 €/mese + 290 € attivazione | 1.490 €/anno (124 €/mese) | professionista o studio fino a 3 persone | J.A.R.V.I.S. fino a 3 postazioni, policy AI, 90 min di alfabetizzazione AI Act con attestato, aggiornamenti, assistenza WhatsApp entro 2 giorni | 6 h all'avvio + 1 h/mese |
+| **Studio** | 290 €/mese + 290 € attivazione | 2.900 €/anno (242 €/mese) | studi e PMI fino a 10 persone | tutto Essenziale fino a 10 postazioni, PC "cervello" condiviso, base di conoscenza configurata, mezza giornata di formazione, assistenza entro 1 giorno, revisione trimestrale | 12 h all'avvio + 1,5 h/mese |
+| Partner | 590 €/mese + 290 € attivazione | 5.900 €/anno (492 €/mese) | fino a 25 persone | tutto Studio fino a 25 postazioni, un flusso automatizzato al mese, assistenza prioritaria in giornata, richiamo trimestrale, policy aggiornata | 14 h all'avvio + 6 h/mese |
 
-## 5. La strada verso 10.000 €/mese
+Postazioni oltre il piano: 12 €/mese l'una. Cambio di piano in qualsiasi momento, con la differenza calcolata a giorni. Tutti i prezzi IVA esclusa.
 
-### Scenario a regime (mese 7-9)
+**Perché gli abbonamenti**: il fatturato non riparte da zero ogni mese. Ogni cliente acquisito si somma ai precedenti, e l'annuale porta cassa subito (un piano Studio annuale incassa 2.900 € alla firma). La leva commerciale è spingere l'annuale: due mesi gratis e attivazione inclusa sono un risparmio di 588-1.470 € che il cliente vede scritto sul sito.
 
-| Voce | Quantità al mese | Fatturato |
+## 5. La strada verso 10.000 €/mese ricorrenti
+
+### Scenario a regime (mese 12)
+
+| Piano | Clienti attivi | Ricavo mensile ricorrente |
 |---|---|---|
-| Diagnosi & Policy | 4 | 1.960 € |
-| Installazioni J.A.R.V.I.S. Privato | 2 | 4.800 € |
-| Canoni 190 € (clienti installati accumulati) | 10 | 1.900 € |
-| Partner AI | 2 | 1.580 € |
-| **Totale** | | **10.240 €** |
+| Essenziale | 18 | 18 × ~137 € (metà mensili, metà annuali) = 2.460 € |
+| Studio | 19 | 19 × ~266 € = 5.050 € |
+| Partner | 5 | 5 × ~541 € = 2.700 € |
+| Attivazioni dei nuovi clienti mensili | 2 al mese | 580 € |
+| **Totale** | **42 clienti** | **~10.800 € al mese** |
 
-Ore di lavoro: circa 24 (diagnosi) + 28 (installazioni) + 15 (canoni) + 12 (partner) = **~80 ore al mese**, più vendita. È un'attività da una persona, a tempo pieno.
+Il prezzo medio considera metà clienti sul mensile e metà sull'annuale (che vale 10/12 del mensile). Ore di lavoro: ~18 (Essenziale) + ~29 (Studio) + ~30 (Partner) + ~32 per l'avvio di 4 nuovi clienti al mese = **~110 ore al mese**, più vendita. È un'attività da una persona, a tempo pieno, che dal secondo anno può assumere un tecnico per l'assistenza.
 
 ### Imbuto necessario
 
-Con un tasso di chiusura prudente del 20% dalla chiamata gratuita alla diagnosi, e del 50% dalla diagnosi all'installazione:
+Servono **4 nuovi abbonati al mese** (e un tasso di disdetta sotto il 2% mensile, cioè meno di un cliente al mese).
 
 | Passo | Al mese |
 |---|---|
 | Contatti qualificati (email, LinkedIn, segnalazioni) | 60-80 |
-| Chiamate di 30 minuti | 20 |
-| Diagnosi vendute | 4 |
-| Installazioni | 2 |
+| Chiamate gratuite di 30 minuti | 20 |
+| Demo in studio (diagnosi) | 8 |
+| Nuovi abbonati | 4 |
 
 ### Rampa realistica
 
-| Mese | Azioni | Fatturato atteso |
-|---|---|---|
-| 1 | Sito online, 3 diagnosi a prezzo di lancio (290 €) a studi conosciuti in cambio di testimonianza, 100 contatti | 900 € |
-| 2 | Prime 2 installazioni, 4 diagnosi, primo post LinkedIn a settimana | 6.800 € |
-| 3 | 1 installazione, 4 diagnosi, 2 canoni | 4.800 € |
-| 4-6 | 2 installazioni/mese, 4 diagnosi, canoni che si accumulano | 7.500-9.000 € |
-| 7-9 | A regime (tabella sopra) | 10.000 €+ |
+| Mese | Azioni | Clienti attivi | Ricorrente al mese |
+|---|---|---|---|
+| 1 | Sito online, offerta "clienti fondatori": Studio annuale a 2.400 € il primo anno per i primi 5 studi, in cambio di testimonianza | 3 | ~650 € (incasso del mese ~7.200 € se annuali) |
+| 3 | 4 nuovi abbonati al mese, primo post LinkedIn a settimana | 11 | ~2.500 € |
+| 6 | Seminari con gli Ordini, prime segnalazioni dai clienti | 23 | ~5.400 € |
+| 9 | Primi Partner da clienti Studio soddisfatti | 33 | ~8.000 € |
+| 12 | A regime (tabella sopra) | 42 | ~10.800 € |
+
+Con gli annuali la cassa arriva prima del ricorrente: 4 nuovi clienti al mese di cui 2 annuali Studio portano ~5.800 € alla firma, oltre ai canoni.
 
 ## 6. Canali, in ordine di resa
 
@@ -134,7 +140,7 @@ Con un tasso di chiusura prudente del 20% dalla chiamata gratuita alla diagnosi,
 | Rischio | Risposta |
 |---|---|
 | Il modello locale delude rispetto a ChatGPT | Dirlo in diagnosi, prima che paghino. Offrire la via ibrida (Claude via API sotto contratto) per le attività dove serve qualità. |
-| Lo studio non ha PC adeguati | Il pacchetto base (Diagnosi & Policy) vende comunque. Un mini-PC da 16 GB costa 400-600 € e si quota a parte. |
+| Lo studio non ha PC adeguati | L'Essenziale funziona anche con il cervello Puter o Claude nel browser, e policy e formazione AI Act valgono comunque. Un mini-PC da 16 GB costa 400-600 € e si quota a parte. |
 | Il Digital Omnibus allenta l'art. 4 | Il bisogno privacy/GDPR resta identico. La formazione resta il motivo per cui lo strumento viene usato. |
 | Troppe ore in viaggio | Diagnosi in video; installazione in presenza solo entro 100 km, altrimenti da remoto con un referente in studio. |
 | Non arrivano contatti | Il collo di bottiglia è sempre la vendita. 20 email a settimana non sono negoziabili. |

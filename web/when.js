@@ -75,3 +75,44 @@ export function describeWhen(at, now = new Date()) {
   if (days < 7) return `${giorni[d.getDay()]} alle ${hm}`;
   return `${giorni[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? " " + d.getFullYear() : ""} alle ${hm}`;
 }
+
+// ------------------------------------------------------------------ promemoria ricorrenti
+const GIORNI = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"];
+const hhmm = (h, m) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+/** "ogni lunedì alle 9", "tutti i giorni alle 8", "nei giorni feriali", "il 16 di ogni mese", "ogni anno il 3 marzo".
+ *  Restituisce { rule, at, rest } con la prossima scadenza, o null se la frase non è ricorrente. */
+export function parseRecurring(text, now = new Date()) {
+  let t = fold(text), o = fold(text).length === text.length ? text : fold(text);
+  const blank = (re) => { const g = new RegExp(re.source, "g"); let mm; while ((mm = g.exec(t))) { const i = mm.index, len = mm[0].length; t = t.slice(0, i) + " ".repeat(len) + t.slice(i + len); o = o.slice(0, i) + " ".repeat(len) + o.slice(i + len); if (!len) g.lastIndex++; } };
+  let rule = null, m;
+  if (/\b(ogni giorno|tutti i giorni|ogni mattina|ogni sera|quotidianamente)\b/.test(t)) { rule = { every: "day" }; if (/ogni sera/.test(t)) rule.defH = 20; blank(/\b(ogni giorno|tutti i giorni|ogni mattina|ogni sera|quotidianamente)\b/); }
+  else if (/\b(nei giorni feriali|ogni giorno feriale|tutti i giorni lavorativi|ogni giorno lavorativo|dal lunedi al venerdi)\b/.test(t)) { rule = { every: "weekday" }; blank(/\b(nei giorni feriali|ogni giorno feriale|tutti i giorni lavorativi|ogni giorno lavorativo|dal lunedi al venerdi)\b/); }
+  else if ((m = /\b(?:ogni|tutti i|tutte le)\s+(lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenic[ah]e?)\b/.exec(t))) { rule = { every: "week", weekday: WEEK.indexOf(m[1].replace(/che$/, "ca").replace(/he$/, "a")) }; blank(new RegExp(m[0].replace(/\s+/g, "\\s+"))); }
+  else if (/\bogni settimana\b/.test(t)) { rule = { every: "week", weekday: now.getDay() }; blank(/\bogni settimana\b/); }
+  else if ((m = /\b(?:il\s+)?(\d{1,2})\s+(?:di\s+)?ogni\s+mese\b|\bogni\s+mese\s+il\s+(\d{1,2})\b|\bogni mese\b/.exec(t))) { rule = { every: "month", day: +(m[1] || m[2] || now.getDate()) }; blank(new RegExp(m[0].replace(/\s+/g, "\\s+"))); }
+  else if ((m = new RegExp(`\\bogni anno\\s+(?:il\\s+)?(\\d{1,2})\\s+(${MESI.join("|")})\\b|\\b(?:il\\s+)?(\\d{1,2})\\s+(${MESI.join("|")})\\s+di ogni anno\\b`).exec(t))) { rule = { every: "year", day: +(m[1] || m[3]), month: MESI.indexOf(m[2] || m[4]) }; blank(new RegExp(m[0].replace(/\s+/g, "\\s+"))); }
+  if (!rule) return null;
+  if ((m = /\b(?:alle|all'|ore)\s*(\d{1,2})(?:[:.](\d{2}))?(?:\s+e\s+(mezza|un quarto))?\b/.exec(t))) { rule.h = +m[1]; rule.m = m[2] ? +m[2] : m[3] ? (/mezza/.test(m[3]) ? 30 : 15) : 0; if (/\b(pomeriggio|sera)\b/.test(t) && rule.h < 12) rule.h += 12; blank(/\b(?:alle|all'|ore)\s*\d{1,2}(?:[:.]\d{2})?(?:\s+e\s+(?:mezza|un quarto))?\b/); }
+  else { rule.h = rule.defH || 9; rule.m = 0; }
+  delete rule.defH; if (rule.h > 23 || rule.m > 59) return null;
+  blank(/\b(di|del|della)\s+(mattina|pomeriggio|sera)\b/);
+  return { rule, at: nextOccurrence(rule, now), rest: tidy(o) };
+}
+/** Prossima scadenza della regola, strettamente dopo `after`. */
+export function nextOccurrence(rule, after = new Date()) {
+  const base = after instanceof Date ? after : new Date(after);
+  for (let i = 0; i < 400; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i, rule.h, rule.m, 0, 0);
+    if (d <= base) continue;
+    if (rule.every === "day") return d.getTime();
+    if (rule.every === "weekday" && d.getDay() > 0 && d.getDay() < 6) return d.getTime();
+    if (rule.every === "week" && d.getDay() === rule.weekday) return d.getTime();
+    if (rule.every === "month") { const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); if (d.getDate() === Math.min(rule.day, last)) return d.getTime(); }
+    if (rule.every === "year" && d.getMonth() === rule.month && d.getDate() === rule.day) return d.getTime();
+  }
+  return null;
+}
+export function describeRule(rule) {
+  const at = "alle " + hhmm(rule.h, rule.m);
+  return { day: `ogni giorno ${at}`, weekday: `nei giorni feriali ${at}`, week: `ogni ${GIORNI[rule.weekday]} ${at}`, month: `il ${rule.day} di ogni mese ${at}`, year: `ogni anno il ${rule.day} ${MESI[rule.month]} ${at}` }[rule.every];
+}

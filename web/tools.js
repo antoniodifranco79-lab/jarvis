@@ -37,7 +37,26 @@ export const TOOL_DEFS = [
     input_schema: { type: "object", properties: { query: str, lingua: { type: "string", enum: ["it", "en"] } }, required: ["query"] } },
   { name: "leggi_wikipedia", description: "Legge il testo di una voce di Wikipedia (fino a circa 12.000 caratteri). Usalo dopo cerca_wikipedia per studiare un argomento, poi salva i punti chiave con impara.",
     input_schema: { type: "object", properties: { titolo: str, lingua: { type: "string", enum: ["it", "en"] } }, required: ["titolo"] } },
+  { name: "calcolo_professionale", description: "Calcoli da studio descritti a parole, con risultato esatto: interessi legali o a tasso dato tra due date, rata e piano di un mutuo, importo in lettere per assegni, decodifica del codice fiscale (data e luogo di nascita), regime forfettario, prestazione occasionale, compenso da fatturare per un netto voluto, split payment, margine e ricarico, sconti anche in cascata, variazioni percentuali, ore lavorate, giorno della settimana, giorni mancanti a una data, età.",
+    input_schema: { type: "object", properties: { richiesta: { ...str, description: "La richiesta completa con i numeri, es. \"interessi legali su 10000 euro dal 1/1/2024 al 31/12/2025\", \"rata mutuo 150000 euro al 3,2% per 25 anni\", \"1250,50 in lettere\", \"forfettario con ricavi 40000\"." } }, required: ["richiesta"] } },
+  { name: "scadenze_fiscali", description: "Scadenze fiscali ordinarie italiane (F24 del 16, IVA, imposte sui redditi, IMU, dichiarazioni) nei prossimi giorni, già spostate al primo giorno lavorativo.",
+    input_schema: { type: "object", properties: { giorni: { type: "integer", description: "Quanti giorni guardare avanti (default 45)." } } } },
+  { name: "analizza_documento", description: "Analisi esatta di un documento caricato, senza riassumere: date e scadenze, importi, dati identificativi (codici fiscali, partite IVA, IBAN, email, PEC, telefoni), clausole chiave (durata, rinnovo, recesso, penali, foro...), statistiche e leggibilità, con le pagine.",
+    input_schema: { type: "object", properties: { file: str, cosa: { type: "string", enum: ["tutto", "scadenze", "importi", "dati", "clausole", "statistiche"] } }, required: ["file"] } },
+  { name: "confronta_documenti", description: "Confronta due documenti caricati (per esempio due versioni di un contratto) e restituisce le frasi modificate, aggiunte e tolte.",
+    input_schema: { type: "object", properties: { file_a: str, file_b: str }, required: ["file_a", "file_b"] } },
+  { name: "anonimizza_documento", description: "Crea una copia anonimizzata (GDPR) di un documento caricato, con codici fiscali, partite IVA, IBAN, email, telefoni, date di nascita e nomi sostituiti da segnaposto, scaricabile in Word.",
+    input_schema: { type: "object", properties: { file: str, nomi: { ...str, description: "Altri nomi da oscurare, separati da virgole. Facoltativo." } }, required: ["file"] } },
+  { name: "usa_modello", description: "Compila un modello di documento da studio e lo rende scaricabile in Word. Modelli: sollecito, diffida, disdetta, incarico, preventivo, convocazione, verbale, documenti-730, avviso-scadenza, privacy, benvenuto, delega, quietanza, policy-ai. Passa in campi i dati che conosci (es. destinatario, importo, fattura, scadenza, cliente, oggetto, voci, data).",
+    input_schema: { type: "object", properties: { modello: { type: "string", enum: ["sollecito", "diffida", "disdetta", "incarico", "preventivo", "convocazione", "verbale", "documenti-730", "avviso-scadenza", "privacy", "benvenuto", "delega", "quietanza", "policy-ai"] }, campi: { type: "object", description: "Coppie nome campo: valore." } }, required: ["modello"] } },
+  { name: "elenca_promemoria", description: "Elenca i promemoria attivi, con data e ora.", input_schema: { type: "object", properties: {} } },
+  { name: "cancella_promemoria", description: "Cancella i promemoria il cui testo contiene le parole indicate.",
+    input_schema: { type: "object", properties: { testo: str }, required: ["testo"] } },
+  { name: "converti_valuta", description: "Converte un importo tra valute con il cambio di riferimento della Banca Centrale Europea (serve internet).",
+    input_schema: { type: "object", properties: { importo: num, da: { ...str, description: "Codice ISO, es. USD" }, a: { ...str, description: "Codice ISO, es. EUR" } }, required: ["importo", "da", "a"] } },
 ];
+/** Strumenti per i modelli locali più piccoli (contesto corto): i più utili, per non riempire il prompt. */
+export const CORE_TOOLS = ["search_documents", "read_document", "calcola_iva", "calcola_fattura_professionista", "calcola_scadenza", "calcolo_professionale", "scadenze_fiscali", "analizza_documento", "usa_modello", "crea_bozza", "imposta_promemoria", "impara", "cerca_conoscenza", "meteo", "cerca_wikipedia", "leggi_wikipedia"];
 
 /** Valida l'input di uno strumento contro il suo schema (tipi, obbligatori, enum). Restituisce un errore o null. */
 export function validateInput(name, input) {

@@ -125,7 +125,7 @@ Dopo che accetta, aspetta 2 giorni:
 >
 > Leonardo Di Franco · +39 379 166 7781
 
-Al seminario: alla fine mostra un QR code con l'offerta "Diagnosi a 290 € invece di 490 € per chi è in sala, valida 30 giorni". Raccogli i nomi su un foglio presenze ("per mandarvi le slide").
+Al seminario: alla fine mostra un QR code con l'offerta "attivazione gratuita anche sul mensile per chi è in sala, valida 30 giorni". Raccogli i nomi su un foglio presenze ("per mandarvi le slide").
 
 **Camera di Commercio, Punto Impresa Digitale (PID).** Telefona al PID della tua Camera:
 
@@ -145,7 +145,7 @@ Se sei fornitore ammesso, ogni cliente paga meno: a Roma il contributo è il 70%
 
 ## Fase 3 · La chiamata di 30 minuti
 
-Obiettivo: **capire il problema, far dire al cliente quanto gli costa, fissare la Diagnosi**. Parla tu il 30% del tempo.
+Obiettivo: **capire il problema, far dire al cliente quanto gli costa, fissare l'avvio dell'abbonamento** (o almeno la demo in studio). Parla tu il 30% del tempo.
 
 **Minuti 0-3 · Apertura**
 > Grazie del tempo. Le propongo così: le faccio qualche domanda su come lavorate, poi le dico onestamente se posso esservi utile e, se sì, come. Le va bene?
@@ -162,13 +162,13 @@ Obiettivo: **capire il problema, far dire al cliente quanto gli costa, fissare l
 9. Chi decide su queste spese, oltre a lei?
 
 **Minuti 18-25 · Riassunto e proposta**
-> Se ho capito bene: siete in [N], l'AI la usano già [chi] senza regole, la formazione non c'è, e [compito] vi porta via circa [X] ore a settimana. Le propongo di partire dalla Diagnosi: in due ore vedo come lavorate, vi lascio la policy firmabile e faccio la formazione a tutto il team con l'attestato. Costa 490 euro e copre subito l'obbligo dell'AI Act. Dopo, se ha senso, installiamo l'assistente.
+> Se ho capito bene: siete in [N], l'AI la usano già [chi] senza regole, la formazione non c'è, e [compito] vi porta via circa [X] ore a settimana. Le propongo il piano [Essenziale/Studio]: installo l'assistente sui vostri PC, vi lascio la policy firmabile e faccio la formazione a tutto il team con l'attestato, che copre subito l'obbligo dell'AI Act. Aggiornamenti e assistenza sono compresi. Costa [149/290] euro al mese, oppure [1.490/2.900] all'anno, che sono due mesi gratis e l'attivazione inclusa. Se volete provare, partite dal mensile: si disdice con 30 giorni di preavviso.
 
 **Minuti 25-30 · Chiusura**
-> Le va bene [giorno] alle [ora] per la Diagnosi? Le mando adesso su WhatsApp la conferma con il preventivo.
+> Preferite il mensile per provare o l'annuale con i due mesi gratis? *(ascolta)* Le va bene [giorno] alle [ora] per l'installazione? Le mando adesso su WhatsApp la conferma con il preventivo.
 
 **Fai il conto delle ore davanti a lui** (è l'argomento più forte):
-> [X] ore a settimana per [N] persone, a un costo di circa 25 euro l'ora, fanno [X × N × 25 × 4] euro al mese. Se l'assistente ne fa risparmiare anche solo un terzo, si ripaga in [2.400 / risparmio] mesi.
+> [X] ore a settimana per [N] persone, a un costo di circa 25 euro l'ora, fanno [X × N × 25 × 4] euro al mese. Se l'assistente ne fa risparmiare anche solo un terzo, sono [risparmio] euro al mese contro un abbonamento di [149/290]: si ripaga dal primo mese.
 
 ---
 
@@ -193,7 +193,7 @@ Se il cliente ha un documento non riservato sotto mano, usa il suo: vale dieci v
 
 | Il cliente dice | Tu rispondi |
 |---|---|
-| "Costa troppo." | "Rispetto a cosa? *(ascolta)* La Diagnosi costa 490 euro, meno di mezza giornata di un collaboratore, e copre l'obbligo di formazione dell'AI Act. In molte province la Camera di Commercio rimborsa una parte con il voucher: lo verifichiamo insieme." |
+| "Costa troppo." | "Rispetto a cosa? *(ascolta)* L'Essenziale annuale sono 124 euro al mese, meno di cinque ore di un collaboratore, e dentro c'è la formazione che copre l'obbligo dell'AI Act. Se preferite, partite dal mensile e smettete quando volete. In molte province la Camera di Commercio rimborsa una parte con il voucher: lo verifichiamo insieme." |
 | "Usiamo già ChatGPT, va benissimo." | "Ottimo, vuol dire che il team è già pronto. La domanda è dove finiscono i documenti che ci incollate. Con un contratto business e regole scritte si può fare: la aiuto anche a impostarlo così. Ma per i fascicoli più delicati serve un'alternativa che resti in studio." |
 | "Non ho tempo adesso." | "Proprio per questo partiamo da due ore, una volta sola. Che settimana è più tranquilla per voi? Fissiamo adesso e se cambia qualcosa spostiamo." |
 | "Ci devo pensare." | "Certo. Per aiutarla a decidere: è una questione di prezzo, di tempo o di fiducia sul risultato? *(ascolta e rispondi a quella)*" |
@@ -202,7 +202,8 @@ Se il cliente ha un documento non riservato sotto mano, usa il suo: vale dieci v
 | "Ne parlo con il socio / con l'informatico." | "Perfetto. Facciamo una chiamata di 20 minuti tutti insieme? Così le domande tecniche le risolvo io direttamente." |
 | "Abbiamo già il tecnico informatico." | "Benissimo, lavoro volentieri con lui: io non tocco reti e gestionale, mi occupo solo dell'AI e della formazione." |
 | "Mandami una mail con il preventivo." | "Gliela mando subito. Per farlo su misura, mi dice solo quante persone sono e se c'è un PC con 16 GB di memoria? E ci risentiamo giovedì per eventuali domande?" |
-| "E se poi non lo usiamo?" | "Per questo la formazione è sui vostri casi veri e c'è il supporto mensile. I canoni si disdicono con 30 giorni di preavviso, senza penali. Il software resta vostro." |
+| "E se poi non lo usiamo?" | "Per questo la formazione è sui vostri casi veri e l'assistenza è nell'abbonamento. Partite dal mensile: si disdice con 30 giorni di preavviso, senza penali. Il software resta vostro." |
+| "Preferisco pagare una volta sola." | "Si può con l'annuale: un pagamento all'anno, o due rate semestrali, e vale 12 mesi al prezzo di 10. Dentro ci sono anche aggiornamenti e assistenza, che con un acquisto una tantum dovreste pagare a parte." |
 
 ---
 
@@ -210,38 +211,39 @@ Se il cliente ha un documento non riservato sotto mano, usa il suo: vale dieci v
 
 1. **Chiedi sempre la data**, mai "che ne pensa?". "Martedì 18 o giovedì 20?"
 2. **Manda il preventivo entro un'ora** su WhatsApp e per email.
-3. **Pagamento**: Diagnosi tutta in anticipo o a fine giornata. Installazione 50% alla firma, 50% a fine installazione. Canoni mensili anticipati con bonifico ricorrente.
-4. **Lettera d'incarico** firmata (anche con firma elettronica semplice): cosa è incluso, prezzo, tempi, disdetta 30 giorni, riservatezza dei dati.
+3. **Pagamento**: annuale anticipato alla firma (o in due rate semestrali). Mensile: attivazione alla firma, poi canone anticipato ogni mese con bonifico ricorrente o addebito SEPA. Ricorda il rinnovo dell'annuale 45 giorni prima della scadenza, con una telefonata, non solo con una fattura.
+4. **Contratto di abbonamento** firmato (anche con firma elettronica semplice): piano, postazioni, prezzo, durata (mensile o annuale), rinnovo, disdetta, cosa è incluso, riservatezza dei dati.
 
 ### Preventivo modello
 
 > **Leonardo Di Franco** · AI privata per studi professionali · P.IVA [...] · +39 379 166 7781
 >
 > Spett.le Studio [Nome], alla c.a. Dott. [Cognome]
-> Oggetto: Diagnosi e Policy AI
+> Oggetto: Abbonamento J.A.R.V.I.S. [Essenziale / Studio / Partner], [mensile / annuale]
 >
-> Attività: 2 ore di analisi in studio dell'uso attuale di strumenti di AI e dei flussi di dati; redazione della policy d'uso dell'AI dello studio; sessione di alfabetizzazione AI di 90 minuti per tutto il personale (art. 4 Reg. UE 2024/1689) con attestato, programma e registro presenze; report con priorità e costi dei passi successivi.
-> Data proposta: [giorno] ore [ora], presso lo studio.
-> Corrispettivo: 490,00 € [+ IVA / operazione in regime forfettario].
-> Pagamento: bonifico a fine giornata. IBAN [...].
+> Incluso: installazione di J.A.R.V.I.S. fino a [3 / 10 / 25] postazioni; analisi dell'uso attuale di strumenti di AI e dei flussi di dati; policy d'uso dell'AI dello studio; alfabetizzazione AI per tutto il personale (art. 4 Reg. UE 2024/1689) con attestato, programma e registro presenze; aggiornamenti del modello e del software; assistenza [entro 2 giorni / entro 1 giorno / in giornata].
+> Avvio: [giorno] ore [ora], presso lo studio.
+> Corrispettivo: [annuale: 1.490,00 / 2.900,00 / 5.900,00 € per 12 mesi, attivazione inclusa] oppure [mensile: 149,00 / 290,00 / 590,00 € al mese + 290,00 € di attivazione] [+ IVA / operazione in regime forfettario].
+> Pagamento: [annuale: bonifico alla firma o due rate semestrali] [mensile: attivazione alla firma, canone anticipato entro il giorno 5 di ogni mese]. IBAN [...].
+> Durata e disdetta: [annuale: 12 mesi, rinnovo automatico salvo disdetta 30 giorni prima della scadenza] [mensile: a tempo indeterminato, disdetta con 30 giorni di preavviso].
 > Riservatezza: nessun documento dello studio viene copiato o trasmesso a terzi.
 > Validità dell'offerta: 30 giorni.
 
 ### Pacchetto voucher (per le Camere che finanziano)
 
-Molte Camere chiedono una spesa minima di 3.000 €. Proponi: **Diagnosi + J.A.R.V.I.S. Privato + 4 mesi di assistenza = 3.650 €** (490 + 2.400 + 4 × 190). Con un contributo al 70%, lo studio ne paga circa 1.100. Verifica sempre sul bando locale spese ammesse, fornitori ammessi e tempi: di solito la domanda va presentata **prima** di iniziare il lavoro.
+Molte Camere chiedono una spesa minima di 3.000 €. Proponi: **Partner annuale = 5.900 €**, oppure **Studio annuale con 5 postazioni in più = 3.620 €** (2.900 + 5 × 12 × 12). Con un contributo al 70%, lo Studio annuale costa allo studio circa 1.100 €. Verifica sempre sul bando locale spese ammesse, fornitori ammessi e tempi: di solito la domanda va presentata **prima** di iniziare il lavoro.
 
 ---
 
-## Fase 7 · Dopo la Diagnosi: dall'una tantum al canone
+## Fase 7 · Dopo l'avvio: dal mensile all'annuale, dall'Essenziale al Partner
 
-Alla fine della Diagnosi, consegnando il report:
+Un mese dopo l'avvio, consegnando il report della diagnosi inclusa nell'abbonamento:
 
-> Dal report vedete tre cose: l'obbligo di formazione ora è coperto, la policy è firmata, e il compito che vi costa di più è [X]. L'assistente installato sui vostri PC lo riduce. L'installazione costa 2.400 euro e la facciamo in una giornata. Preferite la settimana del [data] o del [data]?
+> Dal report vedete tre cose: l'obbligo di formazione ora è coperto, la policy è firmata, e il compito che vi costa di più è [X]. L'assistente lo sta già riducendo. Se passate all'annuale adesso, scalo quanto avete già pagato questo mese e due mesi sono gratis. Preferite pagare in un'unica soluzione o in due rate?
 
 Dopo l'installazione, al primo mese:
 
-> Come va con l'assistente? Cosa usate di più? *(ascolta)* Il prossimo passo è automatizzare [compito ripetitivo che ti hanno detto]. Con il pacchetto Partner ne automatizzo uno al mese.
+> Come va con l'assistente? Cosa usate di più? *(ascolta)* Il prossimo passo è automatizzare [compito ripetitivo che ti hanno detto]. Con il piano Partner ne automatizzo uno al mese.
 
 ---
 
@@ -269,8 +271,9 @@ Una settimana dopo ogni consegna:
 |---|---|
 | Contatti nuovi | 50 |
 | Chiamate di 30 minuti fatte | 5 |
-| Diagnosi vendute | 1 |
-| Installazioni vendute | 0,5 (una ogni due settimane) |
+| Demo in studio fatte | 2 |
+| Nuovi abbonati | 1 (4 al mese) |
+| Abbonati passati dal mensile all'annuale | 1 al mese |
 
 ## I primi 14 giorni, uno per uno
 
@@ -284,7 +287,7 @@ Una settimana dopo ogni consegna:
 | 6-7 | Weekend: scrivi il primo post LinkedIn (testo in ADVERTISING-PLAN) e registra il video di 60 secondi | Post e video pubblicati |
 | 8 | 10 email a freddo; seguiti del giorno 3; contatta un ente di formazione per Fondoprofessioni | 15 contatti |
 | 9 | Prime chiamate di 30 minuti; visita 5 studi della tua via | Almeno 2 chiamate fatte |
-| 10 | 10 email; telefona a chi non ha risposto alla prima email | 1 Diagnosi in calendario |
+| 10 | 10 email; telefona a chi non ha risposto alla prima email | 1 demo in calendario |
 | 11 | Contatta 2 rivenditori di gestionali e 1 tecnico informatico | 1 caffè fissato |
 | 12 | Prima Diagnosi (anche a prezzo pilota 290 € per uno studio amico, in cambio di testimonianza) | Report consegnato |
 | 13 | 10 email; seguiti del giorno 8; email all'Ordine degli Avvocati | 10 contatti |

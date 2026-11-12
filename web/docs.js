@@ -84,14 +84,23 @@ export class Library {
     this.docs.push(doc); this.rebuild(); return doc;
   }
   async remove(id) { this.docs = this.docs.filter((d) => d.id !== id); try { await tx("readwrite", (st) => st.delete(id)); } catch {} this.rebuild(); }
+  /** Documenti da un backup: stessi oggetti salvati in IndexedDB; sostituisce quelli con lo stesso nome. */
+  async importDocs(list) {
+    let n = 0;
+    for (const d of list || []) { if (!d || !d.name || !Array.isArray(d.chunks)) continue; this.docs = this.docs.filter((x) => x.name !== d.name); try { await tx("readwrite", (st) => st.put(d)); } catch {} this.docs.push(d); n++; }
+    this.rebuild(); return n;
+  }
   async clear() { const ids = this.docs.map((d) => d.id); this.docs = []; try { await tx("readwrite", (st) => ids.forEach((id) => st.delete(id))); } catch {} this.rebuild(); }
   /** I k passaggi più pertinenti, con punteggio BM25. Il nome del documento conta come parte del testo. */
   search(query, k = 4, filterDoc = null) {
+    // Frasi esatte tra virgolette ("preavviso di sei mesi"): i passaggi devono contenerle tutte.
+    const phrases = [...String(query).matchAll(/["«“]([^"»”]{3,})["»”]/g)].map((m) => fold(m[1]).replace(/\s+/g, " ").trim());
     const q = [...new Set(tokens(query))]; if (!q.length || !this.passages.length) return [];
     const N = this.passages.length, k1 = 1.4, b = 0.75;
     return this.passages.filter((p) => !filterDoc || p.docId === filterDoc).map((p) => {
       let s = 0; const nameTk = tokens(p.doc);
       for (const w of q) { const f = p.tf.get(w) || 0; const df = this.df.get(w) || 0; if (f) { const idf = Math.log(1 + (N - df + 0.5) / (df + 0.5)); s += idf * (f * (k1 + 1)) / (f + k1 * (1 - b + b * p.len / this.avg)); } if (nameTk.includes(w)) s += 0.6; }
+      if (phrases.length) { const ft = fold(p.text).replace(/\s+/g, " "); s = phrases.every((ph) => ft.includes(ph)) ? s + 5 : 0; }
       return { ...p, score: s };
     }).filter((p) => p.score > 0).sort((a, b) => b.score - a.score).slice(0, k);
   }

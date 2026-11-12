@@ -1,22 +1,22 @@
 # Piano pubblicitario: come portare 20 chiamate al mese
 
-Complemento di [BUSINESS-PLAN.md](BUSINESS-PLAN.md). Obiettivo della pubblicità: **20 chiamate di 30 minuti al mese**, che con i tassi del piano diventano 4 diagnosi e 2 installazioni.
+Complemento di [BUSINESS-PLAN.md](BUSINESS-PLAN.md). Obiettivo della pubblicità: **20 chiamate di 30 minuti al mese**, che con i tassi del piano diventano 8 demo in studio e 4 nuovi abbonati.
 
 ## 1. I numeri che decidono quanto spendere
 
 | Voce | Valore | Da dove viene |
 |---|---|---|
-| Valore medio del primo anno di un cliente J.A.R.V.I.S. Privato | 4.680 € | 2.400 + 190 × 12 |
-| Valore medio di una Diagnosi che non prosegue | 490 € | listino |
+| Valore medio del primo anno di un abbonato (mix dei tre piani) | ~3.100 € | ~260 €/mese × 12, attivazione inclusa |
+| Valore di un abbonato in 3 anni (disdetta < 2%/mese) | ~8.000 € | ricorrente, il motivo per cui conviene investire in pubblicità |
 | Margine lordo (è lavoro tuo, niente licenze) | ~85% | stima: solo spostamenti e strumenti |
-| Costo massimo accettabile per cliente installato (CAC) | 600 € | ≈ 13% del valore annuo |
-| Costo massimo per chiamata fissata (CPL) | 60 € | 10 chiamate → 1 installazione |
+| Costo massimo accettabile per nuovo abbonato (CAC) | 500 € | ≈ 16% del valore del primo anno |
+| Costo massimo per chiamata fissata (CPL) | 100 € | 5 chiamate → 1 abbonato |
 | Costo per click atteso, ricerca Google, Italia, servizi B2B | 2–6 € | benchmark B2B services 5,87 $ (US); Italia generico 1,6–5,3 $ |
 | Tasso di conversione pagina → chiamata (ipotesi prudente) | 5% | benchmark B2B 4,85% |
 | Click necessari per una chiamata | 20 | 1 / 5% |
 | Costo per chiamata atteso da Google | 40–120 € | 20 click × 2–6 € |
 
-Lettura: Google Ads sulle parole giuste sta dentro il limite di 60 € per chiamata solo se la pagina converte e le parole chiave sono strette. LinkedIn costa 2–3 volte di più per click (5,98 € in Italia secondo una fonte, 2–10 $ globali) ma arriva esattamente al titolare dello studio. Meta costa poco (≈1,60 €/click) ma l'intento è basso: serve solo per il retargeting.
+Lettura: Google Ads sulle parole giuste sta dentro il limite di 100 € per chiamata solo se la pagina converte e le parole chiave sono strette. LinkedIn costa 2–3 volte di più per click (5,98 € in Italia secondo una fonte, 2–10 $ globali) ma arriva esattamente al titolare dello studio. Meta costa poco (≈1,60 €/click) ma l'intento è basso: serve solo per il retargeting.
 
 Fonti: [LocaliQ via Total Product Marketing](https://totalproductmarketing.com/marketing-insights/cpc-google-search-ads-business-services/), [Search Engine Land](https://searchengineland.com/google-ads-costs-keep-rising-but-conversion-rates-improved-in-2025-477927), [Landingi](https://landingi.com/it/ppc/costo-2/), [LinkedIn Ads (minimi ufficiali)](https://business.linkedin.com/it/it/advertise/ads/how-to-advertise-on-linkedin), [Stackmatix](https://www.stackmatix.com/blog/linkedin-ads-cost), [Influee (Meta vs LinkedIn, €)](https://influee.co/it/blog/how-much-do-facebook-ads-cost).
 
@@ -78,7 +78,7 @@ Titoli:
 2. AI Act art. 4: in regola in 7gg
 3. AI privata, dati in studio
 4. Niente cloud, niente licenze
-5. Prezzi scritti: da 490 €
+5. Abbonamento da 124 €/mese
 6. Diagnosi gratuita 30 minuti
 7. Per commercialisti e avvocati
 8. Policy AI pronta da firmare
@@ -86,13 +86,13 @@ Titoli:
 10. Assistente AI sul vostro PC
 
 Descrizioni:
-1. Formazione AI Act per tutto il team, policy scritta e report. 490 €, in una settimana.
+1. Formazione AI Act, policy e assistente AI in un abbonamento. Mensile o annuale.
 2. Assistente AI che gira sui computer dello studio: i documenti dei clienti non escono mai.
 3. Il 40% degli studi usa l'AI senza regole. Mettetevi in regola con una chiamata gratuita.
-4. Installazione, formazione e assistenza a prezzo fisso. Nessun canone per utente.
+4. Installazione, formazione e assistenza incluse. Nessuna licenza per utente.
 
 Percorso visualizzato: `/ai-act` · `/studio`
-Estensioni: sitelink "Prezzi", "Come funziona", "Demo J.A.R.V.I.S.", "FAQ"; callout "Senza cloud", "Open source", "Disdetta 30 giorni", "In italiano".
+Estensioni: sitelink "Abbonamenti", "Come funziona", "Demo J.A.R.V.I.S.", "FAQ"; callout "Senza cloud", "Open source", "Disdetta 30 giorni", "In italiano".
 
 ## 4. LinkedIn Ads: dove c'è il titolare
 

@@ -32,6 +32,7 @@ export class Knowledge {
     this.rebuild(); return { item, updated: !!old };
   }
   async forget(titleOrId) { const it = this.items.find((x) => x.id === titleOrId) || this.find(titleOrId); if (!it) return null; this.items = this.items.filter((x) => x.id !== it.id); try { await tx("readwrite", (st) => st.delete(it.id)); } catch {} this.rebuild(); return it; }
+  async clearAll() { const ids = this.items.map((x) => x.id); this.items = []; try { await tx("readwrite", (st) => ids.forEach((id) => st.delete(id))); } catch {} this.rebuild(); }
   search(query, k = 4) {
     const q = [...new Set(tokens(query))]; if (!q.length || !this.idx.length) return [];
     const N = this.idx.length, k1 = 1.2, b = 0.75;
