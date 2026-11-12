@@ -195,6 +195,17 @@ class Brain:
         self.session = session
         return session
 
+    def reload_provider(self) -> None:
+        """Re-read the provider from the settings (for example after a Claude key was added while running)
+        and start a fresh conversation on it."""
+        self.provider = self.settings.resolved_provider
+        self.model = self.settings.active_model
+        self.client = make_client(self.settings)
+        self.server_tools = self._server_tools()
+        tool_names = self.registry.names() + [t["name"] for t in self.server_tools]
+        self.fingerprint = fingerprint(self.system_prompt, self.model, tool_names)
+        self.new_session()
+
     def new_session(self) -> Session:
         """Forget the current conversation (not the long-term memory) and start afresh."""
         self.session = self.memory.new_session(self.mode, self.fingerprint)

@@ -72,6 +72,11 @@ dialog .row { display:flex; gap:8px; justify-content:flex-end; } dialog button {
 .docs-list .dname { overflow-wrap:anywhere; } .docs-list .dmeta { grid-column:1; font-family:var(--font-mono); font-size:.66rem; color:var(--muted); }
 .docs-list button { grid-column:2; grid-row:1 / span 2; font-size:.75rem; padding:4px 10px; }
 dialog label.check { display:flex; gap:8px; align-items:flex-start; color:var(--fg); } dialog label.check input { margin-top:3px; }
+.sources a { font-family:var(--font-mono); font-size:.7rem; color:var(--accent); text-decoration:none; overflow-wrap:anywhere; } .sources a:hover { text-decoration:underline; }
+dialog a { color:var(--accent); } dialog .row.left { justify-content:flex-start; margin:-4px 0 12px; }
+.brain-choices { display:grid; gap:10px; } .brain { display:grid; gap:4px; text-align:left; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--fg); cursor:pointer; font:inherit; }
+.brain:hover, .brain:focus-visible { border-color:var(--accent); outline:none; } .brain b { color:var(--accent); font-family:var(--font-display); letter-spacing:.08em; font-size:.85rem; } .brain span { font-size:.85rem; color:var(--muted); }
+dialog { max-height:90vh; overflow:auto; }
 .dropzone { display:none; position:fixed; inset:12px; z-index:9; border:2px dashed var(--accent); border-radius:22px; background:rgba(4,8,15,.82); place-items:center; text-align:center; padding:20px; font-family:var(--font-display); letter-spacing:.12em; color:var(--accent); pointer-events:none; }
 body.dropping .dropzone { display:grid; }
 @keyframes blink { to { opacity:0; } }
@@ -120,6 +125,23 @@ body.dropping .dropzone { display:grid; }
     <label>Come deve chiamarla <input id="setName" placeholder="Signore"></label>
     <label>Città per il meteo <input id="setCity" placeholder="Milano"></label>
     <label>Lingua <select id="setLang"><option value="it-IT">Italiano</option><option value="en-GB">English</option></select></label>
+    <label>Cervello <select id="setProvider">
+      <option value="claude">Claude di Anthropic · il più intelligente, serve una chiave API</option>
+      <option value="local">Modello locale nel browser · privato e gratuito, si scarica una volta</option>
+    </select></label>
+    <div id="claudeFields">
+      <label>Chiave API di Claude <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+      <p class="dlg-note" id="keyStatus" aria-live="polite"></p>
+      <p class="dlg-note">La crea su <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (Settings → API Keys) dopo aver aggiunto un credito. Resta salvata solo in questo browser. Con Claude le domande e i passaggi dei documenti usati per rispondere vengono inviati ad Anthropic.</p>
+      <label>Modello Claude <select id="setClaudeModel">
+        <option value="claude-opus-5-5">Claude Opus 5.5 · consigliato</option>
+        <option value="claude-fable-5-2">Claude Fable 5.2 · il più capace, costa il doppio</option>
+        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 · più veloce ed economico</option>
+        <option value="claude-haiku-5-5">Claude Haiku 5.5 · rapidissimo, per cose semplici</option>
+      </select></label>
+      <div class="row left"><button type="button" id="setForgetKey">Cancella la chiave</button></div>
+    </div>
+    <div id="localFields">
     <label>Modello (più grande = più intelligente, più lento) <select id="setModel">
       <option value="auto">Automatico · il migliore che questo dispositivo regge</option>
       <option value="Qwen3-0.6B">Qwen3 0.6B · leggerissimo (1,4 GB)</option>
@@ -127,9 +149,18 @@ body.dropping .dropzone { display:grid; }
       <option value="Qwen3-4B">Qwen3 4B · computer (3,5 GB)</option>
       <option value="Qwen3-8B">Qwen3 8B · massimo, serve una buona GPU (5,7 GB)</option>
     </select></label>
+    </div>
     <label class="check"><input type="checkbox" id="setThink"> Ragionamento approfondito: più lento, più preciso su domande difficili</label>
     <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
   </form>
+</dialog>
+<dialog id="brainDialog">
+  <h2>SCEGLI IL CERVELLO</h2>
+  <p class="dlg-note">Come deve ragionare J.A.R.V.I.S. su questo dispositivo? Si può cambiare quando vuole dalle impostazioni.</p>
+  <div class="brain-choices">
+    <button type="button" id="brainClaude" class="brain"><b>Claude di Anthropic</b><span>Il più intelligente: ragiona, cerca sul web, legge i documenti. Nessun download. Serve una chiave API a consumo.</span></button>
+    <button type="button" id="brainLocal" class="brain"><b>Modello locale</b><span>Tutto resta sul dispositivo e non costa nulla. Scarica 1,4–5,7 GB la prima volta e serve WebGPU.</span></button>
+  </div>
 </dialog>
 <dialog id="docsDialog">
   <h2>DOCUMENTI</h2>

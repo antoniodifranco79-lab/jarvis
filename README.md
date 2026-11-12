@@ -35,7 +35,17 @@ Il cervello è Claude (modello predefinito `claude-opus-5-5`), usato attraverso 
 | Privacy | le conversazioni passano per l'API Anthropic | tutto resta sul PC |
 | Hardware | qualsiasi | 8 GB di RAM per `qwen3:4b`, 16 GB per `qwen3:8b`, una GPU aiuta molto |
 
-Con `JARVIS_PROVIDER=auto` (default) Jarvis usa Claude se trova una chiave e altrimenti il modello locale. Per la modalità locale:
+Con `JARVIS_PROVIDER=auto` (default) Jarvis usa Claude se trova una chiave e altrimenti il modello locale.
+
+**Solo Claude, mai Ollama.** Per usare sempre Claude e non scaricare né avviare il motore locale:
+
+```bash
+jarvis claude          # chiede la chiave API (senza mostrarla), la verifica e la salva in ~/.jarvis/.env
+```
+
+Il comando scrive `ANTHROPIC_API_KEY` e `JARVIS_PROVIDER=anthropic`. Nell'app installata non serve il terminale: se manca la chiave, la finestra di J.A.R.V.I.S. apre un pannello dove incollarla; salvandola, Jarvis passa subito a Claude e annulla l'eventuale download del modello locale. La chiave si crea su [console.anthropic.com](https://console.anthropic.com/settings/keys).
+
+Per la modalità locale:
 
 ```bash
 # 1. installa Ollama (Linux; su macOS/Windows: scarica da ollama.com)
@@ -64,7 +74,9 @@ Al primo avvio l'app scarica da sola il motore AI (Ollama, 0,2-1,6 GB a seconda 
 
 La cartella `web/` è J.A.R.V.I.S. in versione web app: stessa interfaccia, voce dal browser, promemoria, meteo, calcoli, memoria, Wikipedia, **chat con i documenti** (PDF, Word e testi letti e cercati nel browser, risposte con le fonti), **strumenti da studio** (IVA, fattura del professionista con cassa e ritenuta, scadenze con festività, verifica di codice fiscale, partita IVA e IBAN), e il modello linguistico (Qwen3 da 0,6 a 8 miliardi di parametri via WebLLM, scelto in automatico in base al dispositivo, con ragionamento approfondito opzionale) che gira **dentro Chrome** grazie a WebGPU. Niente account, niente chiavi: al primo avvio scarica il modello (1-3 GB, una volta sola) e poi funziona anche offline.
 
-Si pubblica con GitHub Pages (workflow `pages.yml`; in Settings > Pages scegliere come sorgente "GitHub Actions"): la web app risponde a `https://<utente>.github.io/jarvis/app/`, mentre la radice `https://<utente>.github.io/jarvis/` è il sito di Leonardo Di Franco (cartella `site/`, vedi [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md)). Da Chrome su Android: "Aggiungi a schermata Home". Richiede Chrome aggiornato e Android 12 o più recente per WebGPU; senza WebGPU restano attivi gli strumenti.
+Al primo avvio chiede quale cervello usare: **Claude** (Opus 5.5 predefinito, oppure Fable 5.2, Sonnet 5.5, Haiku 5.5) con la propria chiave API salvata solo nel browser, nessun download, ricerca sul web e tutti gli strumenti locali a disposizione del modello; oppure il **modello locale**. Si cambia dalle impostazioni.
+
+Si pubblica con GitHub Pages dal ramo `gh-pages`, che il workflow `pages.yml` ricostruisce a ogni modifica di `site/` o `web/`: la web app risponde a `https://<utente>.github.io/jarvis/app/`, mentre la radice `https://<utente>.github.io/jarvis/` è il sito di Leonardo Di Franco (cartella `site/`, vedi [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md)). Da Chrome su Android: "Aggiungi a schermata Home". Richiede Chrome aggiornato e Android 12 o più recente per WebGPU; senza WebGPU restano attivi gli strumenti.
 
 ## Su tablet Android (Termux)
 

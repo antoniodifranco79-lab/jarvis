@@ -104,6 +104,12 @@ footer input::placeholder { color: var(--muted); }
   .turn { max-width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .turn.jarvis.streaming::after { animation: none; } }
+#claudeDlg { background:#081423; color:var(--fg, #d9edf9); border:1px solid rgba(57,198,255,.25); border-radius:18px; padding:20px; max-width:min(92vw, 460px); width:100%; }
+#claudeDlg::backdrop { background:rgba(0,0,0,.6); } #claudeDlg h2 { margin:0 0 10px; font-size:.95rem; letter-spacing:.18em; color:var(--accent); }
+#claudeDlg p { font-size:.85rem; opacity:.85; margin:0 0 12px; } #claudeDlg a { color:var(--accent); }
+#claudeDlg input { width:100%; font:inherit; color:inherit; background:rgba(255,255,255,.05); border:1px solid rgba(57,198,255,.25); border-radius:10px; padding:10px 12px; margin-bottom:10px; box-sizing:border-box; }
+#claudeDlg .row { display:flex; gap:8px; justify-content:flex-end; } #claudeDlg button { font:inherit; padding:8px 16px; border-radius:999px; border:1px solid rgba(57,198,255,.25); background:var(--accent-soft); color:var(--accent); cursor:pointer; }
+#claudeMsg { min-height:1.2em; } #claudeChip { cursor:pointer; }
 </style>
 <!-- HUD:HEAD:END -->
 </head>
@@ -246,7 +252,8 @@ footer input::placeholder { color: var(--muted); }
     switch (m.type) {
       case "hello": $("model").textContent = m.model; app.userName = m.user_name; setState(m.state);
         (m.transcript || []).forEach(t => addTurn(t.role === "user" ? "user" : "jarvis", t.text, t.role === "user" ? "you" : "jarvis"));
-        updateReminders(m.reminders || []); addTurn("jarvis", m.greeting, "jarvis"); break;
+        updateReminders(m.reminders || []); addTurn("jarvis", m.greeting, "jarvis"); claudeSetup(m.claude_setup); break;
+      case "claude_ready": $("model").textContent = m.model; claudeSetup(null); break;
       case "state": setState(m.state, m.tool); break;
       case "user": addTurn("user", m.text, "you"); break;
       case "text": streamText(m.text); break;
@@ -330,5 +337,39 @@ footer input::placeholder { color: var(--muted); }
 })();
 </script>
 <!-- HUD:BODY:END -->
+<dialog id="claudeDlg">
+  <h2>CLAUDE · CHIAVE API</h2>
+  <p id="claudeIntro">Incolli la chiave API di Anthropic: J.A.R.V.I.S. userà Claude come cervello e non scaricherà nessun modello locale. La chiave resta su questo computer, nel file ~/.jarvis/.env.</p>
+  <p>La crea su <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> → Settings → API Keys, dopo aver aggiunto un credito.</p>
+  <input id="claudeKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" aria-label="Chiave API di Claude">
+  <p id="claudeMsg" aria-live="polite"></p>
+  <div class="row"><button type="button" id="claudeLater">Più tardi</button><button type="button" id="claudeSave">Usa Claude</button></div>
+</dialog>
+<script>
+(function () {
+  const dlg = document.getElementById("claudeDlg"), msg = document.getElementById("claudeMsg"), input = document.getElementById("claudeKeyInput");
+  window.claudeSetup = function (state) {
+    let chip = document.getElementById("claudeChip");
+    if (!state) { if (chip) chip.remove(); if (dlg.open) dlg.close(); return; }
+    if (state === "optional") {
+      document.getElementById("claudeIntro").textContent = "Senza chiave uso il modello locale, che va scaricato. Con la chiave API di Anthropic uso Claude: molto più capace e nessun download. La chiave resta su questo computer, nel file ~/.jarvis/.env.";
+      if (!chip) { chip = document.createElement("span"); chip.id = "claudeChip"; chip.className = "chip"; chip.textContent = "usa Claude"; chip.tabIndex = 0; chip.onclick = () => dlg.showModal(); const anchor = document.getElementById("model"); (anchor && anchor.parentElement ? anchor.parentElement : document.body).appendChild(chip); }
+      let asked = false; try { asked = localStorage.getItem("jarvis.claudeAsked") === "1"; localStorage.setItem("jarvis.claudeAsked", "1"); } catch {}
+      if (!asked && !dlg.open) dlg.showModal();
+    } else if (!dlg.open) dlg.showModal();
+  };
+  document.getElementById("claudeLater").onclick = () => dlg.close();
+  document.getElementById("claudeSave").onclick = async () => {
+    const key = input.value.trim(); if (!key) { msg.textContent = "Incolli la chiave (inizia con sk-ant-)."; return; }
+    msg.textContent = "Verifico la chiave…";
+    try {
+      const r = await fetch("/api/claude-key", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ key }) });
+      const j = await r.json();
+      if (!r.ok) { msg.textContent = j.error || "Chiave non accettata."; return; }
+      input.value = ""; msg.textContent = ""; window.claudeSetup(null);
+    } catch (e) { msg.textContent = "Errore di rete: " + e.message; }
+  };
+})();
+</script>
 </body>
 </html>

@@ -79,7 +79,7 @@ export class Library {
     onStep(`leggo ${file.name}`); const pages = await extract(file); const chunks = chunk(pages);
     const chars = pages.reduce((a, p) => a + p.trim().length, 0);
     if (!chunks.length || chars < 20) throw new Error(`${file.name} non contiene testo leggibile: se è una scansione serve prima l'OCR`);
-    const doc = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: file.name, size: file.size, pages: pages.length, chars, added: Date.now(), chunks };
+    const doc = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: file.name, size: file.size, pages: pages.length, chars, added: Date.now(), chunks, text: pages.map((p) => p.replace(/[ \t]+/g, " ").trim()) };
     this.docs = this.docs.filter((d) => d.name !== file.name); try { await tx("readwrite", (st) => st.put(doc)); } catch {}
     this.docs.push(doc); this.rebuild(); return doc;
   }
@@ -100,6 +100,15 @@ export class Library {
     const qt = new Set(tokens(query)); let best = null, bestHits = 0;
     for (const d of this.docs) { const nt = tokens(d.name.replace(/\.[a-z0-9]+$/i, "")).filter((w) => w.length > 2 && !/^\d+$/.test(w)); const hits = nt.filter((w) => qt.has(w)).length; if (hits > bestHits) { best = d; bestHits = hits; } }
     return best;
+  }
+  /** Il documento il cui nome contiene la stringa data (senza badare ad accenti e maiuscole). */
+  find(name) { const q = fold(name || "").replace(/\.[a-z0-9]+$/, "").trim(); if (!q) return null; return this.docs.find((d) => fold(d.name) === fold(name)) || this.docs.find((d) => fold(d.name).includes(q)) || this.docs.find((d) => tokens(q).every((w) => tokens(d.name).includes(w))) || null; }
+  /** Testo completo di un documento con i numeri di pagina, fino a ``max`` caratteri. */
+  fullText(id, max = 60000) {
+    const d = this.docs.find((x) => x.id === id); if (!d) return "";
+    const pages = d.text || [d.chunks.map((c) => c.text).join("\n")];
+    let out = ""; for (let i = 0; i < pages.length; i++) { const block = (pages.length > 1 ? `[p. ${i + 1}]\n` : "") + pages[i] + "\n\n"; if (out.length + block.length > max) { out += `[… testo troncato: mostrate ${i} pagine su ${pages.length}]`; break; } out += block; }
+    return out;
   }
   /** Testo iniziale di un documento, per i riassunti. */
   head(id, chars = 2600) { const d = this.docs.find((x) => x.id === id); if (!d) return ""; let out = ""; for (const c of d.chunks) { if (out.length + c.text.length > chars) break; out += (c.page ? `[p. ${c.page}] ` : "") + c.text + "\n"; } return out || d.chunks[0].text.slice(0, chars); }

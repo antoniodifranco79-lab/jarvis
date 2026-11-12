@@ -18,6 +18,7 @@ from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .. import __version__
 from ..app import Jarvis
+from ..claude_setup import activate, check_key, setup_state
 from ..config import Settings, get_settings
 from ..events import Event
 from ..tools.system import status_snapshot
@@ -152,6 +153,11 @@ def create_app(
         await j.start()
         state["jarvis"] = j
         state["hub"] = Hub(j, Speaker(settings))
+        state["claude_setup"] = setup_state(settings)
+        if state["claude_setup"] == "required":
+            await j.bus.publish(
+                "notice", message="Claude is selected but no API key is set: paste it in the panel that just opened."
+            )
         if settings.resolved_provider == "ollama":
             from ..providers.ollama import ensure_ready
 
@@ -226,6 +232,28 @@ def create_app(
             return JSONResponse({"error": "text is required"}, status_code=400)
         return JSONResponse({"answer": await j.brain.ask_text(text)})
 
+    async def claude_key(request: Request) -> JSONResponse:
+        """Save a Claude API key typed in the HUD and switch the brain to Claude, without a restart.
+        Only accepted from this machine: the key never travels over the network to Jarvis."""
+        host = request.client.host if request.client else ""
+        if host not in {"127.0.0.1", "::1", "localhost", "testclient"}:
+            return JSONResponse({"error": "the key can only be set from this computer"}, status_code=403)
+        payload = await request.json()
+        key = str(payload.get("key", "")).strip() if isinstance(payload, dict) else ""
+        problem = await check_key(key, settings.model)
+        if problem:
+            return JSONResponse({"error": problem}, status_code=400)
+        saved = activate(key, settings)
+        prep = state.pop("brain_prep", None)
+        if prep:
+            prep.cancel()
+        j: Jarvis = state["jarvis"]
+        j.brain.reload_provider()
+        state["claude_setup"] = None
+        await state["hub"].broadcast({"type": "claude_ready", "model": j.brain.model})
+        await j.bus.publish("notice", message=f"Claude is now my brain ({j.brain.model}). Key saved in {saved}.")
+        return JSONResponse({"ok": True, "model": j.brain.model})
+
     async def ws(websocket: WebSocket) -> None:
         await websocket.accept()
         hub: Hub = state["hub"]
@@ -239,6 +267,7 @@ def create_app(
                 "state": j.bus.state.value,
                 "user_name": settings.user_name,
                 "model": j.brain.model,
+                "claude_setup": state.get("claude_setup"),
                 "transcript": transcript,
                 "reminders": [
                     {"id": r.id, "message": r.message, "due_at": r.due_at.isoformat()}
@@ -283,6 +312,7 @@ def create_app(
             Route("/api/reminders", reminders),
             Route("/api/memory", memory),
             Route("/api/ask", ask, methods=["POST"]),
+            Route("/api/claude-key", claude_key, methods=["POST"]),
             WebSocketRoute("/ws", ws),
         ],
         lifespan=lifespan,

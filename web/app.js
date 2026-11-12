@@ -4,6 +4,7 @@
 // documents are read, indexed and searched inside the browser.
 import { Library, ACCEPT } from "./docs.js";
 import { routeStudio } from "./studio.js";
+import * as studio from "./studio.js";
 
 const $ = (id) => document.getElementById(id);
 const transcript = $("transcript"), input = $("input"), stateChip = $("stateChip"), caption = $("caption");
@@ -15,7 +16,9 @@ const store = {
   get(key, fallback) { try { const v = localStorage.getItem("jarvis." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem("jarvis." + key, JSON.stringify(value)); } catch {} },
 };
-const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "" }, store.get("settings", {}));
+const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "", provider: "", claudeModel: "claude-opus-5-5" }, store.get("settings", {}));
+const claudeKey = { get: () => store.get("claudeKey", ""), set: (k) => store.set("claudeKey", k) };
+const usingClaude = () => settings.provider === "claude";
 const library = new Library();
 let facts = store.get("facts", []);          // long-term memory: strings
 let history = store.get("history", []);      // [{role, content}]
@@ -98,7 +101,7 @@ const parseDelay = (t) => { const m = /(?:tra|in|fra)\s+(\d+|un|una|uno|mezz'?)\
 const parseClock = (t) => { const m = /alle\s+(\d{1,2})(?:[:.](\d{2}))?/i.exec(t); if (!m) return null; const d = new Date(); d.setHours(parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0, 0, 0); if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); return d.getTime(); };
 
 /** Fast intent routing: the hands act first, the model phrases the answer. Returns {tool, result, direct} or null. */
-const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera con il modello locale.`;
+const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude, anche con ricerca sul web" : " con il modello locale"}.`;
 async function route(text) {
   const t = text.toLowerCase().trim();
   if (/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/.test(t)) return { tool: "aiuto", result: "", direct: HELP() };
@@ -125,6 +128,61 @@ async function route(text) {
   const calc = /^(quanto fa|calcola|calculate|what is|quanto è)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (calc) { const v = calculate(calc[2]); if (v != null) return { tool: "calcolatrice", result: `${calc[2]} = ${v}`, direct: `Fa ${String(v).replace(".", ",")}, ${settings.name}.` }; }
   const who = /^(chi è|chi era|cos'è|cosa è|che cos'è|who is|what is)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (who) { const r = await wikipedia(who[2], /^who|^what/i.test(who[1]) ? "en" : "it").catch(() => null); if (r) return { tool: "wikipedia", result: r, direct: r }; }
   return null;
+}
+
+// ---------------------------------------------------------------- Claude (cloud): il cervello più capace, senza modelli da scaricare
+let claudeMod = null, claudeSession = null;
+const loadClaude = async () => (claudeMod ||= await import("./claude.js"));
+const contextLine = () => [`oggi è ${fmtDate()}, sono le ${fmtTime()}`, settings.city ? `città dell'utente: ${settings.city}` : "", facts.length ? `fatti memorizzati: ${facts.join("; ")}` : "nessun fatto memorizzato", library.size ? `documenti caricati: ${library.docs.map((d) => d.name).join("; ")}` : "nessun documento caricato"].filter(Boolean).join(". ") + ".";
+const claudeTools = {
+  async search_documents({ query, file }) {
+    if (!library.size) return { text: "Nessun documento caricato. L'utente può aggiungerne con la graffetta." };
+    const doc = file ? library.find(file) : null; if (file && !doc) return { text: `Nessun documento il cui nome contiene "${file}". Documenti: ${library.docs.map((d) => d.name).join("; ")}.` };
+    const hits = library.search(query, 6, doc ? doc.id : null); if (!hits.length) return { text: `Nessun passaggio pertinente per "${query}".` };
+    const base = (claudeTools._n ||= 0); const passages = hits.map((h, i) => ({ ...h, n: base + i + 1 })); claudeTools._n = base + hits.length;
+    return { text: passages.map((p) => `[${p.n}] (${cite(p)})\n${p.text}`).join("\n\n"), sources: passages };
+  },
+  async read_document({ file }) { const d = library.find(file); if (!d) return { text: `Documento "${file}" non trovato. Documenti: ${library.docs.map((x) => x.name).join("; ") || "nessuno"}.` }; return { text: `Documento: ${d.name}\n\n${library.fullText(d.id)}`, sources: [{ doc: d.name, page: null, text: library.head(d.id, 900), n: "doc" }] }; },
+  async list_documents() { return { text: library.size ? library.docs.map((d) => `${d.name} (${d.pages > 1 ? d.pages + " pagine" : d.chars + " caratteri"})`).join("\n") : "Nessun documento caricato." }; },
+  async calcola_iva({ importo, aliquota, modo }) { return { text: studio.iva(importo, aliquota, modo).text }; },
+  async calcola_fattura_professionista({ compenso, cassa_percentuale = 4, iva_percentuale = 22, ritenuta_percentuale = 20, forfettario = false }) { return { text: studio.parcella(compenso, { cassa: cassa_percentuale, ivaRate: iva_percentuale, ritenuta: ritenuta_percentuale, forfettario }).text }; },
+  async calcola_scadenza({ data_inizio, giorni, lavorativi = false }) { const d = studio.parseDate(data_inizio); if (!d) throw new Error("data_inizio non valida, usare AAAA-MM-GG"); return { text: studio.addDays(d, giorni, { working: lavorativi }).text }; },
+  async giorni_tra_date({ da, a }) { const x = studio.parseDate(da), y = studio.parseDate(a); if (!x || !y) throw new Error("date non valide, usare AAAA-MM-GG"); return { text: studio.daysBetween(x, y).text }; },
+  async verifica_codice({ tipo, valore }) { return { text: (tipo === "iban" ? studio.checkIBAN : tipo === "partita_iva" ? studio.checkPIVA : studio.checkCF)(valore).text }; },
+  async calcola({ espressione }) { const v = calculate(espressione); if (v == null) throw new Error("espressione non valida"); return { text: `${espressione} = ${v}` }; },
+  async meteo({ luogo }) { const w = await weather(luogo); if (w.error) throw new Error(w.error); return { text: `Meteo a ${w.place}: adesso ${w.now}. Oggi ${w.today}. Domani ${w.tomorrow}.` }; },
+  async imposta_promemoria({ messaggio, minuti_da_ora, data_ora }) {
+    const at = minuti_da_ora != null ? Date.now() + minuti_da_ora * 60000 : data_ora ? new Date(data_ora).getTime() : NaN;
+    if (!Number.isFinite(at) || at < Date.now() - 60000) throw new Error("orario non valido: indicare minuti_da_ora oppure data_ora futura");
+    scheduleReminder(messaggio, at); try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
+    return { text: `Promemoria impostato per ${fmtDate(new Date(at))} alle ${fmtTime(new Date(at))}: ${messaggio}.` };
+  },
+  async ricorda({ fatto }) { facts.push(fatto); store.set("facts", facts); return { text: `Memorizzato: ${fatto}` }; },
+};
+const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria" };
+async function getClaudeSession() {
+  const m = await loadClaude();
+  return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: claudeTools }));
+}
+async function askClaude(text) {
+  if (!claudeKey.get()) { openSettings("claude"); throw new Error("Serve la chiave API di Claude: la inserisca nelle impostazioni."); }
+  const session = await getClaudeSession(); claudeTools._n = 0;
+  let el = null, body = null, spoken = "", buffer = "", lastEl = null;
+  const bubble = () => { if (!el) { el = addTurn("jarvis streaming", "", "jarvis"); body = el.querySelector(".body"); spoken = ""; buffer = ""; lastEl = el; } };
+  const flushSpeech = (final) => { const rest = buffer.slice(spoken.length); if (final) { if (rest.trim()) speak(rest.trim()); spoken = buffer; return; } const m = /^([\s\S]*?[.!?])\s/.exec(rest); if (m && m[1].length > 12) { speak(m[1]); spoken += m[0]; } };
+  const close = () => { if (el) { el.classList.remove("streaming"); flushSpeech(true); el = null; } };
+  const res = await session.ask(text, contextLine(), {
+    onText: (d) => { bubble(); buffer += d; body.textContent = buffer.trimStart(); transcript.scrollTop = transcript.scrollHeight; flushSpeech(false); },
+    onThinking: () => { caption.textContent = "ragiono…"; },
+    onTool: (name, input) => { close(); setState("tool", TOOL_LABEL[name] || name); addTool(TOOL_LABEL[name] || name, Object.values(input).filter((v) => typeof v !== "object").join(" · ").slice(0, 120)); setState("thinking"); },
+    onNotice: (t) => addTurn("system", t),
+  });
+  close();
+  if (!lastEl) { lastEl = addTurn("jarvis", res.answer || "Fatto.", "jarvis"); speak(res.answer); }
+  const docSources = res.sources.filter((p, i, a) => a.findIndex((q) => q.n === p.n) === i);
+  if (docSources.length) addSources(lastEl, docSources.map((p) => ({ ...p, n: p.n === "doc" ? "doc" : p.n })));
+  if (res.web.length) { const box = document.createElement("div"); box.className = "sources"; res.web.slice(0, 6).forEach(([url, title]) => { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "↗ " + title; box.appendChild(a); }); lastEl.appendChild(box); }
+  return res.answer;
 }
 
 // ---------------------------------------------------------------- the model (WebLLM on WebGPU)
@@ -206,9 +264,14 @@ async function ask(text) {
   text = (text || "").trim(); if (!text || busy) return; busy = true; input.value = ""; $("sendBtn").classList.add("stop");
   addTurn("user", text, "lei"); setState("thinking");
   try {
+    let answer;
+    if (usingClaude() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
+      setState("thinking"); answer = await askClaude(text);
+      history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
+      return;
+    }
     let routed = null; try { routed = await route(text); } catch (e) { console.warn(e); }
     const passages = routed ? [] : docContext(text);
-    let answer;
     if (routed) { setState("tool", routed.tool); addTool(routed.tool, (routed.result || routed.direct).slice(0, 140)); setState("thinking"); }
     if (passages.length) addTool("documenti", passages.map(cite).filter((v, i, a) => a.indexOf(v) === i).join(" · ").slice(0, 140));
     if (app.engineReady && (!routed || (routed.result && !routed.exact))) answer = await askModel(text, routed ? routed.result : "", passages);
@@ -259,8 +322,8 @@ window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; document.body.classList.remove("dropping"); if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
 
 // ---------------------------------------------------------------- input: text, microphone, wake mode
-$("form").addEventListener("submit", (e) => { e.preventDefault(); if (busy && app.engine) { try { app.engine.interruptGenerate(); } catch {} return; } ask(input.value); });
-$("newSession").onclick = () => { history = []; store.set("history", history); transcript.innerHTML = ""; addTurn("system", "— nuova sessione —"); };
+$("form").addEventListener("submit", (e) => { e.preventDefault(); if (busy) { if (claudeSession) claudeSession.abort(); if (app.engine) { try { app.engine.interruptGenerate(); } catch {} } return; } ask(input.value); });
+$("newSession").onclick = () => { history = []; store.set("history", history); store.set("claudeHistory", []); if (claudeSession) claudeSession.reset(); transcript.innerHTML = ""; addTurn("system", "— nuova sessione —"); };
 $("exportBtn").onclick = () => {
   const lines = [...transcript.querySelectorAll(".turn")].map((el) => { const who = el.querySelector(".who")?.textContent; const body = el.querySelector(".body")?.textContent ?? el.textContent; const src = [...el.querySelectorAll(".sources summary")].map((s) => "   fonte " + s.textContent).join("\n"); return (who ? who.toUpperCase() + ": " : "") + body + (src ? "\n" + src : ""); });
   const blob = new Blob([`J.A.R.V.I.S. · conversazione del ${fmtDate()}\n\n` + lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
@@ -283,10 +346,42 @@ $("wakeBtn").onclick = () => { app.wake = !app.wake; $("wakeBtn").classList.togg
 
 // ---------------------------------------------------------------- settings dialog
 const dlg = $("settings");
-$("settingsBtn").onclick = () => { $("setName").value = settings.name; $("setCity").value = settings.city; $("setLang").value = settings.lang; $("setModel").value = settings.model.replace(/-q4f(16|32)_1-MLC$/, ""); $("setThink").checked = !!settings.think; dlg.showModal(); };
-$("settingsBtn").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("settingsBtn").click(); } };
+const syncProviderUI = () => { const c = $("setProvider").value === "claude"; $("claudeFields").hidden = !c; $("localFields").hidden = c; };
+function openSettings(focus) {
+  $("setName").value = settings.name; $("setCity").value = settings.city; $("setLang").value = settings.lang; $("setModel").value = settings.model.replace(/-q4f(16|32)_1-MLC$/, ""); $("setThink").checked = !!settings.think;
+  $("setProvider").value = settings.provider || "claude"; $("setKey").value = claudeKey.get(); $("setClaudeModel").value = settings.claudeModel || "claude-opus-5-5"; $("keyStatus").textContent = claudeKey.get() ? "Chiave salvata su questo dispositivo." : "";
+  syncProviderUI(); if (!dlg.open) dlg.showModal(); if (focus === "claude") $("setKey").focus();
+}
+$("setProvider").onchange = syncProviderUI;
+$("settingsBtn").onclick = () => openSettings();
+$("settingsBtn").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSettings(); } };
 $("setCancel").onclick = () => dlg.close();
-$("setSave").onclick = (e) => { e.preventDefault(); const prevModel = settings.model; settings.name = $("setName").value.trim() || "Signore"; settings.city = $("setCity").value.trim(); settings.lang = $("setLang").value; settings.model = $("setModel").value; settings.think = $("setThink").checked; if (settings.model !== prevModel) settings.lastModel = ""; store.set("settings", settings); dlg.close(); if (settings.model !== prevModel) location.reload(); };
+$("setSave").onclick = async (e) => {
+  e.preventDefault();
+  const prev = { model: settings.model, provider: settings.provider };
+  settings.name = $("setName").value.trim() || "Signore"; settings.city = $("setCity").value.trim(); settings.lang = $("setLang").value; settings.model = $("setModel").value; settings.think = $("setThink").checked;
+  settings.provider = $("setProvider").value; settings.claudeModel = $("setClaudeModel").value;
+  if (settings.model !== prev.model) settings.lastModel = "";
+  if (settings.provider === "claude") {
+    const key = $("setKey").value.trim();
+    if (!key) { $("keyStatus").textContent = "Incolli la chiave API (inizia con sk-ant-)."; return; }
+    if (key !== claudeKey.get()) {
+      $("keyStatus").textContent = "Verifico la chiave…";
+      try { const err = await (await loadClaude()).checkKey(key, settings.claudeModel); if (err) { $("keyStatus").textContent = err; return; } }
+      catch (x) { $("keyStatus").textContent = "Non riesco a caricare il collegamento con Claude: controlli la connessione."; return; }
+      claudeKey.set(key);
+    }
+  }
+  store.set("settings", settings); dlg.close();
+  if (prev.provider !== settings.provider || (settings.provider === "local" && settings.model !== prev.model)) location.reload();
+  else showBrain();
+};
+$("setForgetKey").onclick = () => { claudeKey.set(""); $("setKey").value = ""; $("keyStatus").textContent = "Chiave cancellata da questo dispositivo."; };
+$("brainClaude").onclick = () => { $("brainDialog").close(); settings.provider = "claude"; store.set("settings", settings); openSettings("claude"); };
+$("brainLocal").onclick = () => { $("brainDialog").close(); settings.provider = "local"; store.set("settings", settings); loadEngine(); };
+function showBrain() {
+  if (usingClaude()) { $("model").textContent = (claudeMod?.CLAUDE_MODELS[settings.claudeModel] || "Claude") + (claudeKey.get() ? "" : " · manca la chiave"); }
+}
 
 // ---------------------------------------------------------------- install prompt & boot
 let installEvent = null;
@@ -299,4 +394,6 @@ const hour = new Date().getHours();
 addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, o trascini qui un documento.`, "jarvis");
 if (synth) synth.onvoiceschanged = () => {};
 library.load().then(renderDocs);
-loadEngine();
+if (usingClaude()) { loadClaude().then(showBrain).catch(() => notice("Non riesco a caricare il collegamento con Claude: controlli la connessione.")); $("model").textContent = "Claude"; if (!claudeKey.get()) openSettings("claude"); else notice("Cervello: Claude di Anthropic. Nessun modello da scaricare."); }
+else if (settings.provider === "local") loadEngine();
+else { $("model").textContent = "scegli il cervello"; $("brainDialog").showModal(); }
