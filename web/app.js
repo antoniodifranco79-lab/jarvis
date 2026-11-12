@@ -7,7 +7,7 @@ import { Knowledge } from "./knowledge.js";
 import { routeStudio } from "./studio.js";
 import * as studio from "./studio.js";
 import { Voice } from "./voice.js";
-import { runLocalAgent, toolsBlock } from "./localagent.js";
+import { runLocalAgent, toolsBlock, looksBroken } from "./localagent.js";
 import { createCpuEngine, CPU_MODELS } from "./cpuengine.js";
 import { parseWhen, describeWhen } from "./when.js";
 import { docxBlob, fileName } from "./docx.js";
@@ -469,24 +469,41 @@ async function getClaudeSession() {
   const m = await loadClaude();
   return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: TOOLS }));
 }
-/** Mostra e legge una risposta in streaming, con le righe degli strumenti in mezzo e le fonti alla fine. */
+/** Mostra e legge una risposta in streaming: indicatore "sta scrivendo" finché arriva il primo testo, testo che scorre
+ *  fluido a ritmo costante (anche se il modello manda pezzi irregolari), righe degli strumenti in mezzo, fonti alla fine. */
+const nearBottom = () => transcript.scrollHeight - transcript.scrollTop - transcript.clientHeight < 140;
+const scrollDown = (force) => { if (force || nearBottom()) transcript.scrollTop = transcript.scrollHeight; };
 function streamRenderer() {
-  let el = null, body = null, spoken = "", buffer = "", lastEl = null;
-  const bubble = () => { if (!el) { el = addTurn("jarvis streaming", "", "jarvis"); body = el.querySelector(".body"); spoken = ""; buffer = ""; lastEl = el; } };
+  let el = null, body = null, spoken = "", buffer = "", lastEl = null, shown = 0, raf = 0, typing = null;
+  const created = [];
+  const showTyping = () => { if (typing) return; typing = addTurn("jarvis typing", "", "jarvis", { plain: true }); typing.querySelector(".body").innerHTML = '<span class="dots" aria-label="sta scrivendo"><i></i><i></i><i></i></span>'; created.push(typing); scrollDown(true); };
+  const hideTyping = () => { if (typing) { typing.remove(); typing = null; } };
+  const tick = () => {
+    raf = 0; if (!el) return;
+    const target = buffer.trimStart();
+    if (shown < target.length) { shown = reduced ? target.length : Math.min(target.length, shown + Math.max(2, Math.ceil((target.length - shown) / 7))); body.textContent = target.slice(0, shown); scrollDown(); }
+    if (shown < target.length) raf = requestAnimationFrame(tick);
+  };
+  const bubble = () => { if (!el) { hideTyping(); el = addTurn("jarvis streaming", "", "jarvis"); body = el.querySelector(".body"); spoken = ""; buffer = ""; shown = 0; lastEl = el; created.push(el); } };
   const flushSpeech = (final) => { const rest = buffer.slice(spoken.length); if (final) { if (rest.trim()) speak(rest.trim()); spoken = buffer; return; } const m = /^([\s\S]*?[.!?])\s/.exec(rest); if (m && m[1].length > 12) { speak(m[1]); spoken += m[0]; } };
-  const close = () => { if (el) { el.classList.remove("streaming"); body.dataset.raw = buffer.trim(); richify(el); flushSpeech(true); el = null; } };
+  const close = () => { if (el) { if (raf) cancelAnimationFrame(raf); raf = 0; el.classList.remove("streaming"); body.textContent = buffer.trimStart(); body.dataset.raw = buffer.trim(); richify(el); flushSpeech(true); el = null; scrollDown(); } };
+  showTyping();
   return {
-    onText: (d) => { bubble(); buffer += d; body.textContent = buffer.trimStart(); transcript.scrollTop = transcript.scrollHeight; flushSpeech(false); },
+    onText: (d) => { bubble(); buffer += d; if (!raf) raf = requestAnimationFrame(tick); flushSpeech(false); },
     onThinking: () => { caption.textContent = "ragiono…"; },
-    onTool: (name, input) => { close(); setState("tool", TOOL_LABEL[name] || name); addTool(TOOL_LABEL[name] || name, (name === "crea_bozza" ? [input.titolo] : Object.values(input)).filter((v) => typeof v !== "object").map((v) => String(v).replace(/\s+/g, " ").slice(0, 60)).join(" · ").slice(0, 120)); setState("thinking"); },
+    onTool: (name, input) => { close(); hideTyping(); setState("tool", TOOL_LABEL[name] || name); addTool(TOOL_LABEL[name] || name, (name === "crea_bozza" ? [input.titolo] : Object.values(input)).filter((v) => typeof v !== "object").map((v) => String(v).replace(/\s+/g, " ").slice(0, 60)).join(" · ").slice(0, 120)); setState("thinking"); showTyping(); },
     onNotice: (t) => addTurn("system", t),
+    /** Toglie tutto ciò che questa risposta ha mostrato (per una risposta incomprensibile). */
+    discard() { if (raf) cancelAnimationFrame(raf); raf = 0; voice.stop(); created.forEach((x) => x.remove()); el = null; lastEl = null; typing = null; },
     finish(answer, sources = [], web = []) {
-      close();
-      if (!lastEl) { const a = answer && answer.trim() ? answer : `Non sono riuscito a formulare una risposta, ${settings.name}. Provi a riformulare la domanda, oppure attivi il ragionamento approfondito nelle impostazioni.`; lastEl = addTurn("jarvis", a, "jarvis"); speak(a); }
+      close(); hideTyping();
+      const thin = !answer || !answer.trim();
+      if (!lastEl || thin) { const a = !thin ? answer : `Non sono riuscito a formulare una risposta, ${settings.name}. Provi a riformularla, oppure scelga "Potenza massima" nelle impostazioni.`; lastEl = addTurn("jarvis", a, "jarvis"); speak(a); }
       else addActions(lastEl);
       const docSources = sources.filter((p, i, a) => a.findIndex((q) => q.n === p.n && q.doc === p.doc) === i);
       if (docSources.length) addSources(lastEl, docSources);
       if (web.length) { const box = document.createElement("div"); box.className = "sources"; web.slice(0, 6).forEach(([url, title]) => { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "↗ " + title; box.appendChild(a); }); lastEl.appendChild(box); }
+      scrollDown();
     },
   };
 }
@@ -531,7 +548,8 @@ const WEBLLM_MODELS = ["Qwen3-8B", "Qwen3-4B", "Qwen3-1.7B", "Qwen3-0.6B"];
 async function pickModels() {
   let f16 = true, maxBuf = 0;
   try { const a = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" }); if (!a) return []; f16 = a.features.has("shader-f16"); maxBuf = a.limits.maxBufferSize || 0; } catch { return []; }
-  const q = f16 ? "q4f16_1" : "q4f32_1", id = (m) => `${m}-${q}-MLC`;
+  const mobileGpu = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+  const q = f16 && !mobileGpu && !settings.forceF32 ? "q4f16_1" : "q4f32_1", id = (m) => `${m}-${q}-MLC`;
   const base = String(settings.model || "auto").replace(/-q4f(16|32)_1-MLC$/, "");
   if (base !== "auto" && WEBLLM_MODELS.includes(base)) return WEBLLM_MODELS.slice(WEBLLM_MODELS.indexOf(base)).map(id);
   const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent), mem = navigator.deviceMemory || 4;
@@ -554,6 +572,15 @@ function brainReady(label, how) {
   $("progress").hidden = true; setState("idle"); $("model").textContent = label;
   if (progressTurn) { progressTurn.querySelector(".body").textContent = `Cervello pronto: ${label}, ${how}. Gratis e senza chiave.`; progressTurn = null; } else notice(`Cervello pronto: ${label}, ${how}.`);
   refreshTele?.(); drainQueue();
+  if (/0\.6B|1\.7B|processore/.test(label + how)) suggestPower(`Il modello su questo dispositivo è piccolo: va bene per comandi e documenti, ma nella conversazione libera può sbagliare.`);
+}
+/** Invito a passare a Puter (Claude e modelli di punta, gratis con un account), con un pulsante. */
+function suggestPower(why) {
+  if (store.get("powerHint", 0) > Date.now() - 7 * 864e5) return; store.set("powerHint", Date.now());
+  const el = addTurn("system", why + " Per risposte di livello professionale: ");
+  const b = document.createElement("button"); b.type = "button"; b.className = "inline-cta"; b.textContent = "attiva Potenza massima (gratis)";
+  b.onclick = () => { settings.provider = "puter"; store.set("settings", settings); location.reload(); };
+  el.querySelector(".body").appendChild(b);
 }
 function brainFailed(reason) {
   app.brain = { state: "failed", pct: 0, reason }; $("progress").hidden = true; setState("idle"); $("model").textContent = "modalità essenziale";
@@ -595,7 +622,8 @@ async function loadOnCpu() {
 async function loadEngine() {
   setState("loading"); showProgress(0, "avvio");
   let gpuProblem = "";
-  if (!("gpu" in navigator)) gpuProblem = "questo browser non ha WebGPU";
+  if (settings.preferCpu) gpuProblem = "la scheda grafica di questo dispositivo dava risposte incomprensibili";
+  else if (!("gpu" in navigator)) gpuProblem = "questo browser non ha WebGPU";
   else { const candidates = await pickModels(); if (!candidates.length) gpuProblem = "la scheda grafica non è disponibile al browser"; else gpuProblem = await loadOnGpu(candidates); }
   if (!gpuProblem) return;
   notice(`Grafica accelerata non utilizzabile (${gpuProblem}): passo al motore sul processore, più lento ma compatibile con tutti i dispositivi.`);
@@ -643,8 +671,9 @@ function addSources(el, passages) {
 }
 
 /** Strumenti per il modello locale: il nucleo più quelli che la domanda richiede, per non riempire il contesto. */
+const SMALL_TOOLS = ["search_documents", "read_document", "calcolo_professionale", "calcola_iva", "crea_bozza", "usa_modello", "imposta_promemoria", "impara", "meteo"];
 function localTools(text = "") {
-  const want = new Set(CORE_TOOLS); const t = text.toLowerCase();
+  const want = new Set(/1\.7B/.test(app.model || "") ? SMALL_TOOLS : CORE_TOOLS); const t = text.toLowerCase();
   if (/confront|differenz|version/.test(t)) want.add("confronta_documenti");
   if (/anonim|privacy|dati personali|gdpr/.test(t)) want.add("anonimizza_documento");
   if (/promemoria|ricord|cancell/.test(t)) { want.add("elenca_promemoria"); want.add("cancella_promemoria"); }
@@ -681,8 +710,20 @@ async function askLocal(text, toolResult, passages = [], maxChars = 700) {
   if (think) caption.textContent = "ragiono a fondo…";
   const res = await runLocalAgent({ engine: app.engine, system: localSystem(text), history: history.slice(-6), userContent, tools: TOOLS, think,
     onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B|-cpu$/.test(app.model || "") ? 0 : /4B|8B/.test(app.model || "") ? 6 : 4, isAborted: () => app.aborted });
+  if (looksBroken(res.answer, text) && !app.aborted) return recoverBroken(view, text);
   view.finish(res.answer, [...passages, ...res.sources]);
   return res.answer;
+}
+/** Risposta incomprensibile: si scarta, si passa a un motore più compatibile e la domanda viene ripetuta da sola. */
+function recoverBroken(view, question) {
+  view.discard();
+  const step = /q4f16/.test(app.model || "") ? "f32" : /-cpu$/.test(app.model || "") ? "puter" : "cpu";
+  if (step === "puter") { const a = `Il modello su questo dispositivo non riesce a rispondere bene a questa domanda, ${settings.name}.`; addTurn("jarvis", a, "jarvis", { plain: true }); suggestPower("Per domande così serve un cervello più grande."); store.set("powerHint", 0); return a; }
+  if (step === "f32") settings.forceF32 = true; else settings.preferCpu = true;
+  store.set("settings", settings); store.set("retryQuestion", question);
+  notice(step === "f32" ? "La scheda grafica ha prodotto una risposta incomprensibile: passo alla modalità compatibile e ripeto la domanda." : "La scheda grafica di questo dispositivo non è affidabile: passo al motore sul processore e ripeto la domanda.");
+  setTimeout(() => location.reload(), 1500);
+  return "";
 }
 let busy = false;
 async function ask(text, opts = {}) {
@@ -694,20 +735,20 @@ async function ask(text, opts = {}) {
   try {
     let answer;
     const deep = /^(?:ricerca approfondita(?: su)?|approfondisci|fai una ricerca(?: approfondita)? su|ricerca su)\s+(.+?)[?.!]*$/i.exec(text);
-    if (deep) { answer = await deepResearch(deep[1].trim()); history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory(); return; }
+    if (deep) { answer = await deepResearch(deep[1].trim()); if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory(); return; }
     if (usingPuter() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
       setState("thinking"); answer = await askPuter(text);
-      history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
+      if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
       return;
     }
     if (usingClaude() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
       setState("thinking"); answer = await askClaude(text);
-      history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
+      if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
       return;
     }
     if (FULLSUM.test(text) && library.size && app.engineReady && !usingPuter() && !usingClaude()) {
       const doc = library.mentioned(text) || (library.size === 1 && (DOCWORDS.test(text) || /^\s*(riassumi(lo|la)?|sintetizza(lo|la)?|fammi un riassunto|riassunto)\s*[.!?]*$/i.test(text)) ? library.docs[0] : null);
-      if (doc) { answer = await summarizeDocument(doc, text); history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory(); return; }
+      if (doc) { answer = await summarizeDocument(doc, text); if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory(); return; }
     }
     let routed = null; try { routed = await route(text); } catch (e) { console.warn(e); }
     const passages = routed ? [] : docContext(text);
@@ -725,12 +766,12 @@ async function ask(text, opts = {}) {
     else if (passages.length) { answer = `Ecco i passaggi più pertinenti, ${settings.name}. ${app.engineReady ? "" : "Con il modello attivo li riassumerei io; intanto li apra qui sotto."}`.trim(); const el = addTurn("jarvis", answer, "jarvis"); addSources(el, passages); el.querySelectorAll("details")[0]?.setAttribute("open", ""); speak(answer); }
     else if (routed && routed.noSpeak) { answer = routed.direct; addTurn("jarvis", answer, "jarvis"); }
     else { answer = routed ? routed.direct : `Il cervello non è disponibile su questo dispositivo${app.brain.reason ? " (" + app.brain.reason + ")" : ""}, ${settings.name}. Posso comunque cercare nei documenti e nella conoscenza, fare calcoli da studio, dirle l'ora e il meteo, impostare promemoria e cercare su Wikipedia. Scriva "aiuto" per l'elenco.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }
-    history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
+    if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
   } catch (e) {
     console.error(e); const msg = String(e.message || e);
     notice(/^(Interrotto|Per la potenza|Serve |Il credito|Non raggiungo|La chiave|Troppe richieste|Modello non|Richiesta rifiutata|Errore del servizio)/.test(msg) ? msg : "Qualcosa è andato storto: " + msg);
   }
-  finally { busy = false; document.title = "J.A.R.V.I.S."; $("sendBtn").classList.remove("stop"); if (app.state !== "speaking") setState("idle"); if (app.queue.length && app.brain.state !== "loading") drainQueue(); }
+  finally { busy = false; document.title = "J.A.R.V.I.S."; transcript.querySelectorAll(".turn.typing").forEach((x) => x.remove()); $("sendBtn").classList.remove("stop"); if (app.state !== "speaking") setState("idle"); if (app.queue.length && app.brain.state !== "loading") drainQueue(); }
 }
 
 // ---------------------------------------------------------------- documents: add, list, remove, drag & drop
@@ -1059,12 +1100,13 @@ $("installBtn").onclick = async () => { if (!installEvent) return; installEvent.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 applyLook(); renderSuggest(); if (settings.pinHash) lockScreen();
 updateReminderChip(); reminders.forEach(armReminder);
-history.slice(-6).forEach((m) => addTurn(m.role === "user" ? "user" : "jarvis", m.content, m.role === "user" ? "lei" : "jarvis"));
+history.slice(-6).filter((m) => m.content && String(m.content).trim()).forEach((m) => addTurn(m.role === "user" ? "user" : "jarvis", m.content, m.role === "user" ? "lei" : "jarvis"));
 const hour = new Date().getHours();
 addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, "modelli" per lettere e atti pronti, o trascini qui un documento.`, "jarvis", { plain: true });
 (() => { const today = new Date().toDateString(); if (settings.briefing !== false && store.get("lastBriefing", "") !== today) { store.set("lastBriefing", today); const b = briefing(); if (/Promemoria di oggi:|Scadenze fiscali entro/.test(b)) addTurn("jarvis", "Briefing del giorno. " + b, "jarvis", { plain: true }); } })();
 renewalNotice();
 library.load().then(() => { renderDocs(); refreshTele(); });
+{ const rq = store.get("retryQuestion", ""); if (rq) { store.set("retryQuestion", ""); app.queue.push(rq); addTurn("user", rq, "lei"); } }
 knowledge.load().then(renderKnowledge);
 if (usingPuter()) {
   $("model").textContent = "Potenza massima · Puter";

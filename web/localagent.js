@@ -31,6 +31,20 @@ export function parseToolCalls(text) {
   }
   return calls;
 }
+/** Risposta da scartare: testo di altri alfabeti in una conversazione italiana o inglese, parole ripetute a raffica,
+ *  simboli a caso, oppure un frammento di una o due parole a una domanda vera. Succede con alcuni driver grafici
+ *  dei telefoni (calcoli a 16 bit) o quando un modello piccolo si perde. */
+export function looksBroken(answer, question = "") {
+  const a = String(answer || "").trim(); if (!a) return true;
+  const letters = a.replace(/[\s\d\p{P}\p{S}]/gu, ""); if (!letters.length) return a.length > 0 && question.length > 12;
+  const foreign = (letters.match(/[^\p{Script=Latin}]/gu) || []).length; if (foreign / letters.length > 0.3) return true;
+  const symbols = (a.match(/[^\p{L}\p{N}\s.,;:!?'"«»()\-–—€%/°@#&*+=\[\]]/gu) || []).length; if (symbols / a.length > 0.15) return true;
+  const words = a.toLowerCase().match(/[\p{L}\p{N}']+/gu) || [];
+  let run = 1; for (let i = 1; i < words.length; i++) { run = words[i] === words[i - 1] ? run + 1 : 1; if (run >= 4) return true; }
+  if (words.length >= 12 && new Set(words).size / words.length < 0.25) return true;
+  if (words.length <= 2 && question.trim().split(/\s+/).length >= 4 && !/^(sì|si|no|ok|certo|fatto|esatto|yes)(?![\p{L}])/iu.test(a)) return true;
+  return false;
+}
 export const visibleText = (t) => t.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").replace(/<tool_call>[\s\S]*?(<\/tool_call>|$)/g, "").replace(/<\/?tool_(?:call|response)>/g, "").trim();
 
 /** I modelli piccoli sbagliano i tipi: "1220" al posto di 1220, campi in più. Si correggono prima di validare. */

@@ -50,3 +50,16 @@ test("strumento inesistente: l'errore torna al modello", async () => {
   const r = await runLocalAgent({ engine: e, system: "s", userContent: "?", tools: {} });
   assert.equal(r.answer, "Mi scusi."); assert.match(e.calls[1].messages.at(-1).content, /non esiste/);
 });
+
+import { looksBroken } from "../localagent.js";
+test("risposte incomprensibili riconosciute", () => {
+  assert.ok(looksBroken("", "che ore sono a Roma?"));
+  assert.ok(looksBroken("的的的 переход stazione 的的", "come stai oggi?"));
+  assert.ok(looksBroken("the the the the the", "dimmi qualcosa"));
+  assert.ok(looksBroken("Pomodoro", "mi spieghi cosa prevede il contratto di locazione?"));
+  assert.ok(looksBroken("@@ ## $$ ^^ ~~ || @@ ## ^^ ~~", "riassumi il documento"));
+  assert.ok(!looksBroken("Sì.", "Il preavviso è di sei mesi?"));
+  assert.ok(!looksBroken("Il preavviso per il recesso è di sei mesi [1].", "quanto è il preavviso?"));
+  assert.ok(!looksBroken("Fatto. Glielo ricordo domani alle 09:00, Signore.", "ricordami domani alle 9 di chiamare Rossi"));
+  assert.ok(!looksBroken("Buongiorno! Come posso aiutarla oggi?", "ciao"));
+});
