@@ -34,6 +34,8 @@ main > * { min-width: 0; min-height: 0; }
 .docs-list .dmeta, .k-list .km { grid-column: 1; font-family: var(--font-mono); font-size: 0.66rem; color: var(--muted); letter-spacing: 0.06em; overflow-wrap: anywhere; }
 .k-list .kc { grid-column: 1 / -1; font-size: 0.86rem; color: var(--fg); opacity: 0.85; white-space: pre-wrap; max-height: 5.6em; overflow: hidden; }
 .docs-list button, .k-list button { grid-column: 2; grid-row: 1 / span 2; font-size: 0.68rem !important; padding: 4px 10px !important; }
+.voicebox { border: 1px solid var(--line); padding: 10px 12px 2px; margin: 0 0 12px; } .voicebox legend { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--holo); padding: 0 6px; }
+dialog.holo input[type=range] { padding: 0; accent-color: var(--holo); }
 .brain-choices { display: grid; gap: 10px; }
 .brain { display: grid; gap: 4px; text-align: left; padding: 14px 16px !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--font-ui) !important; font-size: 0.95rem !important; color: var(--fg) !important; }
 .brain b { color: var(--holo); font-family: var(--font-display); letter-spacing: 0.12em; font-size: 0.82rem; font-weight: 500; } .brain span { color: var(--muted); }
@@ -135,7 +137,7 @@ body.dropping .dropzone { display: grid; }
       <button type="button" class="hbtn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
       <button type="submit" class="hbtn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
-    <div class="hint" id="hint">"aiuto" per i comandi · "studia …" per farlo imparare · graffetta per i documenti</div>
+    <div class="hint" id="hint">gratis e senza chiave · "aiuto" per i comandi · "studia …" per farlo imparare · graffetta per i documenti</div>
   </footer>
 </div>
 <div class="hud-scan" aria-hidden="true"></div>
@@ -147,8 +149,8 @@ body.dropping .dropzone { display: grid; }
     <label>Città per il meteo <input id="setCity" placeholder="Milano"></label>
     <label>Lingua <select id="setLang"><option value="it-IT">Italiano</option><option value="en-GB">English</option></select></label>
     <label>Cervello <select id="setProvider">
-      <option value="claude">Claude di Anthropic · il più intelligente, serve una chiave API</option>
-      <option value="local">Modello locale nel browser · privato e gratuito, si scarica una volta</option>
+      <option value="local">Locale su questo dispositivo · gratuito, senza chiave, privato</option>
+      <option value="claude">Claude di Anthropic · avanzato, serve una chiave API a pagamento</option>
     </select></label>
     <div id="claudeFields">
       <label>Chiave API di Claude <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
@@ -171,17 +173,18 @@ body.dropping .dropzone { display: grid; }
       <option value="Qwen3-8B">Qwen3 8B · massimo, serve una buona GPU (5,7 GB)</option>
     </select></label>
     </div>
+    <fieldset class="voicebox">
+      <legend>Voce</legend>
+      <label>Voce italiana <select id="setVoiceIt"></select></label>
+      <label>Voce inglese <select id="setVoiceEn"></select></label>
+      <label>Preferenza automatica <select id="setVoiceGender"><option value="male">Maschile</option><option value="female">Femminile</option></select></label>
+      <label>Velocità <input id="setVoiceRate" type="range" min="0.8" max="1.3" step="0.05"></label>
+      <div class="row left"><button type="button" id="voiceTest">Prova la voce</button><button type="button" id="voiceTestEn">Prova in inglese</button></div>
+      <p class="dlg-note" id="voiceTip" hidden>Su questo browser non trovo voci neurali. Per la voce più realistica apra J.A.R.V.I.S. con Microsoft Edge (voci "Natural") o con Chrome su Android.</p>
+    </fieldset>
     <label class="check"><input type="checkbox" id="setThink"> Ragionamento approfondito: più lento, più preciso su domande difficili</label>
     <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
   </form>
-</dialog>
-<dialog class="holo" id="brainDialog">
-  <h2>SCEGLI IL CERVELLO</h2>
-  <p class="dlg-note">Come deve ragionare J.A.R.V.I.S. su questo dispositivo? Si può cambiare quando vuole dalle impostazioni.</p>
-  <div class="brain-choices">
-    <button type="button" id="brainClaude" class="brain"><b>Claude di Anthropic</b><span>Il più intelligente: ragiona, cerca sul web, legge i documenti. Nessun download. Serve una chiave API a consumo.</span></button>
-    <button type="button" id="brainLocal" class="brain"><b>Modello locale</b><span>Tutto resta sul dispositivo e non costa nulla. Scarica 1,4–5,7 GB la prima volta e serve WebGPU.</span></button>
-  </div>
 </dialog>
 <dialog class="holo" id="docsDialog">
   <h2>DOCUMENTI</h2>

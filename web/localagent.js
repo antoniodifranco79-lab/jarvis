@@ -1,0 +1,86 @@
+// Agente locale: il modello nel browser (Qwen3 via WebLLM) usa gli strumenti di J.A.R.V.I.S. con il formato
+// <tool_call> su cui Qwen3 è addestrato. Nessuna chiave e nessun server: tutto gira sul dispositivo.
+import { TOOL_DEFS, validateInput } from "./tools.js";
+
+const firstSentence = (d) => (d.match(/^.*?[.!?](\s|$)/) || [d])[0].trim();
+
+/** Blocco strumenti nel formato Qwen (Hermes): firme JSON tra <tools></tools>, chiamate tra <tool_call></tool_call>. */
+export function toolsBlock(defs = TOOL_DEFS) {
+  const fns = defs.map((t) => JSON.stringify({ type: "function", function: { name: t.name, description: firstSentence(t.description), parameters: t.input_schema } }));
+  return `# Strumenti
+
+Puoi chiamare funzioni per aiutare l'utente. Le firme sono tra <tools></tools>:
+<tools>
+${fns.join("\n")}
+</tools>
+
+Per chiamare una funzione rispondi soltanto con un oggetto JSON tra i tag <tool_call></tool_call>:
+<tool_call>
+{"name": "nome_funzione", "arguments": {"parametro": "valore"}}
+</tool_call>
+Il risultato ti arriva tra <tool_response></tool_response>; a quel punto rispondi all'utente oppure chiama un'altra funzione.`;
+}
+
+/** Estrae le chiamate (anche senza tag di chiusura, che il motore può tagliare come sequenza di stop). */
+export function parseToolCalls(text) {
+  const calls = [], re = /<tool_call>\s*([\s\S]*?)\s*(?:<\/tool_call>|$)/g; let m;
+  while ((m = re.exec(text))) {
+    const raw = m[1].trim(); if (!raw) continue;
+    try { const j = JSON.parse(raw.replace(/^```(?:json)?|```$/g, "").trim()); if (j && typeof j.name === "string") calls.push({ name: j.name, arguments: typeof j.arguments === "string" ? JSON.parse(j.arguments) : j.arguments || j.parameters || {} }); else calls.push({ name: null, raw }); }
+    catch { calls.push({ name: null, raw }); }
+  }
+  return calls;
+}
+export const visibleText = (t) => t.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").replace(/<tool_call>[\s\S]*?(<\/tool_call>|$)/g, "").replace(/<\/?tool_(?:call|response)>/g, "").trim();
+
+/** I modelli piccoli sbagliano i tipi: "1220" al posto di 1220, campi in più. Si correggono prima di validare. */
+export function coerceArgs(name, args) {
+  const def = TOOL_DEFS.find((t) => t.name === name); if (!def || !args || typeof args !== "object") return args;
+  const props = def.input_schema.properties || {}, out = {};
+  for (const [k, v] of Object.entries(args)) {
+    const p = props[k]; if (!p) continue;
+    if ((p.type === "number" || p.type === "integer") && typeof v === "string" && v.trim() !== "") { const n = Number(v.replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "")); out[k] = p.type === "integer" ? Math.round(n) : n; }
+    else if (p.type === "boolean" && typeof v === "string") out[k] = /^(true|si|sì|yes|1)$/i.test(v);
+    else if (p.type === "string" && typeof v === "number") out[k] = String(v);
+    else out[k] = v;
+  }
+  return out;
+}
+
+/**
+ * Esegue una domanda con il ciclo strumenti. engine: motore WebLLM (chat.completions.create in streaming).
+ * Callbacks: onText(delta), onTool(name, args), onThinking(). Restituisce {answer, sources, rounds}.
+ */
+export async function runLocalAgent({ engine, system, history = [], userContent, tools, think = false, onText, onTool, onThinking, maxRounds = 4, resultChars = 3500, isAborted = () => false }) {
+  const suffix = think ? "" : " /no_think";
+  const messages = [{ role: "system", content: system }, ...history, { role: "user", content: userContent + suffix }];
+  const sources = []; let answer = "", rounds = 0;
+  while (true) {
+    let out = "", shown = "";
+    const stream = await engine.chat.completions.create({ messages, stream: true, temperature: 0.35, max_tokens: think ? 1600 : 700, stop: ["</tool_call>"] });
+    for await (const chunk of stream) {
+      const d = chunk.choices?.[0]?.delta?.content || ""; if (!d) continue; out += d;
+      if (/<think>(?![\s\S]*<\/think>)/.test(out)) onThinking?.();
+      const safe = visibleText(out).replace(/<[^>]*$/, "").replace(/\s+$/, (w) => (w.includes("\n") ? "" : w));
+      if (safe.length > shown.length && safe.startsWith(shown)) { onText?.(safe.slice(shown.length)); shown = safe; }
+    }
+    if (shown) answer += (answer ? "\n" : "") + shown;
+    const calls = out.includes("<tool_call>") ? parseToolCalls(out) : [];
+    if (!calls.length || rounds >= maxRounds || isAborted()) break;
+    rounds++;
+    const cleanOut = out.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    messages.push({ role: "assistant", content: cleanOut.includes("</tool_call>") ? cleanOut : cleanOut + "\n</tool_call>" });
+    const results = [];
+    for (const c of calls) {
+      if (!c.name) { results.push(`Errore: la chiamata non è JSON valido (${String(c.raw).slice(0, 160)}). Riprova con JSON valido.`); continue; }
+      if (!tools[c.name]) { results.push(`Errore: lo strumento "${c.name}" non esiste.`); continue; }
+      const args = coerceArgs(c.name, c.arguments), bad = validateInput(c.name, args);
+      if (bad) { results.push(`Errore negli argomenti di ${c.name}: ${bad}.`); continue; }
+      onTool?.(c.name, args);
+      try { const r = await tools[c.name](args); if (r.sources) sources.push(...r.sources); const txt = String(r.text); results.push(txt.length > resultChars ? txt.slice(0, resultChars) + "\n[… testo troncato]" : txt); }
+      catch (e) { results.push(`Errore: ${e.message || e}`); }
+    }
+    messages.push({ role: "user", content: results.map((r) => `<tool_response>\n${r}\n</tool_response>`).join("\n") + suffix });
+  }
+  return { answer: answer.trim(), sources, rounds };
+}
