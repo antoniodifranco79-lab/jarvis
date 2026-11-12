@@ -36,12 +36,19 @@ const TOOL_DEFS = [
     input_schema: { type: "object", properties: { luogo: str }, required: ["luogo"] } },
   { name: "imposta_promemoria", description: "Imposta un promemoria o un timer su questo dispositivo. Indica minuti_da_ora oppure data_ora (AAAA-MM-GGTHH:MM, ora locale).",
     input_schema: { type: "object", properties: { messaggio: str, minuti_da_ora: num, data_ora: str }, required: ["messaggio"] } },
+  { name: "impara", description: "Salva una voce nella base di conoscenza di J.A.R.V.I.S., che resta per le conversazioni future. Usalo ogni volta che apprendi qualcosa di utile e duraturo: dal web, da una pagina letta, da un documento, o da ciò che l'utente ti insegna (procedure dello studio, clienti, norme, decisioni). Un titolo breve e univoco; contenuto sintetico ma autosufficiente, con date e numeri esatti; la fonte (URL o nome del documento). Con lo stesso titolo aggiorni la voce esistente.",
+    input_schema: { type: "object", properties: { titolo: str, contenuto: str, fonte: str }, required: ["titolo", "contenuto"] } },
+  { name: "cerca_conoscenza", description: "Cerca nella base di conoscenza di J.A.R.V.I.S. ciò che hai già imparato in passato. Usalo prima di cercare sul web quando la domanda riguarda un tema che potresti aver già studiato o che l'utente ti ha insegnato.",
+    input_schema: { type: "object", properties: { query: str }, required: ["query"] } },
+  { name: "dimentica", description: "Elimina una voce dalla base di conoscenza, quando l'utente lo chiede o quando è superata.",
+    input_schema: { type: "object", properties: { titolo: str }, required: ["titolo"] } },
   { name: "ricorda", description: "Salva un fatto da ricordare sull'utente (preferenze, nomi, procedure dello studio). Usalo quando l'utente dice qualcosa che vale la pena ricordare.",
     input_schema: { type: "object", properties: { fatto: str }, required: ["fatto"] } },
 ];
 export const toolDefinitions = () => [
   ...TOOL_DEFS.map((t) => ({ ...t, eager_input_streaming: true })),
   { type: "web_search_20260209", name: "web_search", max_uses: 5, user_location: { type: "approximate", country: "IT" } },
+  { type: "web_fetch_20260209", name: "web_fetch", max_uses: 5 },
 ];
 
 /** Valida l'input di uno strumento contro il suo schema (tipi, obbligatori, enum). Restituisce un errore o null. */
@@ -71,8 +78,14 @@ Come lavori
 - Documenti dell'utente: quando la domanda può riguardare un suo documento, chiama search_documents (o read_document per riassunti e analisi complete) e rispondi solo da quei testi, citando i passaggi come [1], [2]. Se l'informazione non c'è, dillo.
 - Numeri fiscali, date e scadenze: usa sempre gli strumenti di calcolo e riporta i numeri esattamente come li restituiscono.
 - Fatti che cambiano (notizie, prezzi, norme recenti, scadenze fiscali dell'anno): cerca sul web e cita la fonte.
-- Quando l'utente ti dice qualcosa che vale la pena ricordare, chiama ricorda.
-- All'inizio di ogni messaggio dell'utente trovi un blocco [Contesto] con data, ora, fatti memorizzati e documenti caricati: usalo, non ripeterlo.
+- Quando l'utente ti dice qualcosa di personale che vale la pena ricordare (preferenze, nomi), chiama ricorda.
+
+Come impari
+- Hai una base di conoscenza che cresce con te. Quando apprendi qualcosa di utile e duraturo (dal web, da una pagina che leggi con web_fetch, da un documento, da ciò che l'utente ti insegna), salvalo con impara: titolo breve, contenuto sintetico con date e numeri esatti, fonte. Non salvare chiacchiere né cose effimere.
+- Se l'utente ti chiede di studiare un argomento, cerca sul web, leggi con web_fetch le due o tre fonti migliori (meglio se ufficiali) e salva ciò che conta in voci separate; poi riassumi cosa hai imparato.
+- Se l'utente ti dà un link, leggilo con web_fetch. Se ti chiede di imparare da un documento, leggilo con read_document e salva i punti chiave.
+- Prima di rispondere su un tema che potresti aver già studiato, consulta la conoscenza: le voci più pertinenti ti arrivano già nel [Contesto]; per altro usa cerca_conoscenza. Se una voce è superata, aggiornala con lo stesso titolo.
+- All'inizio di ogni messaggio dell'utente trovi un blocco [Contesto] con data, ora, fatti memorizzati, documenti caricati e conoscenze pertinenti: usalo, non ripeterlo.
 
 Confini
 - Non inventare mai fatti, numeri, nomi, norme o risultati di strumenti. Se non sai, dillo e suggerisci come verificare.

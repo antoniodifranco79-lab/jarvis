@@ -57,7 +57,7 @@ Homepage = "https://github.com/antoniodifranco79-lab/jarvis"
 include = ["jarvis*"]
 
 [tool.setuptools.package-data]
-"jarvis.server" = ["static/*"]
+"jarvis.server" = ["static/*", "static/hud/*"]
 "jarvis.assets" = ["*"]
 
 [tool.pytest.ini_options]

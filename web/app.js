@@ -3,6 +3,7 @@
 // JavaScript; voice comes from the browser. Nothing leaves the device except weather/Wikipedia lookups:
 // documents are read, indexed and searched inside the browser.
 import { Library, ACCEPT } from "./docs.js";
+import { Knowledge } from "./knowledge.js";
 import { routeStudio } from "./studio.js";
 import * as studio from "./studio.js";
 
@@ -20,6 +21,7 @@ const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model
 const claudeKey = { get: () => store.get("claudeKey", ""), set: (k) => store.set("claudeKey", k) };
 const usingClaude = () => settings.provider === "claude";
 const library = new Library();
+const knowledge = new Knowledge();
 let facts = store.get("facts", []);          // long-term memory: strings
 let history = store.get("history", []);      // [{role, content}]
 let reminders = store.get("reminders", []);  // [{id, message, at}]
@@ -38,7 +40,8 @@ const setState = (s, extra) => {
   caption.textContent = extra || { idle: "tutti i sistemi operativi", listening: "in ascolto", thinking: "elaborazione", tool: "strumento in uso", speaking: "risposta vocale", loading: "preparazione del modello" }[s] || s;
 };
 const notice = (text) => { addTurn("system", text); if (app.state === "idle") caption.textContent = text.toLowerCase().slice(0, 60); };
-const updateReminderChip = () => { const c = $("reminderChip"); c.hidden = !reminders.length; c.textContent = reminders.length + (reminders.length === 1 ? " promemoria" : " promemoria"); };
+const updateReminderChip = () => { const c = $("reminderChip"); c.hidden = !reminders.length; c.textContent = reminders.length + " promemoria"; refreshTele?.(); };
+let refreshTele = null;
 
 // ---------------------------------------------------------------- speech out
 const synth = window.speechSynthesis;
@@ -46,28 +49,8 @@ const pickVoice = (lang) => { const vs = synth ? synth.getVoices() : []; const s
 const guessLang = (t) => /\b(the|is|and|you|sir|what|good|morning|evening)\b/i.test(t) && !/\b(il|la|che|sono|signore|buongiorno|buonasera|grazie|oggi)\b/i.test(t) ? "en-GB" : "it-IT";
 const speak = (text) => { if (!synth || !text) return; const clean = text.replace(/[*_`#]/g, ""); app.speaking = app.speaking.then(() => new Promise((resolve) => { const u = new SpeechSynthesisUtterance(clean); u.lang = guessLang(clean); const v = pickVoice(u.lang); if (v) u.voice = v; u.rate = 1.02; u.pitch = 0.9; u.onstart = () => setState("speaking"); u.onend = () => { setState("idle"); resolve(); }; u.onerror = () => { setState("idle"); resolve(); }; synth.speak(u); })); };
 
-// ---------------------------------------------------------------- reactor
-const canvas = $("reactor"), ctx = canvas.getContext("2d"); let t0 = performance.now(), bars = new Array(40).fill(0);
-const draw = (now) => {
-  const t = (now - t0) / 1000, W = canvas.width, H = canvas.height, cx = W / 2, cy = H / 2, R = W * 0.42, s = app.state;
-  const speed = reduced ? 0 : (s === "thinking" || s === "loading" ? 1.6 : s === "tool" ? 1 : s === "speaking" ? 0.7 : 0.25);
-  const col = s === "listening" ? "82,227,155" : (s === "tool" || s === "loading") ? "255,181,71" : "57,198,255";
-  ctx.clearRect(0, 0, W, H); const pulse = reduced ? 0.5 : 0.5 + 0.5 * Math.sin(t * (s === "idle" ? 1.2 : 3));
-  const glow = ctx.createRadialGradient(cx, cy, R * 0.05, cx, cy, R * 0.55); glow.addColorStop(0, `rgba(${col},${0.55 + 0.25 * pulse})`); glow.addColorStop(0.5, `rgba(${col},0.12)`); glow.addColorStop(1, "rgba(0,0,0,0)");
-  ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(cx, cy, R * 0.55, 0, Math.PI * 2); ctx.fill();
-  ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * speed * 0.1);
-  for (let i = 0; i < 90; i++) { const a = (i / 90) * Math.PI * 2, big = i % 15 === 0; ctx.strokeStyle = `rgba(${col},${big ? 0.9 : 0.35})`; ctx.lineWidth = big ? 2.2 : 1; ctx.beginPath(); ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R); ctx.lineTo(Math.cos(a) * (R - (big ? 14 : 7)), Math.sin(a) * (R - (big ? 14 : 7))); ctx.stroke(); }
-  ctx.restore();
-  [[0.9, 0.9, 1], [0.78, -1.3, 0.6], [0.66, 0.6, 0.45]].forEach(([r, dir, len], i) => { ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * speed * dir + i); ctx.strokeStyle = `rgba(${col},${0.55 + 0.15 * i})`; ctx.lineWidth = i === 0 ? 3 : 2; ctx.lineCap = "round"; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.arc(0, 0, R * r, k * 2.1, k * 2.1 + len); ctx.stroke(); } ctx.restore(); });
-  const active = s === "speaking" || s === "listening";
-  for (let i = 0; i < bars.length; i++) { const target = active ? (s === "listening" ? app.level : 0.25 + Math.random() * 0.75) * (0.4 + 0.6 * Math.abs(Math.sin(i * 1.7 + t * 5))) : 0.05; bars[i] += (target - bars[i]) * (reduced ? 1 : 0.25); }
-  ctx.save(); ctx.translate(cx, cy); for (let i = 0; i < bars.length; i++) { const a = (i / bars.length) * Math.PI * 2, r0 = R * 0.36, h = 6 + bars[i] * R * 0.16; ctx.strokeStyle = `rgba(${col},0.8)`; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * (r0 + h), Math.sin(a) * (r0 + h)); ctx.stroke(); } ctx.restore();
-  if (s === "thinking" || s === "tool" || s === "loading") { ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 4); const g = ctx.createLinearGradient(0, 0, R * 0.6, 0); g.addColorStop(0, `rgba(${col},0)`); g.addColorStop(1, `rgba(${col},0.7)`); ctx.strokeStyle = g; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(R * 0.6, 0); ctx.stroke(); ctx.restore(); }
-  ctx.fillStyle = `rgba(${col},${0.75 + 0.25 * pulse})`; ctx.shadowColor = `rgba(${col},0.9)`; ctx.shadowBlur = 30 + 20 * pulse; ctx.beginPath(); ctx.arc(cx, cy, R * 0.16, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
-  ctx.fillStyle = "rgba(255,255,255,0.85)"; ctx.beginPath(); ctx.arc(cx, cy, R * 0.06, 0, Math.PI * 2); ctx.fill();
-  requestAnimationFrame(draw);
-};
-requestAnimationFrame(draw);
+// ---------------------------------------------------------------- reactor (shared holographic renderer, hud/reactor.js)
+window.JarvisReactor.create($("reactor"), { getState: () => ({ state: app.state, level: app.level }) });
 
 // ---------------------------------------------------------------- tools (the hands)
 const IT_DAYS = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato"], IT_MONTHS = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
@@ -101,13 +84,13 @@ const parseDelay = (t) => { const m = /(?:tra|in|fra)\s+(\d+|un|una|uno|mezz'?)\
 const parseClock = (t) => { const m = /alle\s+(\d{1,2})(?:[:.](\d{2}))?/i.exec(t); if (!m) return null; const d = new Date(); d.setHours(parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0, 0, 0); if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); return d.getTime(); };
 
 /** Fast intent routing: the hands act first, the model phrases the answer. Returns {tool, result, direct} or null. */
-const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude, anche con ricerca sul web" : " con il modello locale"}.`;
+const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Conoscenza: "impara che …" mi insegna qualcosa, "cosa hai imparato" mostra ciò che so; con Claude posso anche studiare un argomento sul web e memorizzarlo. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude, anche con ricerca sul web" : " con il modello locale"}.`;
 async function route(text) {
   const t = text.toLowerCase().trim();
   if (/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/.test(t)) return { tool: "aiuto", result: "", direct: HELP() };
   if (/\b(quali|che|elenca|lista)\b.*\b(documenti|file)\b/.test(t) && !/\b(dice|contien|parla)/.test(t)) { const list = library.docs.map((d) => `${d.name} (${d.pages > 1 ? d.pages + " pagine" : d.chars < 1000 ? d.chars + " caratteri" : Math.round(d.chars / 1000) + " mila caratteri"})`); return { tool: "documenti", result: list.length ? "Documenti caricati: " + list.join("; ") : "Nessun documento caricato.", direct: list.length ? `Ho ${list.length} documenti, ${settings.name}: ${list.join("; ")}.` : `Nessun documento caricato, ${settings.name}. Usi la graffetta per aggiungerne.` }; }
   const studio = routeStudio(text); if (studio) return { tool: studio.tool, result: studio.result, direct: studio.result, exact: true };
-  if (/\b(che or[ae]|che ore sono|what time)\b/.test(t)) return { tool: "orologio", result: `Ora: ${fmtTime()}, ${fmtDate()}.`, direct: `Sono le ${fmtTime()}, ${settings.name}.` };
+  if (/^(che ore sono|che ora è|che ora e|che ora sono|dimmi l.ora|sai che ore sono|what time)/.test(t) || /\b(che ore sono|what time is it)\b/.test(t)) return { tool: "orologio", result: `Ora: ${fmtTime()}, ${fmtDate()}.`, direct: `Sono le ${fmtTime()}, ${settings.name}.` };
   if (/\b(che giorno|data di oggi|what day|what's the date)\b/.test(t)) return { tool: "calendario", result: `Oggi è ${fmtDate()}.`, direct: `Oggi è ${fmtDate()}, ${settings.name}.` };
   if (/\b(meteo|tempo fa|che tempo|piove|pioverà|temperatura|weather|gradi)\b/.test(t)) {
     const m = /\b(?:a|in|ad|at|per)\s+([A-Za-zÀ-ÿ' ]{2,30})$/i.exec(text.trim().replace(/[?.!]+$/, "")) ; const place = (m && m[1].trim()) || settings.city;
@@ -123,6 +106,9 @@ async function route(text) {
     try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
     return { tool: "promemoria", result: `Promemoria impostato ${when}: ${r.message}.`, direct: `Fatto. Glielo ricordo ${when}, ${settings.name}.` };
   }
+  const learnM = /^(impara che|impara:|imparalo:|sappi che|tieni presente che)\s*(.+)$/is.exec(text.trim());
+  if (learnM) { const content = learnM[2].trim(); const title = content.split(/[.:;\n]/)[0].split(/\s+/).slice(0, 8).join(" "); const r = await knowledge.learn({ title, content, source: "insegnato da " + settings.name, origin: "user" }); renderKnowledge(); return { tool: "conoscenza", result: `${r.updated ? "Aggiornato" : "Imparato"}: ${title}`, direct: `${r.updated ? "Aggiornato" : "Imparato"}, ${settings.name}. Lo userò d'ora in poi.` }; }
+  if (/\b(cosa hai imparato|che cosa hai imparato|cosa sai fare di nuovo|mostrami la conoscenza)\b/.test(t)) { const list = knowledge.recent(8).map((k) => k.title); return { tool: "conoscenza", result: list.length ? "Voci recenti: " + list.join("; ") : "Nessuna voce.", direct: list.length ? `Ho imparato ${knowledge.size} cose, ${settings.name}. Le più recenti: ${list.join("; ")}.` : `Per ora non ho imparato nulla, ${settings.name}. Mi insegni qualcosa con "impara che…".` }; }
   if (/^(ricorda che|ricordati che|memorizza che|remember that)\s+/i.test(text.trim())) { const fact = text.trim().replace(/^(ricorda che|ricordati che|memorizza che|remember that)\s+/i, ""); facts.push(fact); store.set("facts", facts); return { tool: "memoria", result: `Memorizzato: ${fact}`, direct: `Annotato, ${settings.name}.` }; }
   if (/\b(cosa sai di me|cosa ti ho detto|cosa ricordi|what do you remember)\b/.test(t)) return { tool: "memoria", result: facts.length ? "Fatti memorizzati: " + facts.join("; ") : "Nessun fatto memorizzato.", direct: facts.length ? `Ricordo questo, ${settings.name}: ${facts.join("; ")}.` : `Per ora non mi ha detto nulla da ricordare, ${settings.name}.` };
   const calc = /^(quanto fa|calcola|calculate|what is|quanto è)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (calc) { const v = calculate(calc[2]); if (v != null) return { tool: "calcolatrice", result: `${calc[2]} = ${v}`, direct: `Fa ${String(v).replace(".", ",")}, ${settings.name}.` }; }
@@ -133,7 +119,13 @@ async function route(text) {
 // ---------------------------------------------------------------- Claude (cloud): il cervello più capace, senza modelli da scaricare
 let claudeMod = null, claudeSession = null;
 const loadClaude = async () => (claudeMod ||= await import("./claude.js"));
-const contextLine = () => [`oggi è ${fmtDate()}, sono le ${fmtTime()}`, settings.city ? `città dell'utente: ${settings.city}` : "", facts.length ? `fatti memorizzati: ${facts.join("; ")}` : "nessun fatto memorizzato", library.size ? `documenti caricati: ${library.docs.map((d) => d.name).join("; ")}` : "nessun documento caricato"].filter(Boolean).join(". ") + ".";
+const contextLine = (question = "") => {
+  const known = knowledge.relevant(question, 3);
+  return [`oggi è ${fmtDate()}, sono le ${fmtTime()}`, settings.city ? `città dell'utente: ${settings.city}` : "", facts.length ? `fatti memorizzati: ${facts.join("; ")}` : "nessun fatto memorizzato",
+    library.size ? `documenti caricati: ${library.docs.map((d) => d.name).join("; ")}` : "nessun documento caricato",
+    knowledge.size ? `base di conoscenza: ${knowledge.size} voci` : "base di conoscenza vuota",
+    known.length ? "conoscenze pertinenti:\n" + known.map((k) => `- ${k.title}: ${k.content.slice(0, 600)}${k.source ? ` (fonte: ${k.source})` : ""}`).join("\n") : ""].filter(Boolean).join(". ") + ".";
+};
 const claudeTools = {
   async search_documents({ query, file }) {
     if (!library.size) return { text: "Nessun documento caricato. L'utente può aggiungerne con la graffetta." };
@@ -157,9 +149,12 @@ const claudeTools = {
     scheduleReminder(messaggio, at); try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
     return { text: `Promemoria impostato per ${fmtDate(new Date(at))} alle ${fmtTime(new Date(at))}: ${messaggio}.` };
   },
+  async impara({ titolo, contenuto, fonte = "" }) { const r = await knowledge.learn({ title: titolo, content: contenuto, source: fonte, origin: "claude" }); renderKnowledge(); return { text: `${r.updated ? "Voce aggiornata" : "Voce salvata"} nella base di conoscenza: ${r.item.title} (${knowledge.size} voci in tutto).` }; },
+  async cerca_conoscenza({ query }) { const hits = knowledge.search(query, 5); return { text: hits.length ? hits.map((k, i) => `(${i + 1}) ${k.title}${k.source ? ` [fonte: ${k.source}]` : ""}\n${k.content}`).join("\n\n") : `Niente nella base di conoscenza su "${query}".` }; },
+  async dimentica({ titolo }) { const it = await knowledge.forget(titolo); renderKnowledge(); return { text: it ? `Voce eliminata: ${it.title}.` : `Nessuna voce intitolata "${titolo}".` }; },
   async ricorda({ fatto }) { facts.push(fatto); store.set("facts", facts); return { text: `Memorizzato: ${fatto}` }; },
 };
-const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria" };
+const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico" };
 async function getClaudeSession() {
   const m = await loadClaude();
   return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: claudeTools }));
@@ -171,7 +166,7 @@ async function askClaude(text) {
   const bubble = () => { if (!el) { el = addTurn("jarvis streaming", "", "jarvis"); body = el.querySelector(".body"); spoken = ""; buffer = ""; lastEl = el; } };
   const flushSpeech = (final) => { const rest = buffer.slice(spoken.length); if (final) { if (rest.trim()) speak(rest.trim()); spoken = buffer; return; } const m = /^([\s\S]*?[.!?])\s/.exec(rest); if (m && m[1].length > 12) { speak(m[1]); spoken += m[0]; } };
   const close = () => { if (el) { el.classList.remove("streaming"); flushSpeech(true); el = null; } };
-  const res = await session.ask(text, contextLine(), {
+  const res = await session.ask(text, contextLine(text), {
     onText: (d) => { bubble(); buffer += d; body.textContent = buffer.trimStart(); transcript.scrollTop = transcript.scrollHeight; flushSpeech(false); },
     onThinking: () => { caption.textContent = "ragiono…"; },
     onTool: (name, input) => { close(); setState("tool", TOOL_LABEL[name] || name); addTool(TOOL_LABEL[name] || name, Object.values(input).filter((v) => typeof v !== "object").join(" · ").slice(0, 120)); setState("thinking"); },
@@ -226,6 +221,11 @@ const SUMMARY = /\b(riassum|riassunto|sintesi|sintetizza|di cosa parla|cosa dice
 const DOCWORDS = /\b(document|contratt|file|pdf|allegat|testo|clausol|articol|bilanci|verbal|atto|fattur|preventiv|relazion|lettera|mail|delibera|statuto|perizia)/i;
 /** Passaggi dai documenti pertinenti alla domanda, o [] se la domanda non riguarda i documenti. */
 function docContext(text) {
+  const known = knowledge.relevant(text, 2).map((k, i) => ({ doc: "Conoscenza: " + k.title, page: null, text: k.content, n: i + 1 }));
+  const fromDocs = docPassages(text).map((p) => ({ ...p, n: p.n + known.length }));
+  return [...known, ...fromDocs];
+}
+function docPassages(text) {
   if (!library.size) return [];
   const named = library.mentioned(text);
   if (named && SUMMARY.test(text)) return [{ doc: named.name, page: null, text: library.head(named.id), n: 1 }];
@@ -297,6 +297,7 @@ function renderDocs() {
     li.append(name, meta, rm); ul.appendChild(li);
   });
   $("docsClear").hidden = library.size < 2;
+  refreshTele?.();
 }
 async function addFiles(files) {
   files = [...files]; if (!files.length) return;
@@ -383,6 +384,71 @@ function showBrain() {
   if (usingClaude()) { $("model").textContent = (claudeMod?.CLAUDE_MODELS[settings.claudeModel] || "Claude") + (claudeKey.get() ? "" : " · manca la chiave"); }
 }
 
+// ---------------------------------------------------------------- knowledge: view, search, teach, export, import
+const kDlg = $("knowledgeDialog");
+const fmtWhen = (ms) => new Date(ms).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
+function renderKnowledge() {
+  $("knowledgeChip").textContent = knowledge.size ? `${knowledge.size} conoscenz${knowledge.size === 1 ? "a" : "e"}` : "conoscenza";
+  const recent = knowledge.recent(4), box = $("tLearned"); box.innerHTML = "";
+  if (!recent.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "Ancora nulla. Chieda a Jarvis di studiare un argomento, o scriva \"impara che…\"."; box.appendChild(e); }
+  recent.forEach((k) => { const d = document.createElement("div"); d.textContent = k.title; d.title = k.content.slice(0, 300); box.appendChild(d); });
+  if (kDlg.open) renderKnowledgeList();
+  refreshTele?.();
+}
+function renderKnowledgeList() {
+  const q = $("kSearch").value.trim(), list = q ? knowledge.search(q, 30) : knowledge.recent(60), ul = $("kList"); ul.innerHTML = "";
+  if (!list.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = q ? "Nessuna voce trovata." : "La base di conoscenza è vuota. Con Claude, provi: \"studia le scadenze fiscali di dicembre\"."; ul.appendChild(li); return; }
+  list.forEach((k) => {
+    const li = document.createElement("li"), t = document.createElement("span"), m = document.createElement("span"), c = document.createElement("span"), rm = document.createElement("button");
+    t.className = "kt"; t.textContent = k.title; m.className = "km"; m.textContent = `${fmtWhen(k.updated)} · ${k.origin === "user" ? "insegnato da lei" : k.origin === "import" ? "importato" : "imparato da Jarvis"}${k.source ? " · " + k.source : ""}`;
+    c.className = "kc"; c.textContent = k.content; rm.type = "button"; rm.textContent = "dimentica"; rm.onclick = async () => { await knowledge.forget(k.id); renderKnowledge(); renderKnowledgeList(); };
+    li.append(t, rm, m, c); ul.appendChild(li);
+  });
+}
+$("knowledgeChip").onclick = () => { $("kSearch").value = ""; renderKnowledgeList(); kDlg.showModal(); };
+$("knowledgeChip").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("knowledgeChip").click(); } };
+$("kSearch").oninput = renderKnowledgeList;
+$("kClose").onclick = () => kDlg.close();
+$("kAdd").onclick = async () => { const title = $("kTitle").value.trim(), content = $("kContent").value.trim(); if (!title || !content) return; await knowledge.learn({ title, content, source: "insegnato da " + settings.name, origin: "user" }); $("kTitle").value = ""; $("kContent").value = ""; renderKnowledge(); renderKnowledgeList(); };
+$("kExport").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([knowledge.export()], { type: "application/json" })); a.download = `jarvis-conoscenza-${new Date().toISOString().slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+$("kImport").onclick = () => $("kImportFile").click();
+$("kImportFile").onchange = async () => { const f = $("kImportFile").files[0]; $("kImportFile").value = ""; if (!f) return; try { const n = await knowledge.import(await f.text()); notice(`Importate ${n} voci nella base di conoscenza.`); renderKnowledge(); renderKnowledgeList(); } catch (e) { notice("Importazione non riuscita: " + e.message); } };
+
+// ---------------------------------------------------------------- telemetry: real values from this device
+const tele = { fps: 0, frames: 0, since: performance.now(), batt: null, gpu: "" };
+const setBar = (id, pct, warn) => { const el = $(id); if (!el) return; el.style.width = Math.max(0, Math.min(100, pct)) + "%"; el.classList.toggle("warn", !!warn); };
+const brainLabel = () => (usingClaude() ? (claudeMod?.CLAUDE_MODELS?.[settings.claudeModel] || "Claude") : settings.provider === "local" ? ($("model").textContent || "locale") : "da scegliere");
+refreshTele = () => {
+  const now = new Date(), hh = String(now.getHours()).padStart(2, "0"), mm = String(now.getMinutes()).padStart(2, "0"), ss = String(now.getSeconds()).padStart(2, "0");
+  $("tClock").textContent = `${hh}:${mm}:${ss}`; $("tClockBig").textContent = `${hh}:${mm}`; $("tDate").textContent = now.toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
+  $("rDate").innerHTML = `${now.toLocaleDateString("it-IT")}<br>${hh}:${mm}:${ss}`;
+  const brain = brainLabel(); $("tBrain").textContent = brain; $("sBrain").textContent = "cervello " + brain; $("rBrain").innerHTML = "cervello<br>" + brain;
+  const online = navigator.onLine; $("tNet").textContent = online ? "online" : "offline"; $("sNet").textContent = "rete " + (online ? "online" : "offline"); $("tStatus").textContent = online ? "online" : "offline";
+  if (tele.batt) { const pct = Math.round(tele.batt.level * 100), lbl = pct + "%" + (tele.batt.charging ? " ⚡" : ""); $("tBatt").textContent = lbl; $("sBatt").textContent = "batteria " + lbl; setBar("tBattBar", pct, pct < 20); } else { $("sBatt").hidden = true; }
+  $("tCores").textContent = navigator.hardwareConcurrency ? navigator.hardwareConcurrency + " core" : "n/d";
+  $("tMem").textContent = navigator.deviceMemory ? "≥ " + navigator.deviceMemory + " GB" : "n/d";
+  $("tGpu").textContent = tele.gpu || ("gpu" in navigator ? "WebGPU" : "assente");
+  $("tFps").textContent = tele.fps ? tele.fps + " fps" : "—"; setBar("tFpsBar", (tele.fps / 60) * 100, tele.fps && tele.fps < 30);
+  $("tDocs").textContent = library.size; $("sDocs").textContent = library.size + " documenti"; $("tKnow").textContent = knowledge.size; $("sKnow").textContent = knowledge.size + " conoscenze";
+  setBar("tKnowBar", Math.min(100, knowledge.size * 2)); $("tFacts").textContent = facts.length; $("tRem").textContent = reminders.length;
+  $("rArchive").innerHTML = `conoscenze ${knowledge.size}<br>documenti ${library.size}`;
+};
+const countFrames = (now) => { tele.frames++; if (now - tele.since >= 1000) { tele.fps = Math.round((tele.frames * 1000) / (now - tele.since)); tele.frames = 0; tele.since = now; } requestAnimationFrame(countFrames); };
+requestAnimationFrame(countFrames);
+setInterval(() => refreshTele(), 1000);
+window.addEventListener("online", () => refreshTele()); window.addEventListener("offline", () => refreshTele());
+try { navigator.getBattery?.().then((b) => { tele.batt = b; b.onlevelchange = b.onchargingchange = () => refreshTele(); refreshTele(); }); } catch {}
+try { navigator.gpu?.requestAdapter().then((a) => { const i = a && a.info; tele.gpu = i ? [i.vendor, i.architecture].filter(Boolean).join(" ") || "WebGPU" : a ? "WebGPU" : "assente"; refreshTele(); }).catch(() => {}); } catch {}
+
+// ---------------------------------------------------------------- boot sequence (once per session, skipped with reduced motion)
+let bootDone; const booted = new Promise((r) => { bootDone = r; });
+(() => {
+  const boot = $("boot"); let seen = false; try { seen = sessionStorage.getItem("jarvis.booted") === "1"; sessionStorage.setItem("jarvis.booted", "1"); } catch {}
+  const done = () => { boot.classList.add("done"); setTimeout(() => boot.remove(), 600); bootDone(); };
+  if (seen || reduced) { boot.remove(); bootDone(); return; }
+  boot.onclick = done; setTimeout(done, 2100);
+})();
+
 // ---------------------------------------------------------------- install prompt & boot
 let installEvent = null;
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; if (!matchMedia("(display-mode: standalone)").matches) $("installBtn").style.display = "block"; });
@@ -393,7 +459,8 @@ history.slice(-6).forEach((m) => addTurn(m.role === "user" ? "user" : "jarvis", 
 const hour = new Date().getHours();
 addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, o trascini qui un documento.`, "jarvis");
 if (synth) synth.onvoiceschanged = () => {};
-library.load().then(renderDocs);
-if (usingClaude()) { loadClaude().then(showBrain).catch(() => notice("Non riesco a caricare il collegamento con Claude: controlli la connessione.")); $("model").textContent = "Claude"; if (!claudeKey.get()) openSettings("claude"); else notice("Cervello: Claude di Anthropic. Nessun modello da scaricare."); }
+library.load().then(() => { renderDocs(); refreshTele(); });
+knowledge.load().then(renderKnowledge);
+if (usingClaude()) { loadClaude().then(showBrain).catch(() => notice("Non riesco a caricare il collegamento con Claude: controlli la connessione.")); $("model").textContent = "Claude"; if (!claudeKey.get()) booted.then(() => openSettings("claude")); else notice("Cervello: Claude di Anthropic. Nessun modello da scaricare."); }
 else if (settings.provider === "local") loadEngine();
-else { $("model").textContent = "scegli il cervello"; $("brainDialog").showModal(); }
+else { $("model").textContent = "scegli il cervello"; booted.then(() => $("brainDialog").showModal()); }

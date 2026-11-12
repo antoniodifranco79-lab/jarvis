@@ -13,7 +13,8 @@ from typing import Any
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .. import __version__
@@ -21,6 +22,8 @@ from ..app import Jarvis
 from ..claude_setup import activate, check_key, setup_state
 from ..config import Settings, get_settings
 from ..events import Event
+from ..tools.documents import DOC_EXT
+from ..tools.knowledge import list_notes
 from ..tools.system import status_snapshot
 from ..voice.sentences import SentenceBuffer
 from ..voice.tts import Speaker
@@ -141,6 +144,12 @@ class Hub:
             self.busy = False
 
 
+def count_documents(workspace: Path) -> int:
+    if not workspace.exists():
+        return 0
+    return sum(1 for p in workspace.rglob("*") if p.is_file() and p.suffix.lower() in DOC_EXT and not any(part.startswith(".") for part in p.relative_to(workspace).parts))
+
+
 def create_app(
     settings: Settings | None = None, jarvis: Jarvis | None = None, *, voice: bool = False
 ) -> Starlette:
@@ -209,6 +218,8 @@ def create_app(
                 "user_name": settings.user_name,
                 "tools": j.registry.names() + [t["name"] for t in j.brain.server_tools],
                 "system": status_snapshot(),
+                "knowledge": len(list_notes(settings.workspace)),
+                "documents": count_documents(settings.workspace),
             }
         )
 
@@ -313,6 +324,7 @@ def create_app(
             Route("/api/memory", memory),
             Route("/api/ask", ask, methods=["POST"]),
             Route("/api/claude-key", claude_key, methods=["POST"]),
+            Mount("/hud", app=StaticFiles(directory=STATIC / "hud"), name="hud"),
             WebSocketRoute("/ws", ws),
         ],
         lifespan=lifespan,

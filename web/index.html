@@ -3,123 +3,144 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#04080f">
+<meta name="theme-color" content="#02070d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>J.A.R.V.I.S.</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="hud/hud.css">
 <style>
-:root { --bg:#04080f; --bg-2:#081423; --fg:#d9edf9; --muted:#7693ab; --line:rgba(57,198,255,.18); --panel:rgba(10,28,46,.62); --accent:#39c6ff; --accent-soft:rgba(57,198,255,.14); --amber:#ffb547; --good:#52e39b; --bad:#ff6b7a;
-  --font-display:"Orbitron","Segoe UI",system-ui,sans-serif; --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --font-mono:"JetBrains Mono",Menlo,Consolas,monospace; color-scheme:dark; }
-* { box-sizing:border-box; } html, body { height:100%; }
-body { margin:0; background:radial-gradient(1200px 700px at 30% 40%, var(--bg-2), var(--bg) 70%); color:var(--fg); font-family:var(--font-body); font-size:16px; line-height:1.5;
-  padding-left:max(12px, env(safe-area-inset-left,0px)); padding-right:max(12px, env(safe-area-inset-right,0px)); padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
-.app { height:100%; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto 1fr auto; gap:10px; padding-block:10px; }
-header { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-.brand { display:flex; align-items:baseline; gap:10px; } .brand h1 { font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:.3em; margin:0; color:var(--accent); text-shadow:0 0 18px rgba(57,198,255,.45); }
-.brand small { font-family:var(--font-mono); font-size:.68rem; color:var(--muted); letter-spacing:.06em; }
-.chips { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
-.chip { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; padding:4px 9px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:var(--accent-soft); white-space:nowrap; cursor:default; }
-.chip.act { cursor:pointer; color:var(--accent); } .chip.act:hover, .chip.act:focus-visible { border-color:var(--accent); outline:none; }
-.chip.state { color:var(--accent); border-color:rgba(57,198,255,.5); }
-.chip.state[data-state="listening"] { color:var(--good); border-color:rgba(82,227,155,.5); background:rgba(82,227,155,.1); }
-.chip.state[data-state="tool"], .chip.state[data-state="loading"] { color:var(--amber); border-color:rgba(255,181,71,.5); background:rgba(255,181,71,.1); }
-.chip.state[data-state="speaking"] { color:#fff; border-color:rgba(255,255,255,.4); }
-main { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:12px; min-height:0; min-width:0; } main > * { min-width:0; }
-.reactor { position:relative; display:grid; place-items:center; min-height:220px; min-width:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); overflow:hidden; }
-.reactor canvas { width:100%; max-width:480px; aspect-ratio:1/1; height:auto; display:block; }
-.reactor .caption { position:absolute; left:8px; right:8px; bottom:10px; text-align:center; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
-.progress { position:absolute; left:16px; right:16px; top:12px; height:4px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; } .progress > i { display:block; height:100%; width:0; background:var(--accent); transition:width .3s; }
-.panel { display:grid; grid-template-rows:auto 1fr; min-height:0; min-width:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); }
-.panel-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); font-family:var(--font-mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
-.panel-head button { font:inherit; letter-spacing:inherit; text-transform:inherit; color:var(--accent); background:none; border:1px solid var(--line); border-radius:999px; padding:3px 10px; cursor:pointer; }
-.transcript { overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; min-height:0; }
-.turn { max-width:94%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; overflow-wrap:anywhere; min-width:0; }
-.turn.user { align-self:flex-end; background:rgba(57,198,255,.12); border:1px solid rgba(57,198,255,.25); border-bottom-right-radius:4px; }
-.turn.jarvis { align-self:flex-start; background:rgba(255,255,255,.04); border:1px solid var(--line); border-bottom-left-radius:4px; }
-.turn.jarvis.streaming::after { content:"▍"; color:var(--accent); animation:blink 1s steps(2) infinite; }
-.turn .who { display:block; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
-.turn.system { align-self:center; font-family:var(--font-mono); font-size:.72rem; color:var(--muted); background:none; padding:2px 8px; text-align:center; }
-.turn.tool { align-self:flex-start; font-family:var(--font-mono); font-size:.72rem; color:var(--muted); background:none; padding:0 8px; } .turn.tool b { color:var(--amber); font-weight:500; }
-.turn.reminder { align-self:stretch; background:rgba(255,181,71,.1); border:1px solid rgba(255,181,71,.4); color:var(--amber); }
-footer form { display:flex; gap:8px; align-items:center; }
-footer input { flex:1; min-width:0; font:inherit; color:var(--fg); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:999px; padding:11px 16px; }
-footer input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); } footer input::placeholder { color:var(--muted); }
-.btn { width:46px; height:46px; flex:none; border-radius:50%; border:1px solid var(--line); background:var(--accent-soft); color:var(--accent); cursor:pointer; display:grid; place-items:center; }
-.btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-.btn.mic.on { color:#fff; background:var(--good); border-color:var(--good); box-shadow:0 0 24px rgba(82,227,155,.5); } .btn.wake.on { color:#04080f; background:var(--accent); }
-.hint { font-family:var(--font-mono); font-size:.64rem; color:var(--muted); letter-spacing:.06em; text-align:center; margin-top:6px; }
-dialog { background:var(--bg-2); color:var(--fg); border:1px solid var(--line); border-radius:18px; padding:20px; max-width:min(92vw, 460px); width:100%; font-family:var(--font-body); }
-dialog::backdrop { background:rgba(0,0,0,.6); } dialog h2 { font-family:var(--font-display); font-size:.9rem; letter-spacing:.2em; color:var(--accent); margin:0 0 14px; }
-dialog label { display:grid; gap:4px; margin-bottom:12px; font-size:.85rem; color:var(--muted); }
-dialog input, dialog select { font:inherit; color:var(--fg); background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
-dialog .row { display:flex; gap:8px; justify-content:flex-end; } dialog button { font:inherit; padding:8px 16px; border-radius:999px; border:1px solid var(--line); background:var(--accent-soft); color:var(--accent); cursor:pointer; }
-.install { display:none; position:fixed; left:50%; bottom:max(84px, env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:5; font:600 .95rem var(--font-body); color:#04080f; background:var(--accent); border:none; border-radius:999px; padding:12px 22px; box-shadow:0 0 30px rgba(57,198,255,.5); cursor:pointer; }
-.head-actions { display:flex; gap:6px; }
-.sources { display:grid; gap:4px; margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); white-space:normal; }
-.sources details { font-size:.82rem; } .sources summary { cursor:pointer; font-family:var(--font-mono); font-size:.7rem; letter-spacing:.04em; color:var(--accent); list-style:none; }
-.sources summary::-webkit-details-marker { display:none; } .sources summary::before { content:"▸ "; } .sources details[open] summary::before { content:"▾ "; }
-.sources p { margin:6px 0 4px; padding:8px 10px; border-left:2px solid var(--accent); background:rgba(57,198,255,.06); color:var(--fg); white-space:pre-wrap; max-height:220px; overflow:auto; }
-.btn.stop { color:#04080f; background:var(--amber); border-color:var(--amber); }
-.dlg-note { font-size:.82rem; color:var(--muted); margin:0 0 12px; }
-.docs-list { list-style:none; margin:0 0 14px; padding:0; display:grid; gap:8px; max-height:50vh; overflow:auto; }
-.docs-list li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 10px; align-items:center; padding:8px 10px; border:1px solid var(--line); border-radius:10px; }
-.docs-list li.empty { display:block; color:var(--muted); font-size:.85rem; border-style:dashed; }
-.docs-list .dname { overflow-wrap:anywhere; } .docs-list .dmeta { grid-column:1; font-family:var(--font-mono); font-size:.66rem; color:var(--muted); }
-.docs-list button { grid-column:2; grid-row:1 / span 2; font-size:.75rem; padding:4px 10px; }
-dialog label.check { display:flex; gap:8px; align-items:flex-start; color:var(--fg); } dialog label.check input { margin-top:3px; }
-.sources a { font-family:var(--font-mono); font-size:.7rem; color:var(--accent); text-decoration:none; overflow-wrap:anywhere; } .sources a:hover { text-decoration:underline; }
-dialog a { color:var(--accent); } dialog .row.left { justify-content:flex-start; margin:-4px 0 12px; }
-.brain-choices { display:grid; gap:10px; } .brain { display:grid; gap:4px; text-align:left; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:rgba(255,255,255,.04); color:var(--fg); cursor:pointer; font:inherit; }
-.brain:hover, .brain:focus-visible { border-color:var(--accent); outline:none; } .brain b { color:var(--accent); font-family:var(--font-display); letter-spacing:.08em; font-size:.85rem; } .brain span { font-size:.85rem; color:var(--muted); }
-dialog { max-height:90vh; overflow:auto; }
-.dropzone { display:none; position:fixed; inset:12px; z-index:9; border:2px dashed var(--accent); border-radius:22px; background:rgba(4,8,15,.82); place-items:center; text-align:center; padding:20px; font-family:var(--font-display); letter-spacing:.12em; color:var(--accent); pointer-events:none; }
-body.dropping .dropzone { display:grid; }
-@keyframes blink { to { opacity:0; } }
-@media (max-width:760px) { main { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(200px,1fr); } .reactor { min-height:200px; } .reactor canvas { max-width:240px; } .turn { max-width:100%; } }
-@media (prefers-reduced-motion:reduce) { .turn.jarvis.streaming::after { animation:none; } }
+/* Layout: telemetry column | reactor stage | transcript; on tablets the telemetry becomes a strip, on phones everything stacks. */
+.app { position: relative; z-index: 1; height: 100%; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px;
+  padding-top: max(10px, env(safe-area-inset-top, 0px)); padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+.app > header { grid-row: 1; } .app > .strip { grid-row: 2; } .app > main { grid-row: 3; } .app > footer { grid-row: 4; }
+main { display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(340px, 32vw); gap: 12px; min-height: 0; min-width: 0; }
+main > * { min-width: 0; min-height: 0; }
+.left { display: grid; grid-auto-rows: min-content; gap: 12px; overflow-y: auto; scrollbar-width: none; }
+.right { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.strip { display: none; gap: 6px; flex-wrap: wrap; }
+.learned { display: grid; gap: 6px; padding: 10px 12px 12px; font-size: 0.92rem; }
+.learned div { border-left: 2px solid var(--holo); padding-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learned .empty { border: 0; padding: 0; color: var(--muted); white-space: normal; font-size: 0.86rem; }
+.docs-list, .k-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; max-height: 46vh; overflow: auto; }
+.docs-list li, .k-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); background: rgba(86, 214, 255, 0.04); }
+.docs-list li.empty, .k-list li.empty { display: block; color: var(--muted); font-size: 0.88rem; border-style: dashed; }
+.docs-list .dname, .k-list .kt { overflow-wrap: anywhere; font-weight: 600; }
+.docs-list .dmeta, .k-list .km { grid-column: 1; font-family: var(--font-mono); font-size: 0.66rem; color: var(--muted); letter-spacing: 0.06em; overflow-wrap: anywhere; }
+.k-list .kc { grid-column: 1 / -1; font-size: 0.86rem; color: var(--fg); opacity: 0.85; white-space: pre-wrap; max-height: 5.6em; overflow: hidden; }
+.docs-list button, .k-list button { grid-column: 2; grid-row: 1 / span 2; font-size: 0.68rem !important; padding: 4px 10px !important; }
+.brain-choices { display: grid; gap: 10px; }
+.brain { display: grid; gap: 4px; text-align: left; padding: 14px 16px !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--font-ui) !important; font-size: 0.95rem !important; color: var(--fg) !important; }
+.brain b { color: var(--holo); font-family: var(--font-display); letter-spacing: 0.12em; font-size: 0.82rem; font-weight: 500; } .brain span { color: var(--muted); }
+dialog.holo label.check { display: flex; gap: 8px; align-items: flex-start; color: var(--fg); } dialog.holo label.check input { width: auto; margin-top: 4px; }
+.dropzone { display: none; position: fixed; inset: 12px; z-index: 55; border: 2px dashed var(--holo); background: rgba(2, 7, 13, 0.86); place-items: center; text-align: center; padding: 20px;
+  font-family: var(--font-display); letter-spacing: 0.16em; color: var(--holo); pointer-events: none; }
+body.dropping .dropzone { display: grid; }
+.install { display: none; position: fixed; left: 50%; bottom: max(90px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 45; font: 600 0.95rem var(--font-ui); letter-spacing: 0.06em;
+  color: #02070d; background: var(--holo); border: none; padding: 12px 22px; box-shadow: 0 0 30px rgba(86, 214, 255, 0.6); cursor: pointer; }
+@media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(320px, 44vw); } .left { display: none; } .strip { display: flex; } }
+@media (max-width: 760px) {
+  body.hud { font-size: 16px; }
+  main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(190px, 32vh) minmax(0, 1fr); }
+  .stage { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-bottom: 6px; } .stage canvas { width: min(100%, 26vh); }
+  .stage .reticle { display: none; } .stage .caption { position: static; font-size: 0.64rem; letter-spacing: 0.14em; }
+  .clock { display: none; } .turn { max-width: 100%; } .hbtn { width: 42px; height: 42px; }
+}
 </style>
 </head>
-<body>
+<body class="hud">
+<div class="hud-bg" aria-hidden="true"></div>
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="lines">
+    <div class="title">J.A.R.V.I.S.</div>
+    <span style="animation-delay:.05s">inizializzazione nucleo <b>ok</b></span>
+    <span style="animation-delay:.3s">interfaccia olografica <b>ok</b></span>
+    <span style="animation-delay:.55s">archivio documenti <b>ok</b></span>
+    <span style="animation-delay:.8s">base di conoscenza <b>ok</b></span>
+    <span style="animation-delay:1.05s">protocolli vocali <b>ok</b></span>
+    <span style="animation-delay:1.3s">tutti i sistemi operativi <b>online</b></span>
+  </div>
+</div>
 <div class="app">
-  <header>
-    <div class="brand"><h1>J.A.R.V.I.S.</h1><small id="model">avvio…</small></div>
+  <header class="hud-top">
+    <div class="brand"><div class="sigil" aria-hidden="true"></div><div><h1>J.A.R.V.I.S.</h1><small id="model">avvio…</small></div></div>
     <div class="chips">
       <span class="chip" id="reminderChip" hidden>0 promemoria</span>
       <span class="chip act" id="docsChip" role="button" tabindex="0" title="Documenti caricati su questo dispositivo">documenti</span>
+      <span class="chip act" id="knowledgeChip" role="button" tabindex="0" title="Ciò che J.A.R.V.I.S. ha imparato">conoscenza</span>
       <span class="chip act" id="settingsBtn" role="button" tabindex="0">impostazioni</span>
       <span class="chip state" id="stateChip" data-state="idle">idle</span>
+      <span class="clock" id="tClock">--:--:--</span>
     </div>
   </header>
+  <div class="strip" aria-label="Telemetria">
+    <span class="chip" id="sBrain">cervello —</span><span class="chip" id="sNet">rete —</span><span class="chip" id="sBatt">batteria —</span>
+    <span class="chip" id="sDocs">0 documenti</span><span class="chip" id="sKnow">0 conoscenze</span>
+  </div>
   <main>
-    <section class="reactor" aria-label="Stato">
+    <aside class="left" aria-label="Telemetria">
+      <section class="frame">
+        <div class="frame-title"><span>sistemi</span><b id="tStatus">online</b></div>
+        <div class="tele">
+          <div class="tele-big" id="tClockBig">--:--</div>
+          <div class="tele-row"><span class="k">data</span><span class="v" id="tDate">—</span></div>
+          <div class="tele-row"><span class="k">cervello</span><span class="v" id="tBrain">—</span></div>
+          <div class="tele-row"><span class="k">rete</span><span class="v" id="tNet">—</span></div>
+          <div class="tele-row"><span class="k">batteria</span><span class="v" id="tBatt">n/d</span><div class="bar"><i id="tBattBar"></i></div></div>
+          <div class="tele-row"><span class="k">processori</span><span class="v" id="tCores">—</span></div>
+          <div class="tele-row"><span class="k">memoria</span><span class="v" id="tMem">—</span></div>
+          <div class="tele-row"><span class="k">gpu</span><span class="v" id="tGpu">—</span></div>
+          <div class="tele-row"><span class="k">fotogrammi</span><span class="v" id="tFps">—</span><div class="bar"><i id="tFpsBar"></i></div></div>
+        </div>
+      </section>
+      <section class="frame">
+        <div class="frame-title"><span>archivio</span><b id="tArchive">locale</b></div>
+        <div class="tele">
+          <div class="tele-row"><span class="k">documenti</span><span class="v" id="tDocs">0</span></div>
+          <div class="tele-row"><span class="k">conoscenze</span><span class="v" id="tKnow">0</span><div class="bar"><i id="tKnowBar"></i></div></div>
+          <div class="tele-row"><span class="k">fatti</span><span class="v" id="tFacts">0</span></div>
+          <div class="tele-row"><span class="k">promemoria</span><span class="v" id="tRem">0</span></div>
+        </div>
+      </section>
+      <section class="frame">
+        <div class="frame-title"><span>ultime acquisizioni</span><b>&#9650;</b></div>
+        <div class="learned" id="tLearned"><div class="empty">Ancora nulla. Chieda a Jarvis di studiare un argomento, o scriva "impara che…".</div></div>
+      </section>
+    </aside>
+    <section class="stage frame" aria-label="Stato">
       <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
-      <canvas id="reactor" width="480" height="480"></canvas>
+      <span class="reticle tl">j.a.r.v.i.s. // olo-hud<br>protocollo assistente</span>
+      <span class="reticle tr" id="rDate">—</span>
+      <span class="reticle bl" id="rBrain">cervello —</span>
+      <span class="reticle br" id="rArchive">archivio —</span>
+      <canvas id="reactor" aria-hidden="true"></canvas>
       <div class="caption" id="caption">avvio dei sistemi</div>
     </section>
-    <section class="panel" aria-label="Conversazione">
-      <div class="panel-head"><span>trascrizione</span><span class="head-actions"><button type="button" id="exportBtn" title="Scarica la conversazione come testo">esporta</button><button type="button" id="newSession">nuova sessione</button></span></div>
+    <section class="right frame" aria-label="Conversazione">
+      <div class="frame-title"><span>trascrizione</span><span class="acts"><button type="button" class="ghost" id="exportBtn" title="Scarica la conversazione come testo">esporta</button><button type="button" class="ghost" id="newSession">nuova sessione</button></span></div>
       <div class="transcript" id="transcript"></div>
     </section>
   </main>
   <footer>
-    <form id="form" autocomplete="off">
-      <button type="button" class="btn wake" id="wakeBtn" title="Ascolta sempre la parola Jarvis" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 12h2m14 0h2M12 3v2m0 14v2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></button>
-      <button type="button" class="btn" id="attachBtn" title="Aggiungi documenti (PDF, Word, testo)"><svg viewBox="0 0 24 24"><path d="M21 11.5 12.4 20a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"/></svg></button>
+    <form id="form" class="cmd" autocomplete="off">
+      <button type="button" class="hbtn wake" id="wakeBtn" title="Ascolta sempre la parola Jarvis" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 12h2m14 0h2M12 3v2m0 14v2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></button>
+      <button type="button" class="hbtn" id="attachBtn" title="Aggiungi documenti (PDF, Word, testo)"><svg viewBox="0 0 24 24"><path d="M21 11.5 12.4 20a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"/></svg></button>
       <input type="file" id="fileInput" multiple hidden>
-      <input id="input" placeholder="Chieda a Jarvis, o trascini un documento…" aria-label="Messaggio">
-      <button type="button" class="btn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-      <button type="submit" class="btn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
+      <div class="prompt"><input id="input" placeholder="Comando per Jarvis, o trascini un documento…" aria-label="Messaggio"></div>
+      <button type="button" class="hbtn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button type="submit" class="hbtn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
-    <div class="hint" id="hint">scriva "aiuto" · graffetta per i documenti · microfono per parlare · i file restano su questo dispositivo</div>
+    <div class="hint" id="hint">"aiuto" per i comandi · "studia …" per farlo imparare · graffetta per i documenti</div>
   </footer>
 </div>
+<div class="hud-scan" aria-hidden="true"></div>
 <button class="install" id="installBtn">Aggiungi J.A.R.V.I.S. alla schermata Home</button>
-<dialog id="settings">
+<dialog class="holo" id="settings">
   <h2>IMPOSTAZIONI</h2>
   <form method="dialog">
     <label>Come deve chiamarla <input id="setName" placeholder="Signore"></label>
@@ -154,7 +175,7 @@ body.dropping .dropzone { display:grid; }
     <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
   </form>
 </dialog>
-<dialog id="brainDialog">
+<dialog class="holo" id="brainDialog">
   <h2>SCEGLI IL CERVELLO</h2>
   <p class="dlg-note">Come deve ragionare J.A.R.V.I.S. su questo dispositivo? Si può cambiare quando vuole dalle impostazioni.</p>
   <div class="brain-choices">
@@ -162,13 +183,28 @@ body.dropping .dropzone { display:grid; }
     <button type="button" id="brainLocal" class="brain"><b>Modello locale</b><span>Tutto resta sul dispositivo e non costa nulla. Scarica 1,4–5,7 GB la prima volta e serve WebGPU.</span></button>
   </div>
 </dialog>
-<dialog id="docsDialog">
+<dialog class="holo" id="docsDialog">
   <h2>DOCUMENTI</h2>
   <p class="dlg-note">Letti, indicizzati e cercati solo su questo dispositivo: nessun file viene inviato a server. PDF con testo, Word (.docx), testo, Markdown, CSV, HTML, email.</p>
   <ul id="docsList" class="docs-list"></ul>
   <div class="row"><button type="button" id="docsClear" hidden>Rimuovi tutti</button><button type="button" id="docsAdd">Aggiungi file</button><button type="button" id="docsClose">Chiudi</button></div>
 </dialog>
+<dialog class="holo" id="knowledgeDialog">
+  <h2>BASE DI CONOSCENZA</h2>
+  <p class="dlg-note">Ciò che J.A.R.V.I.S. ha imparato dal web, dai documenti e da lei. Resta su questo dispositivo; può esportarlo e importarlo su un altro.</p>
+  <label>Cerca <input id="kSearch" type="search" placeholder="es. scadenze IMU"></label>
+  <ul id="kList" class="k-list"></ul>
+  <details>
+    <summary class="dlg-note" style="cursor:pointer">Insegna qualcosa a mano</summary>
+    <label>Titolo <input id="kTitle" placeholder="es. Procedura invio F24 dello studio"></label>
+    <label>Contenuto <textarea id="kContent" placeholder="Cosa deve sapere Jarvis, con date e numeri esatti"></textarea></label>
+    <div class="row left"><button type="button" id="kAdd">Salva nella conoscenza</button></div>
+  </details>
+  <input type="file" id="kImportFile" accept=".json,application/json" hidden>
+  <div class="row"><button type="button" id="kImport">Importa</button><button type="button" id="kExport">Esporta</button><button type="button" id="kClose">Chiudi</button></div>
+</dialog>
 <div class="dropzone" aria-hidden="true"><span>Rilasci qui i documenti · restano su questo dispositivo</span></div>
+<script src="hud/reactor.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>
