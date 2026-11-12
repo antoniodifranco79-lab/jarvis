@@ -256,7 +256,7 @@ async function route(text) {
   if (/\bparla (?:più|piu) (piano|lentamente|lento|veloce|velocemente|in fretta)\b/.test(t)) { const slower = /piano|lent/.test(t); settings.voiceRate = Math.max(0.6, Math.min(1.6, Math.round(((+settings.voiceRate || 1) + (slower ? -0.1 : 0.1)) * 10) / 10)); store.set("settings", settings); return { tool: "voce", result: "", direct: `Va bene, ${settings.name}: velocità della voce ${settings.voiceRate.toLocaleString("it-IT")}.` }; }
   if (/^(buongiorno|buon pomeriggio|buonasera)?\s*(jarvis)?[,!]?\s*(briefing|riepilogo (?:della|di) (?:giornata|oggi)|cosa ho oggi|come (?:è|e) la giornata|che cosa ho in programma)\b/.test(t) || /^(buongiorno|buondì)\s*(jarvis)?[.!]*$/.test(t)) return { tool: "briefing", result: briefing(), direct: `${new Date().getHours() < 12 ? "Buongiorno" : "Buonasera"}, ${settings.name}. ${briefing()}`, exact: true };
   if (/\b(tempo (?:mi hai fatto )?risparmiat|quanto tempo (?:ho|mi hai fatto|mi fai) risparmi|statistiche (?:di |d')uso|quanto ti uso)/.test(t)) return { tool: "statistiche", result: statsText(), direct: statsText() + ` Grazie a lei, ${settings.name}.`, exact: true };
-  if (/\b(novità|cosa c'è di nuovo|cosa ce di nuovo|ultima versione|che versione)\b/.test(t)) return { tool: "novità", result: "", direct: NEWS() };
+  if (/\b(novità|cosa c'è di nuovo|cosa ce di nuovo|ultima versione|che versione)(?![a-zà-ÿ])/.test(t)) return { tool: "novità", result: "", direct: NEWS() };
   if (/^(blocca|blocca jarvis|blocca lo schermo)[.!]*$/.test(t)) { if (!settings.pinHash) return { tool: "privacy", result: "", direct: `Prima imposti un PIN nelle impostazioni, ${settings.name}.` }; lockScreen(); return { tool: "privacy", result: "", direct: "", silent: true }; }
   // modelli di documento
   if (/^(modelli|che modelli hai|quali modelli|elenco (?:dei )?modelli|mostra(?:mi)? i modelli)\b/.test(t)) { openTemplates(); return { tool: "modelli", result: "", direct: `Ho ${TEMPLATES.length} modelli pronti, ${settings.name}: ${TEMPLATES.map((x) => x.title.toLowerCase()).join(", ")}. Li ho aperti: scelga, compili i campi e scarichi il Word.` }; }
@@ -320,7 +320,7 @@ async function route(text) {
   const studio = routeStudio(text); if (studio) { track("calcs"); return { tool: studio.tool, result: studio.result, direct: studio.result, exact: true }; }
   if (/^(che ore sono|che ora è|che ora e|che ora sono|dimmi l.ora|sai che ore sono|what time)/.test(t) || /\b(che ore sono|what time is it)\b/.test(t)) return { tool: "orologio", result: `Ora: ${fmtTime()}, ${fmtDate()}.`, direct: `Sono le ${fmtTime()}, ${settings.name}.` };
   if (/\b(che giorno|data di oggi|what day|what's the date)\b/.test(t)) return { tool: "calendario", result: `Oggi è ${fmtDate()}.`, direct: `Oggi è ${fmtDate()}, ${settings.name}.` };
-  if (/\b(meteo|tempo fa|che tempo|piove|pioverà|temperatura|weather|gradi)\b/.test(t)) {
+  if (/\b(meteo|tempo fa|che tempo|piove|pioverà|temperatura|weather|gradi)(?![a-zà-ÿ])/.test(t)) {
     const clean = text.trim().replace(/[?.!]+$/, "").replace(/\s+(oggi|domani|dopodomani|stasera|stamattina|adesso|ora|questa settimana|nel weekend)$/i, "");
     const m = /\b(?:a|in|ad|at|per)\s+([A-Za-zÀ-ÿ' ]{2,30})$/i.exec(clean); const place = (m && m[1].trim()) || settings.city;
     if (!place) return { tool: "meteo", result: "", direct: `Per il meteo mi serve una città, ${settings.name}: la imposti nelle impostazioni, oppure me la dica.` };

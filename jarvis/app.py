@@ -53,6 +53,8 @@ class Jarvis:
             return 0
         self.mcp = MCPHub(self.registry)
         added = await self.mcp.connect(config)
+        if added:
+            self.brain.refresh_tools()
         log.info("MCP: %d tools from %d servers", added, len(self.mcp.servers))
         return added
 

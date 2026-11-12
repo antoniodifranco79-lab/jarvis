@@ -47,6 +47,8 @@ export function parseWhen(text, now = new Date()) {
   else if ((m = /\b(?:a\s+)?mezzanotte\b/.exec(t))) { hh = 0; cut(m[0]); if (!day) { day = new Date(now); day.setDate(day.getDate() + 1); } }
   cut(/\b(di|del|della)\s+(mattina|pomeriggio|sera)\b/g);
   if (hh == null && !day) return null;
+  // "oggi" senza ora: tra un'ora (anche a tarda sera, quando l'ora piena successiva sarebbe già domani)
+  if (hh == null && day && day.toDateString() === now.toDateString() && defHour === Math.min(23, now.getHours() + 1)) return { at: now.getTime() + 36e5, rest: tidy(o) };
   if (hh != null && hh > 23) return null;
   const d = day ? new Date(day) : new Date(now);
   d.setHours(hh != null ? hh : defHour, hh != null ? mm : 0, 0, 0);

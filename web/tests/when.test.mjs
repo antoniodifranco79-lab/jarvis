@@ -60,3 +60,9 @@ test("prossima ricorrenza", () => {
   assert.equal(new Date(nextOccurrence({ every: "weekday", h: 18, m: 0 }, fri)).getDay(), 1, "venerdì sera → lunedì");
   assert.equal(new Date(nextOccurrence({ every: "month", day: 31, h: 9, m: 0 }, new Date(2026, 10, 1))).getDate(), 30, "il 31 a novembre diventa il 30");
 });
+
+test("oggi senza ora, anche a tarda sera", () => {
+  const late = new Date(2026, 10, 11, 23, 30);
+  const r = parseWhen("ricordami oggi di spegnere il server", late);
+  assert.equal(r.at - late.getTime(), 36e5); assert.equal(r.rest, "spegnere il server");
+});

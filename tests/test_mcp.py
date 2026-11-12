@@ -61,3 +61,21 @@ async def test_stdio_server_tools(tmp_path):
         assert hub.status()["connected"] == {"fake": 2}
     finally:
         await hub.close()
+
+
+async def test_app_connects_mcp_and_refreshes_fingerprint(tmp_path, settings, memory, monkeypatch):
+    from jarvis.app import Jarvis
+
+    script = tmp_path / "server.py"
+    script.write_text(SERVER)
+    cfg = tmp_path / "mcp.json"
+    cfg.write_text(json.dumps({"mcpServers": {"fake": {"command": sys.executable, "args": ["-u", str(script)], "trusted": True}}}))
+    monkeypatch.setenv("JARVIS_MCP_CONFIG", str(cfg))
+    j = Jarvis(settings, memory=memory, client=object())
+    before = j.brain.fingerprint
+    try:
+        assert await j.connect_mcp() == 2
+        assert j.brain.fingerprint != before and "mcp__fake__add" in [t["name"] for t in j.brain.tools()]
+        assert not j.registry.get("mcp__fake__delete_everything").dangerous, "trusted server: no confirmation"
+    finally:
+        await j.mcp.close()

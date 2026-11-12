@@ -206,6 +206,12 @@ class Brain:
         self.fingerprint = fingerprint(self.system_prompt, self.model, tool_names)
         self.new_session()
 
+    def refresh_tools(self) -> None:
+        """Tools were added or removed (for example MCP servers connected at start-up): update the fingerprint so
+        a conversation saved with a different tool set is not resumed."""
+        tool_names = self.registry.names() + [t["name"] for t in self.server_tools]
+        self.fingerprint = fingerprint(self.system_prompt, self.model, tool_names)
+
     def new_session(self) -> Session:
         """Forget the current conversation (not the long-term memory) and start afresh."""
         self.session = self.memory.new_session(self.mode, self.fingerprint)
