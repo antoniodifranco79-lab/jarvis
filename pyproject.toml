@@ -44,7 +44,7 @@ voice = [
 vision = ["mss>=9.0", "pillow>=10.0", "opencv-python-headless>=4.9"]
 local = ["ddgs>=9.0"]
 app = ["pywebview>=5.0", "zstandard>=0.22"]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4", "anthropic>=2.7.0"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4", "anthropic>=2.7.0", "zstandard>=0.22"]
 all = ["jarvis-ai[server,voice,vision,local,app,docs,dev]"]
 
 [project.scripts]
