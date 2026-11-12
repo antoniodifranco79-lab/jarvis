@@ -26,6 +26,7 @@ jobs:
           rm -rf _site && mkdir -p _site/app
           cp -r site/. _site/
           cp -r web/. _site/app/
+          rm -rf _site/app/tests   # i test restano nel repository, non nel sito
           touch _site/.nojekyll
           find _site -type f | sort
       - name: Push to gh-pages
