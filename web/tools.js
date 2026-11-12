@@ -54,6 +54,10 @@ export const TOOL_DEFS = [
     input_schema: { type: "object", properties: { testo: str }, required: ["testo"] } },
   { name: "converti_valuta", description: "Converte un importo tra valute con il cambio di riferimento della Banca Centrale Europea (serve internet).",
     input_schema: { type: "object", properties: { importo: num, da: { ...str, description: "Codice ISO, es. USD" }, a: { ...str, description: "Codice ISO, es. EUR" } }, required: ["importo", "da", "a"] } },
+  { name: "leggi_pagina_web", description: "Legge il testo di una pagina web dato l'indirizzo (articoli, normative, circolari, siti di aziende). Usalo quando l'utente dà un link o chiede di leggere o riassumere una pagina.",
+    input_schema: { type: "object", properties: { url: { ...str, description: "Indirizzo completo, con https://" } }, required: ["url"] } },
+  { name: "prepara_email", description: "Prepara un'email pronta da inviare con il programma di posta dell'utente: mostra un pulsante che la apre già compilata (destinatario, oggetto, testo).",
+    input_schema: { type: "object", properties: { destinatario: { ...str, description: "Indirizzo email, se noto." }, oggetto: str, testo: str }, required: ["oggetto", "testo"] } },
   { name: "utilita", description: "Utilità varie con risultato esatto: ora in un'altra città, conversioni di unità (lunghezze, pesi, volumi, superfici, velocità, temperature, dati, energia), distanza in linea d'aria tra città, alba e tramonto, qualità dell'aria, definizione di una parola (Wikizionario), QR code, password sicure, numeri casuali, festività di un anno, numero della settimana.",
     input_schema: { type: "object", properties: { richiesta: { ...str, description: "La richiesta in italiano, es. \"converti 10 km in miglia\", \"distanza tra Milano e Roma\", \"qualità dell'aria a Torino\"." } }, required: ["richiesta"] } },
 ];

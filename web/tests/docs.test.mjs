@@ -42,3 +42,9 @@ test("ripristino di documenti da backup", async () => {
   assert.equal(b.size, 1); assert.match(b.search("fatturato 2025")[0].text, /milione/);
   assert.equal(await b.importDocs([{ name: "rotto" }, null]), 0);
 });
+
+import { isScanned, ACCEPT } from "../docs.js";
+test("scansioni ed Excel riconosciuti", () => {
+  assert.ok(isScanned(["", "  ", "\n3\n"])); assert.ok(!isScanned(["Il contratto ha durata di quattro anni dalla firma. ".repeat(4), ""]));
+  for (const ext of [".xlsx", ".jpg", ".png", ".pdf"]) assert.ok(ACCEPT.includes(ext), ext);
+});

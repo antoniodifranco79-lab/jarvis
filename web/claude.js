@@ -15,7 +15,7 @@ const MAX_CONTINUATIONS = 6, MAX_ROUNDS = 12, MAX_HISTORY_MESSAGES = 80, MAX_HIS
 
 // ------------------------------------------------------------------ strumenti (definiti in tools.js)
 export const toolDefinitions = () => [
-  ...TOOL_DEFS.map((t) => ({ ...t, eager_input_streaming: true })),
+  ...TOOL_DEFS.filter((t) => t.name !== "leggi_pagina_web").map((t) => ({ ...t, eager_input_streaming: true })), // Claude legge il web con web_fetch
   { type: "web_search_20260209", name: "web_search", max_uses: 5, user_location: { type: "approximate", country: "IT" } },
   { type: "web_fetch_20260209", name: "web_fetch", max_uses: 5 },
 ];

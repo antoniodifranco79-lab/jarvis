@@ -82,6 +82,8 @@ Funziona **gratis e senza chiave su qualunque dispositivo**: se il browser ha la
 
 **Versione 2.0: 100 upgrade** ([elenco completo](docs/UPGRADE-100.md)). Calcoli da studio (interessi legali, mutuo, importi in lettere, codice fiscale, forfettario, prestazione occasionale, compenso dal netto, margini, sconti, ore lavorate, cambio BCE), scadenzario fiscale e calendario .ics, analisi dei documenti (scadenze, importi, dati identificativi, clausole, leggibilità), confronto tra versioni, anonimizzazione GDPR, 14 modelli di documento in Word, promemoria ricorrenti con rinvio, briefing del giorno, risposte formattate con i pulsanti leggi, impara e riprova, PIN, modalità privata, backup e cancellazione dei dati, dati dello studio e dell'abbonamento. Tutto in moduli separati e testati: `web/calc.js`, `web/extract.js`, `web/templates.js`, `web/ics.js`, `web/format.js`.
 
+**Scansioni, foto ed Excel**: i PDF scansionati e le foto di documenti si leggono con l'OCR sul dispositivo (Tesseract.js, caricato solo quando serve); i fogli Excel con SheetJS. **Pagine web ed email**: "riassumi https://…" legge la pagina (lettore r.jina.ai, gratuito); ogni risposta si apre come email.
+
 **Utilità** (`web/utility.js`, anche come strumento `utilita` per i cervelli): ora nelle città del mondo, conversioni di unità, distanza tra città, alba e tramonto, qualità dell'aria (Open-Meteo), definizioni dal Wikizionario, QR code, password sicure, numeri casuali, festività dell'anno, numero della settimana. Tutto gratis e senza chiave.
 
 **Test della web app**: `node --test web/tests/*.test.mjs` (promemoria, Word, riassunti, agente locale, motore CPU, documenti, conoscenza, voce, calcoli da studio, controlli statici su strumenti e cache offline); girano anche in CI.

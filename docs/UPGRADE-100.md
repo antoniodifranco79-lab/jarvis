@@ -140,3 +140,8 @@ Test aggiunti in questa versione: quattro nuovi file di test per la web app (cal
 
 - **Server MCP nell'app desktop**: Jarvis usa gli strumenti di qualsiasi server del Model Context Protocol, locale o remoto, configurati in `~/.jarvis/mcp.json`, con conferma per le azioni non di sola lettura.
 - **Utilità nella web app**: ora nelle città del mondo, conversioni di unità, distanza tra città, alba e tramonto, qualità dell'aria, dizionario, QR code, password, numeri casuali, festività dell'anno, numero della settimana; disponibili anche ai cervelli con lo strumento `utilita`.
+- **Scansioni e foto**: i PDF scansionati e le immagini di documenti vengono letti con il riconoscimento del testo (OCR) sul dispositivo, in italiano e inglese.
+- **Excel**: file .xlsx, .xls e .ods letti foglio per foglio, cercabili e analizzabili come gli altri documenti.
+- **Pagine web**: "riassumi https://…" legge la pagina e la passa al cervello attivo; strumento `leggi_pagina_web` anche per il modello locale e Puter.
+- **Email**: pulsante "email" sotto ogni risposta e strumento `prepara_email` che apre il programma di posta con destinatario, oggetto e testo.
+- **Ragionamento più lungo**: con i modelli locali da 4 e 8 miliardi Jarvis può concatenare fino a 6 strumenti per una domanda.

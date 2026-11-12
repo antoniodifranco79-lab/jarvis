@@ -5,7 +5,10 @@
 const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
 const PDFJS_WORKER = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
 const MAMMOTH = "https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js";
-export const ACCEPT = ".pdf,.docx,.txt,.md,.csv,.tsv,.json,.html,.htm,.xml,.eml,.rtf,.log";
+const TESSERACT = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+const XLSX_URL = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+export const ACCEPT = ".pdf,.docx,.xlsx,.xls,.ods,.txt,.md,.csv,.tsv,.json,.html,.htm,.xml,.eml,.rtf,.log,.jpg,.jpeg,.png,.webp,.bmp";
+const IMAGE = /^(jpe?g|png|webp|bmp)$/;
 const MAX_BYTES = 40 * 1024 * 1024;
 
 // ------------------------------------------------------------------ storage (IndexedDB, con ripiego in memoria)
@@ -50,13 +53,39 @@ async function pdfPages(buf) {
   }
   return pages;
 }
+const loadScript = (src, global) => new Promise((res, rej) => { if (window[global]) return res(window[global]); const sc = document.createElement("script"); sc.src = src; sc.onload = () => res(window[global]); sc.onerror = () => rej(new Error("libreria non raggiungibile: serve internet la prima volta")); document.head.appendChild(sc); });
+/** Un PDF è una scansione se le sue pagine non hanno quasi testo. */
+export const isScanned = (pages) => pages.length > 0 && pages.reduce((a, p) => a + p.replace(/\s+/g, "").length, 0) / pages.length < 25;
+let ocrWorker = null;
+/** Riconoscimento del testo (OCR) sul dispositivo, in italiano e inglese: le immagini non lasciano il browser. */
+async function ocr(images, onStep = () => {}) {
+  const T = await loadScript(TESSERACT, "Tesseract");
+  ocrWorker ||= await T.createWorker("ita+eng");
+  const out = [];
+  for (let i = 0; i < images.length; i++) { onStep(`riconosco il testo${images.length > 1 ? `, pagina ${i + 1} di ${images.length}` : ""}`); const r = await ocrWorker.recognize(images[i]); out.push(r.data.text || ""); }
+  return out;
+}
+async function pdfImages(buf, max = 40) {
+  const doc = await pdfjs.getDocument({ data: buf, isEvalSupported: false }).promise, imgs = [];
+  for (let p = 1; p <= Math.min(doc.numPages, max); p++) {
+    const page = await doc.getPage(p), vp = page.getViewport({ scale: 2 }), c = document.createElement("canvas");
+    c.width = vp.width; c.height = vp.height; await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise; imgs.push(c);
+  }
+  return imgs;
+}
+async function sheets(buf) {
+  const X = await loadScript(XLSX_URL, "XLSX"); const wb = X.read(buf, { type: "array", cellDates: true });
+  return wb.SheetNames.map((n) => `Foglio "${n}"\n` + X.utils.sheet_to_csv(wb.Sheets[n], { FS: " ; ", blankrows: false })).filter((t) => t.split("\n").length > 1);
+}
 const loadMammoth = () => (mammothP ||= new Promise((res, rej) => { if (window.mammoth) return res(window.mammoth); const s = document.createElement("script"); s.src = MAMMOTH; s.onload = () => res(window.mammoth); s.onerror = () => rej(new Error("libreria Word non raggiungibile")); document.head.appendChild(s); }));
 const htmlToText = (h) => { const d = new DOMParser().parseFromString(h, "text/html"); d.querySelectorAll("script,style").forEach((n) => n.remove()); return d.body ? d.body.innerText || d.body.textContent : ""; };
 
-export async function extract(file) {
+export async function extract(file, onStep = () => {}) {
   if (file.size > MAX_BYTES) throw new Error(`${file.name} supera i 40 MB`);
   const ext = (file.name.split(".").pop() || "").toLowerCase(), buf = await file.arrayBuffer();
-  if (ext === "pdf" || file.type === "application/pdf") return pdfPages(buf);
+  if (ext === "pdf" || file.type === "application/pdf") { const pages = await pdfPages(buf.slice(0)); if (!isScanned(pages)) return pages; onStep(`${file.name} è una scansione: riconosco il testo`); return ocr(await pdfImages(buf), onStep); }
+  if (IMAGE.test(ext) || /^image\//.test(file.type)) return ocr([file], onStep);
+  if (/^(xlsx|xls|ods)$/.test(ext)) return sheets(buf);
   if (ext === "docx") { const m = await loadMammoth(); const r = await m.extractRawText({ arrayBuffer: buf }); return [r.value]; }
   const text = new TextDecoder("utf-8").decode(buf);
   if (ext === "html" || ext === "htm") return [htmlToText(text)];
@@ -76,9 +105,9 @@ export class Library {
   }
   get size() { return this.docs.length; }
   async add(file, onStep = () => {}) {
-    onStep(`leggo ${file.name}`); const pages = await extract(file); const chunks = chunk(pages);
+    onStep(`leggo ${file.name}`); const pages = await extract(file, onStep); const chunks = chunk(pages);
     const chars = pages.reduce((a, p) => a + p.trim().length, 0);
-    if (!chunks.length || chars < 20) throw new Error(`${file.name} non contiene testo leggibile: se è una scansione serve prima l'OCR`);
+    if (!chunks.length || chars < 20) throw new Error(`${file.name} non contiene testo leggibile, nemmeno con il riconoscimento del testo`);
     const doc = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: file.name, size: file.size, pages: pages.length, chars, added: Date.now(), chunks, text: pages.map((p) => p.replace(/[ \t]+/g, " ").trim()) };
     this.docs = this.docs.filter((d) => d.name !== file.name); try { await tx("readwrite", (st) => st.put(doc)); } catch {}
     this.docs.push(doc); this.rebuild(); return doc;

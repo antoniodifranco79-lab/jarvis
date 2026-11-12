@@ -24,4 +24,11 @@ export function renderRich(text) {
   return out.filter((x, i, a) => x || (a[i - 1] && a[i + 1])).join("");
 }
 /** Vero se il testo ha qualcosa da formattare (altrimenti resta testo semplice). */
+/** Link mailto con oggetto e testo (i client email accettano circa 2.000 caratteri nell'indirizzo). */
+export function mailto(subject, body, to = "") {
+  const max = 1800; let b = String(body || ""); if (encodeURIComponent(b).length > max) { while (encodeURIComponent(b).length > max - 120) b = b.slice(0, Math.floor(b.length * 0.9)); b += "\n\n[…testo completo nel documento Word allegato]"; }
+  return `mailto:${encodeURIComponent(to).replace(/%40/g, "@")}?subject=${encodeURIComponent(subject || "")}&body=${encodeURIComponent(b)}`;
+}
+/** Testo leggibile di una pagina web tramite il lettore pubblico r.jina.ai (gratuito, senza chiave). */
+export const readerUrl = (url) => "https://r.jina.ai/" + String(url).trim();
 export const isRich = (t) => /(^|\n)\s*([-*•]|\d{1,2}[.)])\s|\*\*|https?:\/\/|(^|\n)#{1,3}\s|\[\d{1,2}\]/.test(String(t || ""));

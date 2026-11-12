@@ -17,7 +17,7 @@ import * as util from "./utility.js";
 import * as extract from "./extract.js";
 import { TEMPLATES, findTemplate, fillTemplate } from "./templates.js";
 import { icsCalendar } from "./ics.js";
-import { renderRich, isRich } from "./format.js";
+import { renderRich, isRich, mailto, readerUrl } from "./format.js";
 import { parseRecurring, nextOccurrence, describeRule } from "./when.js";
 import { TOOL_DEFS, CORE_TOOLS } from "./tools.js";
 
@@ -75,11 +75,13 @@ function addActions(el) {
   copy.onclick = async () => { try { await navigator.clipboard.writeText(text()); copy.textContent = "copiato"; } catch { const r = document.createRange(); r.selectNodeContents(el.querySelector(".body")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); copy.textContent = "selezionato"; } setTimeout(() => (copy.textContent = "copia"), 1600); };
   const word = document.createElement("button"); word.type = "button"; word.textContent = "word";
   word.onclick = () => { const t = text(); const title = (t.split(/[.!?\n]/)[0] || "Risposta di Jarvis").replace(/^[-*#\s]+/, "").slice(0, 70); downloadDocx(title, t); track("drafts"); };
+  const mail = document.createElement("button"); mail.type = "button"; mail.textContent = "email"; mail.title = "Apri un'email con questo testo";
+  mail.onclick = () => { const t = text(); location.href = mailto((el.dataset.q || t.split(/[.!?\n]/)[0]).slice(0, 90), t); };
   const say = document.createElement("button"); say.type = "button"; say.textContent = "leggi"; say.title = "Rileggi ad alta voce";
   say.onclick = () => { voice.stop(); speak(text()); };
   const learn = document.createElement("button"); learn.type = "button"; learn.textContent = "impara"; learn.title = "Salva nella base di conoscenza";
   learn.onclick = async () => { const t = text(), q = el.dataset.q || ""; const title = (q || t.split(/[.!?\n]/)[0]).replace(/[?!.]+$/, "").slice(0, 80); await knowledge.learn({ title, content: t.slice(0, 8000), source: "risposta di Jarvis, approvata da " + settings.name, origin: "user" }); renderKnowledge(); learn.textContent = "imparato"; learn.disabled = true; };
-  box.append(copy, word, say, learn);
+  box.append(copy, word, mail, say, learn);
   if (el.dataset.q) { const again = document.createElement("button"); again.type = "button"; again.textContent = "riprova"; again.title = "Chiedi di nuovo"; again.onclick = () => ask(el.dataset.q); box.append(again); }
   el.appendChild(box);
 }
@@ -146,6 +148,16 @@ async function runUtility(text) {
     return { tool: u.tool, result: `QR code pronto per: ${u.data}. Lo inquadri con la fotocamera del telefono.` };
   }
   return null;
+}
+/** Testo di una pagina web: prima il lettore r.jina.ai (gestisce CORS e pagine dinamiche), poi la pagina diretta. */
+async function readPage(url) {
+  if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+  let text = "";
+  try { const r = await fetch(readerUrl(url), { headers: { Accept: "text/plain" } }); if (r.ok) text = await r.text(); } catch {}
+  if (!text.trim()) { try { const r = await fetch(url); if (r.ok) { const d = new DOMParser().parseFromString(await r.text(), "text/html"); d.querySelectorAll("script,style,nav,footer").forEach((n) => n.remove()); text = d.body?.innerText || d.body?.textContent || ""; } } catch {} }
+  text = text.replace(/\n{3,}/g, "\n\n").trim(); if (!text) throw new Error("pagina non raggiungibile da qui");
+  const title = (/^Title:\s*(.+)$/m.exec(text) || [])[1] || url.replace(/^https?:\/\//, "").slice(0, 60);
+  return { title, text: `${title} (fonte: ${url})\n\n${text.slice(0, 12000)}` };
 }
 async function weather(place) {
   const g = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place)}&count=1&language=it&format=json`)).json();
@@ -245,6 +257,7 @@ const HELP = () => `Ecco cosa so fare, ${settings.name}.
 - Promemoria: "ricordami domani alle 9 di…", "ogni lunedì alle 9…", "il 16 di ogni mese…"; "quali promemoria ho", "rimanda di 10 minuti", "esporta i promemoria nel calendario".
 - Ogni risposta ha i pulsanti copia, word, leggi, impara e riprova. "Briefing" riassume la giornata, "quanto tempo mi hai fatto risparmiare" mostra le statistiche.
 - Conoscenza: "impara che…", "cosa hai imparato", "studia…" e "ricerca approfondita su…".
+- Documenti anche da scansioni e foto (riconoscimento del testo sul dispositivo) e da Excel; pagine web: "riassumi https://…"; ogni risposta si apre anche come email.
 - Utilità: "che ore sono a Tokyo", "converti 10 km in miglia", "distanza tra Milano e Roma", "alba a Napoli", "qualità dell'aria a Torino", "cosa significa…", "crea un QR code per…", "genera una password", "festività 2027", "che settimana è".
 - Voce: il microfono per parlare, "ripeti", "basta", "parla più piano".
 Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude" : settings.provider === "puter" ? " con i modelli di punta tramite Puter" : " con il modello che gira su questo dispositivo; per la potenza massima scelga Puter nelle impostazioni"}.`;
@@ -273,6 +286,9 @@ async function route(text) {
     }
   }
   if (library.size && /^(leggimi|leggi ad alta voce|leggi)\b/.test(t) && !/wikipedia/.test(t)) { const d = docFor(text); if (d && (library.mentioned(text) || /\b(documento|file|contratto|testo)\b/.test(t))) { const full = docText(d).replace(/\[p\. \d+\]/g, ""); voice.stop(); speak(full.slice(0, 20000)); return { tool: "lettura", result: "", direct: `Leggo ${d.name}, ${settings.name}. Dica "basta" o prema Esc per fermarmi.`, silent: false, noSpeak: true }; } }
+  // pagine web: "leggi/riassumi https://…" — il testo va al cervello, o si mostra l'inizio
+  const urlM = /(https?:\/\/[^\s<>"]+|www\.[^\s<>"]+)/i.exec(text);
+  if (urlM && /\b(leggi|riassumi|riassunto|cosa dice|di cosa parla|analizza|apri|studia)\b/.test(t) && !/qr/.test(t)) { try { const r = await readPage(urlM[1].replace(/[).,;]+$/, "")); track("searches"); return { tool: "pagina web", result: r.text.slice(0, 6000), direct: `Ecco l'inizio di ${r.title}, ${settings.name}:\n${r.text.split("\n\n").slice(1).join("\n\n").slice(0, 900)}` }; } catch (e) { return { tool: "pagina web", result: "", direct: `Non riesco a leggere quella pagina (${e.message}), ${settings.name}.` }; } }
   // utilità: fusi orari, conversioni, password, festività, distanze, sole, aria, dizionario, QR
   try { const u = /\b(ricordami|ricorda di|ricordati di|avvisami|promemoria)\b/.test(t) ? null : await runUtility(text); if (u) { track("calcs"); return { tool: u.tool, result: u.result, direct: u.result, exact: true }; } } catch (e) { return { tool: "utilità", result: "", direct: `Non ci riesco adesso (${e.message}), ${settings.name}.` }; }
   // cambio valuta (BCE)
@@ -443,10 +459,12 @@ const TOOLS = {
   async usa_modello({ modello, campi = {} }) { const r = fillTemplate(modello, campi, ctxForTemplates()); if (!r) throw new Error("modello sconosciuto"); offerDownload(`📄 ${fileName(r.title)} · scarica il modello compilato in Word`, fileName(r.title), docxBlob(r.title, r.body, fmtDate())); track("drafts"); return { text: `Modello "${r.title}" pronto (link nella conversazione).${r.missing.length ? " Campi da completare a mano: " + r.missing.join(", ") + "." : ""}\n\n${r.body.slice(0, 1500)}` }; },
   async elenca_promemoria() { return { text: listReminders() }; },
   async cancella_promemoria({ testo }) { const w = String(testo).toLowerCase(); const hit = reminders.filter((r) => r.message.toLowerCase().includes(w)); hit.forEach((r) => cancelReminder(r.id)); return { text: hit.length ? `Cancellati: ${hit.map((r) => r.message).join("; ")}.` : "Nessun promemoria con quel testo." }; },
+  async leggi_pagina_web({ url }) { const r = await readPage(url); return { text: r.text, sources: [{ doc: r.title, page: null, text: r.text.slice(0, 900), n: "web" }] }; },
+  async prepara_email({ destinatario = "", oggetto, testo }) { const el = addTurn("tool", ""); const a = document.createElement("a"); a.href = mailto(oggetto, testo, destinatario); a.className = "dl"; a.textContent = `✉ apri l'email "${oggetto}"${destinatario ? " a " + destinatario : ""}`; el.querySelector(".body").appendChild(a); track("drafts"); return { text: "Email pronta: l'utente la apre con il link nella conversazione e la invia dal suo programma di posta." }; },
   async utilita({ richiesta }) { const r = await runUtility(richiesta); if (!r) throw new Error('richiesta non riconosciuta: es. "che ore sono a Tokyo", "converti 10 km in miglia", "distanza tra Milano e Roma", "qualità dell\'aria a Torino", "alba a Napoli", "cosa significa ossimoro", "crea un QR code per …", "genera una password", "festività 2027"'); return { text: r.result }; },
   async converti_valuta({ importo, da, a }) { return { text: await exchange(importo, String(da).toUpperCase(), String(a).toUpperCase()) }; },
 };
-const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word", calcolo_professionale: "calcolo", scadenze_fiscali: "scadenzario", analizza_documento: "analisi documento", confronta_documenti: "confronto", anonimizza_documento: "anonimizza", usa_modello: "modello", elenca_promemoria: "promemoria", cancella_promemoria: "promemoria", converti_valuta: "cambio", utilita: "utilità" };
+const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word", calcolo_professionale: "calcolo", scadenze_fiscali: "scadenzario", analizza_documento: "analisi documento", confronta_documenti: "confronto", anonimizza_documento: "anonimizza", usa_modello: "modello", elenca_promemoria: "promemoria", cancella_promemoria: "promemoria", converti_valuta: "cambio", utilita: "utilità", leggi_pagina_web: "leggo la pagina", prepara_email: "email" };
 async function getClaudeSession() {
   const m = await loadClaude();
   return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: TOOLS }));
@@ -483,6 +501,7 @@ Lavori con strumenti: usali con decisione, in parallelo quando sono indipendenti
 - Lettere, email, comunicazioni, verbali da usare: scrivili con crea_bozza, che produce un file Word da scaricare. Per solleciti, diffide, disdette, incarichi, preventivi, convocazioni, verbali, informative privacy, deleghe, quietanze e policy AI usa usa_modello con i campi che conosci.
 - Interessi, mutui, importi in lettere, codice fiscale, forfettario, prestazioni occasionali, margini e sconti: calcolo_professionale. Scadenze fiscali: scadenze_fiscali.
 - Date, importi, dati identificativi e clausole di un documento: analizza_documento; due versioni: confronta_documenti; copia senza dati personali: anonimizza_documento.
+- Link e pagine web: leggi_pagina_web. Email da inviare: prepara_email.
 - Studiare e verificare: cerca_wikipedia e leggi_wikipedia (anche in inglese con lingua "en"), poi salva ciò che conta con impara (titolo breve, contenuto sintetico con date e numeri, fonte). Quando l'utente ti insegna qualcosa di utile, usa impara; per ciò che hai già studiato, cerca_conoscenza.
 - Ogni messaggio inizia con [Contesto] (data, ora, fatti, documenti, conoscenze pertinenti): usalo senza ripeterlo.
 Non inventare mai fatti, numeri, norme o risultati: se non sai, usa uno strumento o dillo. Su temi legali, fiscali e medici sii accurato e ricorda di verificare con la fonte ufficiale quando la decisione è importante.`;
@@ -633,6 +652,8 @@ function localTools(text = "") {
   if (/ore sono a|fuso|convert|distanza|alba|tramonto|aria|smog|significa|definizione|qr|password|casuale|festiv|settimana/.test(t)) want.add("utilita");
   if (/codic|iban|partita iva/.test(t)) want.add("verifica_codice");
   if (/documenti|file/.test(t)) want.add("list_documents");
+  if (/https?:\/\/|www\.|pagina|sito/.test(t)) want.add("leggi_pagina_web");
+  if (/email|mail|scrivi a|invia a/.test(t)) want.add("prepara_email");
   if (/dimentic/.test(t)) want.add("dimentica");
   if (/giorni tra|quanti giorni/.test(t)) want.add("giorni_tra_date");
   if (/ricorda che|memorizza/.test(t)) want.add("ricorda");
@@ -659,7 +680,7 @@ async function askLocal(text, toolResult, passages = [], maxChars = 700) {
   const think = settings.think || (isComplex(text) && /4B|8B/.test(app.model || ""));
   if (think) caption.textContent = "ragiono a fondo…";
   const res = await runLocalAgent({ engine: app.engine, system: localSystem(text), history: history.slice(-6), userContent, tools: TOOLS, think,
-    onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B|-cpu$/.test(app.model || "") ? 0 : 4, isAborted: () => app.aborted });
+    onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B|-cpu$/.test(app.model || "") ? 0 : /4B|8B/.test(app.model || "") ? 6 : 4, isAborted: () => app.aborted });
   view.finish(res.answer, [...passages, ...res.sources]);
   return res.answer;
 }
@@ -736,7 +757,7 @@ async function addFiles(files) {
   try { await navigator.storage?.persist?.(); const est = await navigator.storage?.estimate?.(); if (est && est.quota && est.usage / est.quota > 0.85) notice("La memoria del browser è quasi piena: rimuova documenti che non servono o faccia un backup."); } catch {}
   for (const f of files) {
     setState("tool", "leggo"); caption.textContent = `leggo ${f.name}`.toLowerCase();
-    try { const d = await library.add(f); addTool("documenti", `${d.name}: ${d.pages > 1 ? d.pages + " pagine, " : ""}${d.chunks.length} passaggi indicizzati`); }
+    try { const d = await library.add(f, (st) => { caption.textContent = st.toLowerCase().slice(0, 60); }); addTool("documenti", `${d.name}: ${d.pages > 1 ? d.pages + " pagine, " : ""}${d.chunks.length} passaggi indicizzati`); }
     catch (e) { console.warn(e); notice(String(e.message || e)); }
   }
   setState("idle"); renderDocs();

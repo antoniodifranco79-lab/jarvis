@@ -26,3 +26,11 @@ test("calendario .ics valido, con ricorrenze e avvisi", () => {
   for (const line of ics.split("\r\n")) assert.ok(new TextEncoder().encode(line).length <= 75, line);
   assert.equal(rrule({ every: "month", day: 16 }), "FREQ=MONTHLY;BYMONTHDAY=16");
 });
+
+import { mailto, readerUrl } from "../format.js";
+test("email e lettore web", () => {
+  const m = mailto("Sollecito Rossi", "Gentile Rossi,\nla fattura è scaduta.", "rossi@example.com");
+  assert.match(m, /^mailto:rossi@example\.com\?subject=Sollecito%20Rossi&body=Gentile%20Rossi%2C%0Ala%20fattura/);
+  assert.ok(mailto("x", "a".repeat(5000)).length < 2100, "testi lunghi accorciati");
+  assert.equal(readerUrl(" https://example.com/a "), "https://r.jina.ai/https://example.com/a");
+});

@@ -3,7 +3,7 @@
 // - Librerie esterne con versione fissa (jsdelivr @x.y.z) e caratteri: prima la copia salvata, sono immutabili.
 // - Pesi dei modelli (Hugging Face, GitHub): li gestiscono WebLLM e wllama nelle loro cache.
 // Risultato: dopo il primo avvio J.A.R.V.I.S. funziona anche senza internet.
-const CACHE = "jarvis-v10";
+const CACHE = "jarvis-v11";
 const SHELL = ["./", "./index.html", "./app.js", "./docs.js", "./studio.js", "./claude.js", "./knowledge.js", "./tools.js", "./voice.js", "./localagent.js", "./cpuengine.js", "./puterbrain.js", "./when.js", "./docx.js", "./summarize.js", "./calc.js", "./extract.js", "./templates.js", "./ics.js", "./format.js", "./utility.js", "./hud/hud.css", "./hud/reactor.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 const IMMUTABLE = (u) => (u.hostname === "cdn.jsdelivr.net" && /@\d+\.\d+\.\d+/.test(u.pathname)) || u.hostname === "fonts.gstatic.com" || u.hostname === "fonts.googleapis.com";
 
