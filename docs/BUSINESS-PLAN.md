@@ -85,7 +85,7 @@ Con gli annuali la cassa arriva prima del ricorrente: 4 nuovi clienti al mese di
 
 ## 6. Canali, in ordine di resa
 
-1. **Rete diretta.** Commercialista, avvocato, notaio che già conosci: la prima diagnosi la vendi a chi ti conosce. Obiettivo: 3 clienti pilota nel mese 1.
+1. **Rete diretta.** Commercialista, avvocato, notaio che già conosci: il primo abbonamento lo vendi a chi ti conosce. Obiettivo: 3 clienti fondatori nel mese 1.
 2. **Email mirate agli studi del territorio.** Elenchi pubblici degli Ordini (ODCEC, Ordine Avvocati, Consulenti del Lavoro) della provincia. 20 email a settimana, personalizzate con il nome dello studio. Modello sotto.
 3. **LinkedIn.** Un post a settimana con un caso concreto ("cosa succede a un bilancio incollato in ChatGPT"), video di 60 secondi di Jarvis che legge un documento in locale. Il profilo rimanda al sito.
 4. **Ordini professionali e associazioni.** Proponi agli Ordini locali un seminario gratuito di 1 ora "AI Act e privacy in studio: cosa fare entro fine anno". Ogni seminario porta 3-5 diagnosi.
@@ -131,9 +131,10 @@ Con gli annuali la cassa arriva prima del ricorrente: 4 nuovi clienti al mese di
 |---|---|
 | Contatti inviati | < 15 a settimana |
 | Chiamate fissate | < 4 a settimana |
-| Chiamate → diagnosi | < 15% |
-| Diagnosi → installazione | < 40% (rivedere la diagnosi o il prezzo) |
-| Disdette canoni | > 1 al mese |
+| Chiamate → demo in studio | < 30% |
+| Demo → nuovo abbonato | < 40% (rivedere la demo o il piano proposto) |
+| Abbonati sull'annuale | < 40% (spingere i due mesi gratis) |
+| Disdette | > 1 al mese |
 
 ## 9. Rischi e risposte
 
@@ -150,10 +151,10 @@ Con gli annuali la cassa arriva prima del ricorrente: 4 nuovi clienti al mese di
 La guida operativa giorno per giorno, con i testi da dire, è [VENDITA.md](VENDITA.md); la lista dei contatti è [CONTATTI.csv](CONTATTI.csv).
 
 
-1. **Abilitare GitHub Pages**: Settings → Pages → Source: "GitHub Actions". Il workflow pubblica da solo al prossimo push (oggi fallisce solo per questo).
+1. **Sito già online** su GitHub Pages (ramo `gh-pages`, ripubblicato a ogni modifica): controllare che i prezzi degli abbonamenti siano quelli che si vogliono.
 2. Telefono già sul sito (+39 379 166 7781, anche WhatsApp). Aggiungere l'email professionale in `site/index.html`, oggetto `CONTACT` in fondo al file.
 3. Aprire la Partita IVA (o verificare il regime forfettario: 15% fino a 85.000 €, 5% i primi 5 anni se nuova attività) e un conto dedicato.
-4. Scegliere 3 studi conosciuti e proporre la diagnosi pilota a 290 € entro questa settimana.
+4. Scegliere 3 studi conosciuti e proporre l'offerta clienti fondatori (Studio annuale a 2.400 € il primo anno, in cambio di testimonianza) entro questa settimana.
 5. Scaricare l'elenco ODCEC e Ordine Avvocati della provincia; preparare 20 email per lunedì.
 6. Registrare un video di 60 secondi di Jarvis che legge un PDF in locale; pubblicarlo su LinkedIn con il link al sito.
-7. Comprare un dominio (es. `antoniodifranco.it`) e puntarlo a GitHub Pages: Settings → Pages → Custom domain. Costa 10-15 €/anno e cambia la percezione.
+7. Comprare un dominio (es. `leonardodifranco.it`) e puntarlo a GitHub Pages: Settings → Pages → Custom domain. Costa 10-15 €/anno e cambia la percezione.

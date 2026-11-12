@@ -139,7 +139,7 @@ Se sei fornitore ammesso, ogni cliente paga meno: a Roma il contributo è il 70%
 
 **Rivenditori dei gestionali (TeamSystem, Zucchetti, Wolters Kluwer, OPEN Dot Com, Sistemi) e tecnici informatici degli studi.** Entrano negli studi ogni settimana e non vendono AI locale.
 
-> Ciao, sono Leonardo. Installo assistenti AI che girano sui PC degli studi, senza cloud, con la formazione AI Act. Non tocco il gestionale né l'hardware, che restano vostri. Ti propongo il 15% su ogni installazione che mi segnali, e io segnalo a te gli studi che hanno bisogno di PC nuovi. Ci prendiamo un caffè?
+> Ciao, sono Leonardo. Installo assistenti AI che girano sui PC degli studi, senza cloud, con la formazione AI Act. Non tocco il gestionale né l'hardware, che restano vostri. Ti propongo il 15% del primo anno di ogni abbonamento che mi segnali, e io segnalo a te gli studi che hanno bisogno di PC nuovi. Ci prendiamo un caffè?
 
 ---
 
@@ -289,7 +289,7 @@ Una settimana dopo ogni consegna:
 | 9 | Prime chiamate di 30 minuti; visita 5 studi della tua via | Almeno 2 chiamate fatte |
 | 10 | 10 email; telefona a chi non ha risposto alla prima email | 1 demo in calendario |
 | 11 | Contatta 2 rivenditori di gestionali e 1 tecnico informatico | 1 caffè fissato |
-| 12 | Prima Diagnosi (anche a prezzo pilota 290 € per uno studio amico, in cambio di testimonianza) | Report consegnato |
+| 12 | Primo abbonato (offerta clienti fondatori: Studio annuale a 2.400 € il primo anno, in cambio di testimonianza) | Contratto firmato |
 | 13 | 10 email; seguiti del giorno 8; email all'Ordine degli Avvocati | 10 contatti |
 | 14 | Foglio dei numeri: cosa ha funzionato di più? Raddoppia quello | Piano della settimana 3 scritto |
 
