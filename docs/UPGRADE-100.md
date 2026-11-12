@@ -135,3 +135,8 @@ Ogni voce è una funzione che esiste nel codice, coperta da test automatici (`no
 ---
 
 Test aggiunti in questa versione: quattro nuovi file di test per la web app (calcoli, documenti, modelli, calendario e formattazione) e nuovi casi in quelli esistenti (promemoria ricorrenti, ricerca esatta, ripristino, cancellazione), uno per l'app desktop, più una prova completa nel browser che usa ogni funzione come farebbe un cliente.
+
+## Dopo la 2.0: tutti gli strumenti
+
+- **Server MCP nell'app desktop**: Jarvis usa gli strumenti di qualsiasi server del Model Context Protocol, locale o remoto, configurati in `~/.jarvis/mcp.json`, con conferma per le azioni non di sola lettura.
+- **Utilità nella web app**: ora nelle città del mondo, conversioni di unità, distanza tra città, alba e tramonto, qualità dell'aria, dizionario, QR code, password, numeri casuali, festività dell'anno, numero della settimana; disponibili anche ai cervelli con lo strumento `utilita`.

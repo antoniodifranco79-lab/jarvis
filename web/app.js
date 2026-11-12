@@ -13,6 +13,7 @@ import { parseWhen, describeWhen } from "./when.js";
 import { docxBlob, fileName } from "./docx.js";
 import { summarize, summaryFocus } from "./summarize.js";
 import * as calc from "./calc.js";
+import * as util from "./utility.js";
 import * as extract from "./extract.js";
 import { TEMPLATES, findTemplate, fillTemplate } from "./templates.js";
 import { icsCalendar } from "./ics.js";
@@ -112,6 +113,40 @@ const IT_DAYS = ["domenica", "lunedì", "martedì", "mercoledì", "giovedì", "v
 const fmtTime = (d = new Date()) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 const fmtDate = (d = new Date()) => `${IT_DAYS[d.getDay()]} ${d.getDate()} ${IT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 const WMO = { 0: "cielo sereno", 1: "poco nuvoloso", 2: "parzialmente nuvoloso", 3: "coperto", 45: "nebbia", 48: "nebbia gelata", 51: "pioviggine leggera", 53: "pioviggine", 55: "pioviggine intensa", 61: "pioggia leggera", 63: "pioggia", 65: "pioggia forte", 71: "neve leggera", 73: "neve", 75: "neve forte", 80: "rovesci leggeri", 81: "rovesci", 82: "rovesci violenti", 95: "temporale", 96: "temporale con grandine", 99: "temporale con grandine forte" };
+async function geocode(place) {
+  const g = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place)}&count=1&language=it&format=json`)).json();
+  const loc = g.results && g.results[0]; if (!loc) throw new Error(`non trovo "${place}"`); return { lat: loc.latitude, lon: loc.longitude, name: loc.name + (loc.country ? ", " + loc.country : "") };
+}
+const AQI = (v) => (v <= 20 ? "buona" : v <= 40 ? "discreta" : v <= 60 ? "moderata" : v <= 80 ? "scarsa" : v <= 100 ? "molto scarsa" : "pessima");
+let qrLib = null;
+const loadQr = () => (qrLib ||= new Promise((res, rej) => { if (window.qrcode) return res(window.qrcode); const sc = document.createElement("script"); sc.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"; sc.onload = () => res(window.qrcode); sc.onerror = () => rej(new Error("libreria QR non raggiungibile")); document.head.appendChild(sc); }));
+/** Utilità: risposte immediate (utility.js) o con la rete (distanze, sole, aria, dizionario, QR). */
+async function runUtility(text) {
+  const u = util.routeUtility(text); if (!u) return null;
+  if (!u.need) return u;
+  const here = (p) => p || settings.city;
+  if (u.need === "distanza") { const [a, b] = await Promise.all([geocode(u.a), geocode(u.b)]); const km = util.haversine(a, b); return { tool: u.tool, result: `In linea d'aria da ${a.name} a ${b.name}: ${Math.round(km).toLocaleString("it-IT")} km (su strada di solito il 20-30% in più).` }; }
+  if (u.need === "sole" || u.need === "aria") {
+    if (!here(u.place)) return { tool: u.tool, result: `Mi dica la città, o la imposti nelle impostazioni, ${settings.name}.` };
+    const g = await geocode(here(u.place));
+    if (u.need === "sole") { const j = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lon}&daily=sunrise,sunset,daylight_duration&timezone=auto&forecast_days=1`)).json(); const hm = (x) => x.slice(11, 16); const dl = j.daily.daylight_duration[0] / 3600; return { tool: u.tool, result: `Oggi a ${g.name} il sole sorge alle ${hm(j.daily.sunrise[0])} e tramonta alle ${hm(j.daily.sunset[0])}: ${Math.floor(dl)} ore e ${Math.round((dl % 1) * 60)} minuti di luce.` }; }
+    const j = await (await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${g.lat}&longitude=${g.lon}&current=european_aqi,pm10,pm2_5,nitrogen_dioxide,ozone`)).json(); const c = j.current;
+    return { tool: u.tool, result: `Qualità dell'aria a ${g.name} adesso: ${AQI(c.european_aqi)} (indice europeo ${Math.round(c.european_aqi)}). PM10 ${Math.round(c.pm10)} µg/m³, PM2,5 ${Math.round(c.pm2_5)}, biossido di azoto ${Math.round(c.nitrogen_dioxide)}, ozono ${Math.round(c.ozone)}.` };
+  }
+  if (u.need === "dizionario") {
+    const j = await (await fetch(`https://it.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&titles=${encodeURIComponent(u.word)}&format=json&origin=*`)).json();
+    const page = Object.values(j.query?.pages || {})[0], ex = page?.extract || "";
+    const it = (ex.split(/\n== (?!Italiano)[^=]+ ==\n/)[0].split(/== Italiano ==/)[1] || ex).replace(/^=+ ?(.+?) ?=+$/gm, "$1:").split("\n").filter((l) => l.trim() && !/^(Sillabazione|Pronuncia|Etimologia|Sinonimi|Contrari|Parole derivate|Termini correlati|Traduzione|Note|Citazione)/.test(l)).join(" ").replace(/\s+/g, " ").slice(0, 600);
+    if (it.trim().length > 20) return { tool: u.tool, result: `${u.word} (Wikizionario): ${it.trim()}` };
+    const w = await wikipedia(u.word); return { tool: u.tool, result: w || `Non trovo la definizione di "${u.word}", ${settings.name}.` };
+  }
+  if (u.need === "qr") {
+    const q = await loadQr(); const qr = q(0, "M"); qr.addData(u.data); qr.make(); const url = qr.createDataURL(8, 16);
+    const el = addTurn("tool", ""); const img = document.createElement("img"); img.src = url; img.alt = "QR code: " + u.data; img.className = "qr"; const a = document.createElement("a"); a.href = url; a.download = "qr-code.gif"; a.className = "dl"; a.textContent = " scarica il QR code"; el.querySelector(".body").append(img, a);
+    return { tool: u.tool, result: `QR code pronto per: ${u.data}. Lo inquadri con la fotocamera del telefono.` };
+  }
+  return null;
+}
 async function weather(place) {
   const g = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(place)}&count=1&language=it&format=json`)).json();
   const loc = g.results && g.results[0]; if (!loc) return { error: `Non trovo "${place}".` };
@@ -210,6 +245,7 @@ const HELP = () => `Ecco cosa so fare, ${settings.name}.
 - Promemoria: "ricordami domani alle 9 di…", "ogni lunedì alle 9…", "il 16 di ogni mese…"; "quali promemoria ho", "rimanda di 10 minuti", "esporta i promemoria nel calendario".
 - Ogni risposta ha i pulsanti copia, word, leggi, impara e riprova. "Briefing" riassume la giornata, "quanto tempo mi hai fatto risparmiare" mostra le statistiche.
 - Conoscenza: "impara che…", "cosa hai imparato", "studia…" e "ricerca approfondita su…".
+- Utilità: "che ore sono a Tokyo", "converti 10 km in miglia", "distanza tra Milano e Roma", "alba a Napoli", "qualità dell'aria a Torino", "cosa significa…", "crea un QR code per…", "genera una password", "festività 2027", "che settimana è".
 - Voce: il microfono per parlare, "ripeti", "basta", "parla più piano".
 Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude" : settings.provider === "puter" ? " con i modelli di punta tramite Puter" : " con il modello che gira su questo dispositivo; per la potenza massima scelga Puter nelle impostazioni"}.`;
 async function route(text) {
@@ -237,6 +273,8 @@ async function route(text) {
     }
   }
   if (library.size && /^(leggimi|leggi ad alta voce|leggi)\b/.test(t) && !/wikipedia/.test(t)) { const d = docFor(text); if (d && (library.mentioned(text) || /\b(documento|file|contratto|testo)\b/.test(t))) { const full = docText(d).replace(/\[p\. \d+\]/g, ""); voice.stop(); speak(full.slice(0, 20000)); return { tool: "lettura", result: "", direct: `Leggo ${d.name}, ${settings.name}. Dica "basta" o prema Esc per fermarmi.`, silent: false, noSpeak: true }; } }
+  // utilità: fusi orari, conversioni, password, festività, distanze, sole, aria, dizionario, QR
+  try { const u = /\b(ricordami|ricorda di|ricordati di|avvisami|promemoria)\b/.test(t) ? null : await runUtility(text); if (u) { track("calcs"); return { tool: u.tool, result: u.result, direct: u.result, exact: true }; } } catch (e) { return { tool: "utilità", result: "", direct: `Non ci riesco adesso (${e.message}), ${settings.name}.` }; }
   // cambio valuta (BCE)
   const fx = calc.parseCambio(t); if (fx) { try { const r = await exchange(fx.amount, fx.from, fx.to); track("calcs"); return { tool: "cambio", result: r, direct: r, exact: true }; } catch (e) { return { tool: "cambio", result: "", direct: `Non riesco a ottenere il cambio adesso (${e.message}), ${settings.name}.` }; } }
   if (/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/.test(t)) return { tool: "aiuto", result: "", direct: HELP() };
@@ -405,9 +443,10 @@ const TOOLS = {
   async usa_modello({ modello, campi = {} }) { const r = fillTemplate(modello, campi, ctxForTemplates()); if (!r) throw new Error("modello sconosciuto"); offerDownload(`📄 ${fileName(r.title)} · scarica il modello compilato in Word`, fileName(r.title), docxBlob(r.title, r.body, fmtDate())); track("drafts"); return { text: `Modello "${r.title}" pronto (link nella conversazione).${r.missing.length ? " Campi da completare a mano: " + r.missing.join(", ") + "." : ""}\n\n${r.body.slice(0, 1500)}` }; },
   async elenca_promemoria() { return { text: listReminders() }; },
   async cancella_promemoria({ testo }) { const w = String(testo).toLowerCase(); const hit = reminders.filter((r) => r.message.toLowerCase().includes(w)); hit.forEach((r) => cancelReminder(r.id)); return { text: hit.length ? `Cancellati: ${hit.map((r) => r.message).join("; ")}.` : "Nessun promemoria con quel testo." }; },
+  async utilita({ richiesta }) { const r = await runUtility(richiesta); if (!r) throw new Error('richiesta non riconosciuta: es. "che ore sono a Tokyo", "converti 10 km in miglia", "distanza tra Milano e Roma", "qualità dell\'aria a Torino", "alba a Napoli", "cosa significa ossimoro", "crea un QR code per …", "genera una password", "festività 2027"'); return { text: r.result }; },
   async converti_valuta({ importo, da, a }) { return { text: await exchange(importo, String(da).toUpperCase(), String(a).toUpperCase()) }; },
 };
-const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word", calcolo_professionale: "calcolo", scadenze_fiscali: "scadenzario", analizza_documento: "analisi documento", confronta_documenti: "confronto", anonimizza_documento: "anonimizza", usa_modello: "modello", elenca_promemoria: "promemoria", cancella_promemoria: "promemoria", converti_valuta: "cambio" };
+const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word", calcolo_professionale: "calcolo", scadenze_fiscali: "scadenzario", analizza_documento: "analisi documento", confronta_documenti: "confronto", anonimizza_documento: "anonimizza", usa_modello: "modello", elenca_promemoria: "promemoria", cancella_promemoria: "promemoria", converti_valuta: "cambio", utilita: "utilità" };
 async function getClaudeSession() {
   const m = await loadClaude();
   return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: TOOLS }));
@@ -591,6 +630,7 @@ function localTools(text = "") {
   if (/anonim|privacy|dati personali|gdpr/.test(t)) want.add("anonimizza_documento");
   if (/promemoria|ricord|cancell/.test(t)) { want.add("elenca_promemoria"); want.add("cancella_promemoria"); }
   if (/valut|cambio|dollar|sterlin|franchi|yen/.test(t)) want.add("converti_valuta");
+  if (/ore sono a|fuso|convert|distanza|alba|tramonto|aria|smog|significa|definizione|qr|password|casuale|festiv|settimana/.test(t)) want.add("utilita");
   if (/codic|iban|partita iva/.test(t)) want.add("verifica_codice");
   if (/documenti|file/.test(t)) want.add("list_documents");
   if (/dimentic/.test(t)) want.add("dimentica");

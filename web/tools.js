@@ -54,6 +54,8 @@ export const TOOL_DEFS = [
     input_schema: { type: "object", properties: { testo: str }, required: ["testo"] } },
   { name: "converti_valuta", description: "Converte un importo tra valute con il cambio di riferimento della Banca Centrale Europea (serve internet).",
     input_schema: { type: "object", properties: { importo: num, da: { ...str, description: "Codice ISO, es. USD" }, a: { ...str, description: "Codice ISO, es. EUR" } }, required: ["importo", "da", "a"] } },
+  { name: "utilita", description: "Utilità varie con risultato esatto: ora in un'altra città, conversioni di unità (lunghezze, pesi, volumi, superfici, velocità, temperature, dati, energia), distanza in linea d'aria tra città, alba e tramonto, qualità dell'aria, definizione di una parola (Wikizionario), QR code, password sicure, numeri casuali, festività di un anno, numero della settimana.",
+    input_schema: { type: "object", properties: { richiesta: { ...str, description: "La richiesta in italiano, es. \"converti 10 km in miglia\", \"distanza tra Milano e Roma\", \"qualità dell'aria a Torino\"." } }, required: ["richiesta"] } },
 ];
 /** Strumenti per i modelli locali più piccoli (contesto corto): i più utili, per non riempire il prompt. */
 export const CORE_TOOLS = ["search_documents", "read_document", "calcola_iva", "calcola_fattura_professionista", "calcola_scadenza", "calcolo_professionale", "scadenze_fiscali", "analizza_documento", "usa_modello", "crea_bozza", "imposta_promemoria", "impara", "cerca_conoscenza", "meteo", "cerca_wikipedia", "leggi_wikipedia"];

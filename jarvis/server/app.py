@@ -220,6 +220,7 @@ def create_app(
                 "system": status_snapshot(),
                 "knowledge": len(list_notes(settings.workspace)),
                 "documents": count_documents(settings.workspace),
+                "mcp": j.mcp.status() if getattr(j, "mcp", None) else {"connected": {}, "errors": {}},
             }
         )
 

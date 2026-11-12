@@ -82,11 +82,29 @@ Funziona **gratis e senza chiave su qualunque dispositivo**: se il browser ha la
 
 **Versione 2.0: 100 upgrade** ([elenco completo](docs/UPGRADE-100.md)). Calcoli da studio (interessi legali, mutuo, importi in lettere, codice fiscale, forfettario, prestazione occasionale, compenso dal netto, margini, sconti, ore lavorate, cambio BCE), scadenzario fiscale e calendario .ics, analisi dei documenti (scadenze, importi, dati identificativi, clausole, leggibilità), confronto tra versioni, anonimizzazione GDPR, 14 modelli di documento in Word, promemoria ricorrenti con rinvio, briefing del giorno, risposte formattate con i pulsanti leggi, impara e riprova, PIN, modalità privata, backup e cancellazione dei dati, dati dello studio e dell'abbonamento. Tutto in moduli separati e testati: `web/calc.js`, `web/extract.js`, `web/templates.js`, `web/ics.js`, `web/format.js`.
 
+**Utilità** (`web/utility.js`, anche come strumento `utilita` per i cervelli): ora nelle città del mondo, conversioni di unità, distanza tra città, alba e tramonto, qualità dell'aria (Open-Meteo), definizioni dal Wikizionario, QR code, password sicure, numeri casuali, festività dell'anno, numero della settimana. Tutto gratis e senza chiave.
+
 **Test della web app**: `node --test web/tests/*.test.mjs` (promemoria, Word, riassunti, agente locale, motore CPU, documenti, conoscenza, voce, calcoli da studio, controlli statici su strumenti e cache offline); girano anche in CI.
 
 **Voce.** `web/voice.js` sceglie la voce più naturale del dispositivo (prima le voci neurali Microsoft "Natural" di Edge, poi quelle di rete Google, poi le Premium di Apple, mai le voci robotiche), legge a frasi brevi con l'intonazione naturale e prepara il testo come lo direbbe una persona: importi in euro e centesimi, percentuali, date per esteso, ore, abbreviazioni sciolte, niente citazioni né link. Nelle impostazioni si sceglie la voce, maschile o femminile e la velocità. L'app desktop applica la stessa pulizia (`jarvis/voice/speechtext.py`) alle voci neurali Microsoft di edge-tts.
 
 Si pubblica con GitHub Pages dal ramo `gh-pages`, che il workflow `pages.yml` ricostruisce a ogni modifica di `site/` o `web/`: la web app risponde a `https://<utente>.github.io/jarvis/app/`, mentre la radice `https://<utente>.github.io/jarvis/` è il sito di Leonardo Di Franco (cartella `site/`, vedi [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md)). Da Chrome su Android: "Aggiungi a schermata Home". Richiede Chrome aggiornato e Android 12 o più recente per WebGPU; senza WebGPU restano attivi gli strumenti.
+
+## Tutti gli strumenti del mondo: server MCP (app desktop)
+
+Jarvis desktop è un client [Model Context Protocol](https://modelcontextprotocol.io): può usare gli strumenti di qualsiasi server MCP, locale o remoto (file, database, calendari, CRM, GitHub, browser, gestionali…). Basta elencarli in `~/.jarvis/mcp.json`, nello stesso formato di Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/percorso/documenti"] },
+    "fetch": { "command": "uvx", "args": ["mcp-server-fetch"] },
+    "remoto": { "url": "https://esempio.it/mcp", "headers": { "Authorization": "Bearer …" }, "trusted": false }
+  }
+}
+```
+
+All'avvio Jarvis si collega, registra ogni strumento come `mcp__<server>__<strumento>` e lo usa quando serve. Gli strumenti che non sono dichiarati di sola lettura chiedono conferma prima di agire, a meno che il server sia segnato `"trusted": true`. Stato dei collegamenti in `/api/status` (campo `mcp`). Nessuna dipendenza in più: il client (`jarvis/mcp_client.py`) parla JSON-RPC su stdio e su Streamable HTTP.
 
 ## Su tablet Android (Termux)
 
