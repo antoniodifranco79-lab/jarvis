@@ -41,12 +41,14 @@ const library = new Library();
 const knowledge = new Knowledge();
 let facts = store.get("facts", []);          // long-term memory: strings
 let history = store.get("history", []);      // [{role, content}]
+history = history.filter((m) => m && typeof m.content === "string" && m.content.trim() && !looksBroken(m.content)); // via le risposte senza senso salvate prima
 let inputHistory = store.get("inputHistory", []), histPos = inputHistory.length; // domande recenti, richiamabili con ↑
 let reminders = store.get("reminders", []);  // [{id, message, at, rule?}]
 // Statistiche d'uso, solo su questo dispositivo: servono a mostrare il tempo risparmiato.
 const stats = Object.assign({ since: Date.now(), questions: 0, summaries: 0, drafts: 0, analyses: 0, calcs: 0, searches: 0, reminders: 0, minutes: 0 }, store.get("stats", {}));
 const SAVED = { questions: 2, summaries: 20, drafts: 15, analyses: 10, calcs: 3, searches: 5, reminders: 1 };
 const track = (kind, n = 1) => { stats[kind] = (stats[kind] || 0) + n; stats.minutes += (SAVED[kind] || 0) * n; store.set("stats", stats); };
+const t0 = (x) => String(x || "").toLowerCase().trim();
 const saveHistory = () => { if (!settings.privateMode) store.set("history", history); };
 const app = { state: "idle", engine: null, engineReady: false, level: 0, streaming: null, wake: false, recognizing: false, speaking: Promise.resolve(), lang: settings.lang };
 
@@ -711,7 +713,9 @@ async function askLocal(text, toolResult, passages = [], maxChars = 700) {
   const view = streamRenderer(); TOOLS._n = passages.length;
   const think = settings.think || (isComplex(text) && /4B|8B/.test(app.model || ""));
   if (think) caption.textContent = "ragiono a fondo…";
-  const res = await runLocalAgent({ engine: app.engine, system: localSystem(text), history: history.slice(-6), userContent, tools: TOOLS, think,
+  const small = /0\.6B|1\.7B|-cpu$/.test(app.model || "");
+  const past = history.filter((m) => !looksBroken(m.content)).slice(small ? -2 : -6);
+  const res = await runLocalAgent({ engine: app.engine, system: localSystem(text), history: past, userContent, tools: TOOLS, think, temperature: small ? 0.4 : 0.5, maxTokens: small ? 500 : 900,
     onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B|-cpu$/.test(app.model || "") ? 0 : /4B|8B/.test(app.model || "") ? 6 : 4, isAborted: () => app.aborted });
   if (looksBroken(res.answer, text) && !app.aborted) return recoverBroken(view, text);
   view.finish(res.answer, [...passages, ...res.sources]);
@@ -719,7 +723,7 @@ async function askLocal(text, toolResult, passages = [], maxChars = 700) {
 }
 /** Risposta incomprensibile: si scarta, si passa a un motore più compatibile e la domanda viene ripetuta da sola. */
 function recoverBroken(view, question) {
-  view.discard();
+  view.discard(); history = history.filter((m) => !looksBroken(m.content)).slice(-4); saveHistory();
   const step = /q4f16/.test(app.model || "") ? "f32" : /-cpu$/.test(app.model || "") ? "puter" : "cpu";
   if (step === "puter") { const a = `Il modello su questo dispositivo non riesce a rispondere bene a questa domanda, ${settings.name}.`; addTurn("jarvis", a, "jarvis", { plain: true }); suggestPower("Per domande così serve un cervello più grande."); store.set("powerHint", 0); return a; }
   if (step === "f32") settings.forceF32 = true; else settings.preferCpu = true;
@@ -765,7 +769,17 @@ async function ask(text, opts = {}) {
       answer = `Sto ancora preparando il cervello (${app.brain.pct}%), ${settings.name}. Le rispondo appena è pronto, non serve riscrivere.`;
       addTurn("jarvis", answer, "jarvis"); speak(answer); return;
     }
-    if (app.engineReady && needsModel) answer = await askLocal(text, routed ? routed.result : "", passages);
+    const tiny = /0\.6B|-cpu$/.test(app.model || "");
+    if (app.engineReady && needsModel && tiny && !passages.length && !(routed && routed.result)) {
+      // I modelli minuscoli inventano nella conversazione libera: rispondono solo su documenti, strumenti e fonti.
+      const smallTalk = /^(ciao|salve|hey|ehi|buongiorno|buonasera|buon pomeriggio)\b|come stai|come va|tutto bene/.test(t0(text)) ? `Sto benissimo, grazie, ${settings.name}: tutti i sistemi operativi. In cosa posso esserle utile?`
+        : /^(grazie|ti ringrazio|perfetto|ottimo)\b/.test(t0(text)) ? `Dovere, ${settings.name}.`
+        : /chi sei|cosa sei|come ti chiami|cosa fai/.test(t0(text)) ? `Sono J.A.R.V.I.S., il suo assistente, ${settings.name}: leggo e analizzo i documenti, faccio i calcoli da studio, preparo lettere e modelli in Word, gestisco promemoria e scadenze. Scriva "aiuto" per l'elenco completo.` : "";
+      if (smallTalk) { answer = smallTalk; addTurn("jarvis", answer, "jarvis", { plain: true }); speak(answer); } else {
+      answer = `Per questa domanda il cervello su questo dispositivo è troppo piccolo e rischierei di dire cose senza senso, ${settings.name}. Posso aiutarla con documenti, calcoli, scadenze, promemoria, modelli e Wikipedia ("chi è…", "cos'è…"). Per la conversazione libera attivi la Potenza massima, gratis.`;
+      addTurn("jarvis", answer, "jarvis", { plain: true }); speak(answer); store.set("powerHint", 0); suggestPower("Potenza massima usa Claude e i modelli di punta, gratis con un account Puter."); }
+    }
+    else if (app.engineReady && needsModel) answer = await askLocal(text, routed ? routed.result : "", passages);
     else if (passages.length) { answer = `Ecco i passaggi più pertinenti, ${settings.name}. ${app.engineReady ? "" : "Con il modello attivo li riassumerei io; intanto li apra qui sotto."}`.trim(); const el = addTurn("jarvis", answer, "jarvis"); addSources(el, passages); el.querySelectorAll("details")[0]?.setAttribute("open", ""); speak(answer); }
     else if (routed && routed.noSpeak) { answer = routed.direct; addTurn("jarvis", answer, "jarvis"); }
     else { answer = routed ? routed.direct : `Il cervello non è disponibile su questo dispositivo${app.brain.reason ? " (" + app.brain.reason + ")" : ""}, ${settings.name}. Posso comunque cercare nei documenti e nella conoscenza, fare calcoli da studio, dirle l'ora e il meteo, impostare promemoria e cercare su Wikipedia. Scriva "aiuto" per l'elenco.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }

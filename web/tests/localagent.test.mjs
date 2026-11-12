@@ -59,6 +59,7 @@ test("risposte incomprensibili riconosciute", () => {
   assert.ok(looksBroken("Pomodoro", "mi spieghi cosa prevede il contratto di locazione?"));
   assert.ok(looksBroken("@@ ## $$ ^^ ~~ || @@ ## ^^ ~~", "riassumi il documento"));
   assert.ok(!looksBroken("Sì.", "Il preavviso è di sei mesi?"));
+  assert.ok(looksBroken("[Contesto] oggi è giovedì, sono le 10. Documenti caricati: nessuno.", "che ore sono?"), "ripete il prompt");
   assert.ok(!looksBroken("Il preavviso per il recesso è di sei mesi [1].", "quanto è il preavviso?"));
   assert.ok(!looksBroken("Fatto. Glielo ricordo domani alle 09:00, Signore.", "ricordami domani alle 9 di chiamare Rossi"));
   assert.ok(!looksBroken("Buongiorno! Come posso aiutarla oggi?", "ciao"));

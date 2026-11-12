@@ -36,6 +36,7 @@ export function parseToolCalls(text) {
  *  dei telefoni (calcoli a 16 bit) o quando un modello piccolo si perde. */
 export function looksBroken(answer, question = "") {
   const a = String(answer || "").trim(); if (!a) return true;
+  if (/\[(Contesto|Passaggi|Risultato strumento)\]|<\/?tool_(call|response)>|<\|im_(start|end)\|>/.test(a)) return true; // il modello ripete il prompt
   const letters = a.replace(/[\s\d\p{P}\p{S}]/gu, ""); if (!letters.length) return a.length > 0 && question.length > 12;
   const foreign = (letters.match(/[^\p{Script=Latin}]/gu) || []).length; if (foreign / letters.length > 0.3) return true;
   const symbols = (a.match(/[^\p{L}\p{N}\s.,;:!?'"«»()\-–—€%/°@#&*+=\[\]]/gu) || []).length; if (symbols / a.length > 0.15) return true;
@@ -65,13 +66,14 @@ export function coerceArgs(name, args) {
  * Esegue una domanda con il ciclo strumenti. engine: motore WebLLM (chat.completions.create in streaming).
  * Callbacks: onText(delta), onTool(name, args), onThinking(). Restituisce {answer, sources, rounds}.
  */
-export async function runLocalAgent({ engine, system, history = [], userContent, tools, think = false, onText, onTool, onThinking, maxRounds = 4, resultChars = 3500, isAborted = () => false }) {
+export async function runLocalAgent({ engine, system, history = [], userContent, tools, think = false, onText, onTool, onThinking, maxRounds = 4, resultChars = 3500, isAborted = () => false, temperature = 0.5, maxTokens = 900 }) {
   const suffix = think ? "" : " /no_think";
   const messages = [{ role: "system", content: system }, ...history, { role: "user", content: userContent + suffix }];
   const sources = []; let answer = "", rounds = 0, final = false;
   while (true) {
     let out = "", shown = "";
-    const stream = await engine.chat.completions.create({ messages, stream: true, temperature: 0.35, max_tokens: think ? 2600 : 900, stop: ["</tool_call>"] });
+    // Campionamento consigliato per Qwen3 senza ragionamento (top_p 0,8) con penalità leggere contro i giri a vuoto.
+    const stream = await engine.chat.completions.create({ messages, stream: true, temperature, top_p: 0.8, presence_penalty: 0.3, frequency_penalty: 0.2, max_tokens: think ? 2600 : maxTokens, stop: ["</tool_call>"] });
     for await (const chunk of stream) {
       const d = chunk.choices?.[0]?.delta?.content || ""; if (!d) continue; out += d;
       if (/<think>(?![\s\S]*<\/think>)/.test(out)) onThinking?.();
