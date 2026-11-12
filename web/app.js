@@ -600,11 +600,14 @@ async function loadOnGpu(candidates) {
   let lastErr = "";
   for (const model of candidates) {
     const name = model.replace(/-q4f(16|32)_1-MLC$/, "");
-    $("model").textContent = name + " · scarico";
+    let cached = false; try { cached = await webllm.hasModelInCache?.(model); } catch {}
+    $("model").textContent = name + (cached ? " · avvio" : " · scarico");
+    if (cached) showProgress(1, `${name} è già su questo dispositivo: avvio senza scaricare nulla`);
+    else if (!navigator.onLine) { lastErr = "serve internet solo la prima volta, per scaricare il cervello"; continue; }
     try {
       app.engine = await webllm.CreateMLCEngine(model, { initProgressCallback: (p) => { const m = /(\d+(?:\.\d+)?)\s*MB fetched/i.exec(p.text || ""); showProgress((p.progress || 0) * 100, `${name}${m ? ", " + m[1] + " MB scaricati" : ""}`); } }, { context_window_size: /0\.6B|1\.7B/.test(model) ? 6144 : 8192 });
       app.model = model; settings.lastModel = name; store.set("settings", settings);
-      brainReady(name.replace("Qwen3-", "Qwen3 "), "sulla scheda grafica"); return null;
+      brainReady(name.replace("Qwen3-", "Qwen3 "), "sulla scheda grafica, salvato su questo dispositivo: funziona anche senza internet"); return null;
     } catch (e) { console.warn(model, e); lastErr = friendly(e); notice(`${name} non entra in questo dispositivo, provo un modello più piccolo.`); }
   }
   return lastErr || "nessun modello entra nella memoria grafica";
@@ -736,17 +739,17 @@ async function ask(text, opts = {}) {
     let answer;
     const deep = /^(?:ricerca approfondita(?: su)?|approfondisci|fai una ricerca(?: approfondita)? su|ricerca su)\s+(.+?)[?.!]*$/i.exec(text);
     if (deep) { answer = await deepResearch(deep[1].trim()); if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory(); return; }
-    if (usingPuter() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
+    if (usingPuter() && navigator.onLine && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
       setState("thinking"); answer = await askPuter(text);
       if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
       return;
     }
-    if (usingClaude() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
+    if (usingClaude() && navigator.onLine && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
       setState("thinking"); answer = await askClaude(text);
       if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory();
       return;
     }
-    if (FULLSUM.test(text) && library.size && app.engineReady && !usingPuter() && !usingClaude()) {
+    if (FULLSUM.test(text) && library.size && app.engineReady && (!(usingPuter() || usingClaude()) || !navigator.onLine)) {
       const doc = library.mentioned(text) || (library.size === 1 && (DOCWORDS.test(text) || /^\s*(riassumi(lo|la)?|sintetizza(lo|la)?|fammi un riassunto|riassunto)\s*[.!?]*$/i.test(text)) ? library.docs[0] : null);
       if (doc) { answer = await summarizeDocument(doc, text); if (answer) history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); saveHistory(); return; }
     }
@@ -1098,6 +1101,8 @@ let installEvent = null;
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; if (!matchMedia("(display-mode: standalone)").matches) $("installBtn").style.display = "block"; });
 $("installBtn").onclick = async () => { if (!installEvent) return; installEvent.prompt(); await installEvent.userChoice; $("installBtn").style.display = "none"; };
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+// Archiviazione persistente: il browser non cancella modello, documenti e conoscenza per fare spazio.
+try { navigator.storage?.persisted?.().then((p) => { if (!p) navigator.storage.persist?.(); }); } catch {}
 applyLook(); renderSuggest(); if (settings.pinHash) lockScreen();
 updateReminderChip(); reminders.forEach(armReminder);
 history.slice(-6).filter((m) => m.content && String(m.content).trim()).forEach((m) => addTurn(m.role === "user" ? "user" : "jarvis", m.content, m.role === "user" ? "lei" : "jarvis"));
@@ -1108,7 +1113,12 @@ renewalNotice();
 library.load().then(() => { renderDocs(); refreshTele(); });
 { const rq = store.get("retryQuestion", ""); if (rq) { store.set("retryQuestion", ""); app.queue.push(rq); addTurn("user", rq, "lei"); } }
 knowledge.load().then(renderKnowledge);
-if (usingPuter()) {
+if ((usingPuter() || usingClaude()) && !navigator.onLine) {
+  // Senza internet i cervelli in rete non rispondono: si usa quello salvato sul dispositivo, per questa sessione.
+  notice("Nessuna connessione: uso il cervello salvato su questo dispositivo. Torno alla potenza massima quando c'è internet.");
+  loadEngine();
+}
+else if (usingPuter()) {
   $("model").textContent = "Potenza massima · Puter";
   loadPuterBrain().then((m) => m.loadPuter().then(() => { showBrain(); if (m.isSignedIn()) notice("Cervello: potenza massima con Puter, i modelli di punta senza chiave."); else booted.then(() => { notice("Per la potenza massima colleghi un account Puter gratuito dalle impostazioni."); openSettings(); }); })).catch(() => { notice("Non raggiungo Puter: passo al cervello locale."); settings.provider = "local"; store.set("settings", settings); loadEngine(); });
 }
