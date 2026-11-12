@@ -3,9 +3,10 @@
 // si esportano e si importano in JSON per portarle su un altro dispositivo.
 import { tokens } from "./docs.js";
 
-let dbp = null;
+let dbp = null, DB = "jarvis-knowledge";
+export const setKnowledgeDb = (name) => { DB = name; dbp = null; };
 const db = () => (dbp ||= new Promise((res) => {
-  try { const r = indexedDB.open("jarvis-knowledge", 1); r.onupgradeneeded = () => r.result.createObjectStore("items", { keyPath: "id" }); r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch { res(null); }
+  try { const r = indexedDB.open(DB, 1); r.onupgradeneeded = () => r.result.createObjectStore("items", { keyPath: "id" }); r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch { res(null); }
 }));
 const tx = async (mode, fn) => { const d = await db(); if (!d) return null; return new Promise((res, rej) => { const t = d.transaction("items", mode), st = t.objectStore("items"); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
 const norm = (s) => tokens(s || "").join(" ");

@@ -95,6 +95,7 @@ dialog.holo::backdrop { background: rgba(2, 7, 13, 0.6); backdrop-filter: blur(4
 @keyframes dot { 0%, 100% { opacity: .2; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-4px); } }
 @keyframes dlg-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .turn, dialog.holo, .turn.typing .dots i { animation: none; } .turn .acts button:hover, .suggest button:hover { transform: none; } }
+body.personal .brand h1::after { content: "PERSONALE"; margin-left: 10px; font: 600 0.55rem var(--font-mono); letter-spacing: 0.2em; color: #1a1205; background: linear-gradient(135deg, #f3dcaa, #d4a95a); padding: 3px 7px; vertical-align: middle; }
 @media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(320px, 44vw); } .left { display: none; } .strip { display: flex; } }
 @media (max-width: 760px) {
   body.hud { font-size: 16px; }
@@ -272,6 +273,8 @@ dialog.holo::backdrop { background: rgba(2, 7, 13, 0.6); backdrop-filter: blur(4
       <div class="row left"><button type="button" id="backupBtn">Backup completo</button><button type="button" id="restoreBtn">Ripristina backup</button><button type="button" id="wipeBtn">Cancella tutti i dati</button></div>
       <p class="dlg-note">Il backup contiene impostazioni, memoria, promemoria, conoscenza, cronologia e documenti, in un file che resta suo. La chiave di Claude e il PIN non vengono inclusi.</p>
     </fieldset>
+    <div class="row left"><button type="button" id="switchProfile">Apri il mio Jarvis personale</button></div>
+    <p class="dlg-note">Il Jarvis personale ha memoria, documenti, liste e impostazioni separati da quello dello studio, sullo stesso dispositivo. Si installa a parte sulla schermata Home.</p>
     <p class="dlg-note" id="aboutLine"></p>
     <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
   </form>

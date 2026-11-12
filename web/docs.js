@@ -12,9 +12,11 @@ const IMAGE = /^(jpe?g|png|webp|bmp)$/;
 const MAX_BYTES = 40 * 1024 * 1024;
 
 // ------------------------------------------------------------------ storage (IndexedDB, con ripiego in memoria)
-let dbp = null;
+let dbp = null, DB = "jarvis-docs";
+/** Archivio separato per profilo (studio o personale). Va chiamato prima di load(). */
+export const setDocsDb = (name) => { DB = name; dbp = null; };
 const db = () => (dbp ||= new Promise((res) => {
-  try { const r = indexedDB.open("jarvis-docs", 1); r.onupgradeneeded = () => r.result.createObjectStore("docs", { keyPath: "id" }); r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch { res(null); }
+  try { const r = indexedDB.open(DB, 1); r.onupgradeneeded = () => r.result.createObjectStore("docs", { keyPath: "id" }); r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch { res(null); }
 }));
 const tx = async (mode, fn) => { const d = await db(); if (!d) return null; return new Promise((res, rej) => { const t = d.transaction("docs", mode), st = t.objectStore("docs"); const out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
 

@@ -5,8 +5,8 @@
 // Risultato: dopo il primo avvio J.A.R.V.I.S. funziona anche senza internet.
 // Due cache: quella dell'app cambia nome a ogni versione; quella delle librerie (URL con versione fissa) resta.
 // Le cache degli altri (modelli di WebLLM, wllama, Puter) NON si toccano mai: il modello si scarica una volta sola.
-const CACHE = "jarvis-app-v13", CDN = "jarvis-cdn";
-const SHELL = ["./", "./index.html", "./app.js", "./docs.js", "./studio.js", "./claude.js", "./knowledge.js", "./tools.js", "./voice.js", "./localagent.js", "./cpuengine.js", "./puterbrain.js", "./when.js", "./docx.js", "./summarize.js", "./calc.js", "./extract.js", "./templates.js", "./ics.js", "./format.js", "./utility.js", "./hud/hud.css", "./hud/reactor.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const CACHE = "jarvis-app-v14", CDN = "jarvis-cdn";
+const SHELL = ["./", "./index.html", "./app.js", "./docs.js", "./studio.js", "./claude.js", "./knowledge.js", "./tools.js", "./voice.js", "./localagent.js", "./cpuengine.js", "./puterbrain.js", "./when.js", "./docx.js", "./summarize.js", "./calc.js", "./extract.js", "./templates.js", "./ics.js", "./format.js", "./utility.js", "./hud/hud.css", "./hud/reactor.js", "./manifest.webmanifest", "./manifest-personale.webmanifest", "./lists.js", "./icon-192.png", "./icon-512.png"];
 const IMMUTABLE = (u) => (u.hostname === "cdn.jsdelivr.net" && /@\d+\.\d+\.\d+/.test(u.pathname)) || u.hostname === "fonts.gstatic.com" || u.hostname === "fonts.googleapis.com";
 
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });

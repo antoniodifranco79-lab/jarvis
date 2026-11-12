@@ -84,6 +84,8 @@ Funziona **gratis e senza chiave su qualunque dispositivo**: se il browser ha la
 
 **Scansioni, foto ed Excel**: i PDF scansionati e le foto di documenti si leggono con l'OCR sul dispositivo (Tesseract.js, caricato solo quando serve); i fogli Excel con SheetJS. **Pagine web ed email**: "riassumi https://…" legge la pagina (lettore r.jina.ai, gratuito); ogni risposta si apre come email.
 
+**Jarvis personale**: `app/?p=personale` apre un secondo Jarvis per la vita privata, con memoria, documenti, liste, promemoria e impostazioni separati da quello dello studio, installabile a parte sulla schermata Home. Liste (`web/lists.js`): "aggiungi latte e pane alla lista della spesa", "metti chiamare il dentista nella lista cose da fare", "ho comprato il latte", "cosa devo fare".
+
 **Utilità** (`web/utility.js`, anche come strumento `utilita` per i cervelli): ora nelle città del mondo, conversioni di unità, distanza tra città, alba e tramonto, qualità dell'aria (Open-Meteo), definizioni dal Wikizionario, QR code, password sicure, numeri casuali, festività dell'anno, numero della settimana. Tutto gratis e senza chiave.
 
 **Test della web app**: `node --test web/tests/*.test.mjs` (promemoria, Word, riassunti, agente locale, motore CPU, documenti, conoscenza, voce, calcoli da studio, controlli statici su strumenti e cache offline); girano anche in CI.

@@ -58,6 +58,8 @@ export const TOOL_DEFS = [
     input_schema: { type: "object", properties: { url: { ...str, description: "Indirizzo completo, con https://" } }, required: ["url"] } },
   { name: "prepara_email", description: "Prepara un'email pronta da inviare con il programma di posta dell'utente: mostra un pulsante che la apre già compilata (destinatario, oggetto, testo).",
     input_schema: { type: "object", properties: { destinatario: { ...str, description: "Indirizzo email, se noto." }, oggetto: str, testo: str }, required: ["oggetto", "testo"] } },
+  { name: "gestisci_lista", description: "Liste dell'utente sul dispositivo (spesa, cose da fare, regali, qualsiasi lista con un nome): aggiungere, togliere, segnare come fatte, mostrare, svuotare.",
+    input_schema: { type: "object", properties: { azione: { type: "string", enum: ["aggiungi", "togli", "fatto", "mostra", "svuota", "elenco"] }, lista: { ...str, description: "Nome della lista, es. \"spesa\" o \"cose da fare\"." }, voci: { ...str, description: "Voci separate da virgole (per aggiungi, togli, fatto)." } }, required: ["azione"] } },
   { name: "utilita", description: "Utilità varie con risultato esatto: ora in un'altra città, conversioni di unità (lunghezze, pesi, volumi, superfici, velocità, temperature, dati, energia), distanza in linea d'aria tra città, alba e tramonto, qualità dell'aria, definizione di una parola (Wikizionario), QR code, password sicure, numeri casuali, festività di un anno, numero della settimana.",
     input_schema: { type: "object", properties: { richiesta: { ...str, description: "La richiesta in italiano, es. \"converti 10 km in miglia\", \"distanza tra Milano e Roma\", \"qualità dell'aria a Torino\"." } }, required: ["richiesta"] } },
 ];

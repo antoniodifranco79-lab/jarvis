@@ -2,8 +2,9 @@
 // the hands (clock, weather, calculator, reminders, memory, Wikipedia, studio tools, documents) are plain
 // JavaScript; voice comes from the browser. Nothing leaves the device except weather/Wikipedia lookups:
 // documents are read, indexed and searched inside the browser.
-import { Library, ACCEPT } from "./docs.js";
-import { Knowledge } from "./knowledge.js";
+import { Library, ACCEPT, setDocsDb } from "./docs.js";
+import { Knowledge, setKnowledgeDb } from "./knowledge.js";
+import { parseList, applyList } from "./lists.js";
 import { routeStudio } from "./studio.js";
 import * as studio from "./studio.js";
 import { Voice } from "./voice.js";
@@ -24,14 +25,18 @@ import { TOOL_DEFS, CORE_TOOLS } from "./tools.js";
 const APP_VERSION = "2.0";
 
 const $ = (id) => document.getElementById(id);
+// Profilo: Jarvis dello studio (default) o Jarvis personale (?p=personale), con memoria, documenti e impostazioni separati.
+const PERSONAL = new URLSearchParams(location.search).get("p") === "personale";
+const PREFIX = PERSONAL ? "jarvis.p." : "jarvis.";
+if (PERSONAL) { setDocsDb("jarvis-p-docs"); setKnowledgeDb("jarvis-p-knowledge"); document.body.classList.add("personal"); document.title = "J.A.R.V.I.S. · personale"; const ml = document.querySelector('link[rel="manifest"]'); if (ml) ml.href = "manifest-personale.webmanifest"; }
 const transcript = $("transcript"), input = $("input"), stateChip = $("stateChip"), caption = $("caption");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const WEBLLM_URL = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.88/lib/index.js";
 
 // ---------------------------------------------------------------- settings & memory (local only)
 const store = {
-  get(key, fallback) { try { const v = localStorage.getItem("jarvis." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
-  set(key, value) { try { localStorage.setItem("jarvis." + key, JSON.stringify(value)); } catch {} },
+  get(key, fallback) { try { const v = localStorage.getItem(PREFIX + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(PREFIX + key, JSON.stringify(value)); } catch {} },
 };
 const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "", provider: "local", claudeModel: "claude-opus-5-5", voiceIt: "", voiceEn: "", voiceRate: 1, voiceGender: "male", puterModel: "", studio: "", signer: "", textSize: 1, privateMode: false, pinHash: "", briefing: true, sound: true, plan: "", billing: "annuale", renewal: "" }, store.get("settings", {}));
 const claudeKey = { get: () => store.get("claudeKey", ""), set: (k) => store.set("claudeKey", k) };
@@ -43,6 +48,7 @@ let facts = store.get("facts", []);          // long-term memory: strings
 let history = store.get("history", []);      // [{role, content}]
 history = history.filter((m) => m && typeof m.content === "string" && m.content.trim() && !looksBroken(m.content)); // via le risposte senza senso salvate prima
 let inputHistory = store.get("inputHistory", []), histPos = inputHistory.length; // domande recenti, richiamabili con ↑
+let lists = store.get("lists", {});             // { nome: [{ text, done, added }] }
 let reminders = store.get("reminders", []);  // [{id, message, at, rule?}]
 // Statistiche d'uso, solo su questo dispositivo: servono a mostrare il tempo risparmiato.
 const stats = Object.assign({ since: Date.now(), questions: 0, summaries: 0, drafts: 0, analyses: 0, calcs: 0, searches: 0, reminders: 0, minutes: 0 }, store.get("stats", {}));
@@ -237,10 +243,13 @@ async function exchange(amount, from, to) {
 }
 function briefing() {
   const now = new Date(), today = reminders.filter((r) => new Date(r.at).toDateString() === now.toDateString()).sort((a, b) => a.at - b.at);
-  const fiscal = calc.scadenzeFiscali(now, 7).list;
+  const fiscal = PERSONAL ? [] : calc.scadenzeFiscali(now, 7).list;
   const parts = [`Oggi è ${fmtDate(now)}, sono le ${fmtTime(now)}.`];
   parts.push(today.length ? `Promemoria di oggi: ${today.map((r) => `${fmtTime(new Date(r.at))} ${r.message}`).join("; ")}.` : "Nessun promemoria per oggi.");
-  parts.push(fiscal.length ? `Scadenze fiscali entro una settimana: ${fiscal.map((x) => `${x.date.getDate()}/${x.date.getMonth() + 1} ${x.title}`).join("; ")}.` : "Nessuna scadenza fiscale ordinaria entro una settimana.");
+  if (!PERSONAL) parts.push(fiscal.length ? `Scadenze fiscali entro una settimana: ${fiscal.map((x) => `${x.date.getDate()}/${x.date.getMonth() + 1} ${x.title}`).join("; ")}.` : "Nessuna scadenza fiscale ordinaria entro una settimana.");
+  const todo = (lists["cose da fare"] || []).filter((x) => !x.done), spesa = (lists.spesa || []).filter((x) => !x.done);
+  if (todo.length) parts.push(`Cose da fare: ${todo.slice(0, 6).map((x) => x.text).join(", ")}${todo.length > 6 ? ` e altre ${todo.length - 6}` : ""}.`);
+  if (spesa.length) parts.push(`Nella lista della spesa ${spesa.length} vo${spesa.length === 1 ? "ce" : "ci"}.`);
   if (library.size) parts.push(`In archivio ${library.size} document${library.size === 1 ? "o" : "i"} e ${knowledge.size} conoscenze.`);
   return parts.join(" ");
 }
@@ -265,6 +274,8 @@ const HELP = () => `Ecco cosa so fare, ${settings.name}.
 Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude" : settings.provider === "puter" ? " con i modelli di punta tramite Puter" : " con il modello che gira su questo dispositivo; per la potenza massima scelga Puter nelle impostazioni"}.`;
 async function route(text) {
   const t = text.toLowerCase().trim(); let m0;
+  // liste: spesa, cose da fare, qualsiasi lista
+  const lc = parseList(text); if (lc) { const r = applyList(lists, lc); store.set("lists", lists); renderSuggest(); return { tool: "liste", result: r, direct: r, exact: true }; }
   // voce e conversazione
   if (/^(basta|stop|silenzio|zitto|fermati|smetti di parlare)[.!]*$/.test(t)) { voice.stop(); return { tool: "voce", result: "", direct: "", silent: true }; }
   if (/^(ripeti|puoi ripetere|come hai detto|ripetilo)\b/.test(t)) { const last = [...transcript.querySelectorAll(".turn.jarvis")].pop(); const a = last ? rawText(last) : ""; return { tool: "voce", result: "", direct: a || `Non ho ancora detto nulla da ripetere, ${settings.name}.` }; }
@@ -404,7 +415,9 @@ let claudeMod = null, claudeSession = null;
 const loadClaude = async () => (claudeMod ||= await import("./claude.js"));
 const contextLine = (question = "") => {
   const known = knowledge.relevant(question, 3);
-  return [`oggi è ${fmtDate()}, sono le ${fmtTime()}`, settings.city ? `città dell'utente: ${settings.city}` : "", facts.length ? `fatti memorizzati: ${facts.join("; ")}` : "nessun fatto memorizzato",
+  const open = Object.entries(lists).map(([n, l]) => [n, l.filter((x) => !x.done)]).filter(([, l]) => l.length);
+  return [PERSONAL ? `questo è il Jarvis personale di ${settings.name}: vita privata, impegni, liste, casa, viaggi, idee; non lo studio` : "",
+    `oggi è ${fmtDate()}, sono le ${fmtTime()}`, open.length ? "liste aperte: " + open.map(([n, l]) => `${n} (${l.slice(0, 8).map((x) => x.text).join(", ")})`).join("; ") : "", settings.city ? `città dell'utente: ${settings.city}` : "", facts.length ? `fatti memorizzati: ${facts.join("; ")}` : "nessun fatto memorizzato",
     library.size ? `documenti caricati: ${library.docs.map((d) => d.name).join("; ")}` : "nessun documento caricato",
     knowledge.size ? `base di conoscenza: ${knowledge.size} voci` : "base di conoscenza vuota",
     known.length ? "conoscenze pertinenti:\n" + known.map((k) => `- ${k.title}: ${k.content.slice(0, 600)}${k.source ? ` (fonte: ${k.source})` : ""}`).join("\n") : ""].filter(Boolean).join(". ") + ".";
@@ -463,10 +476,11 @@ const TOOLS = {
   async cancella_promemoria({ testo }) { const w = String(testo).toLowerCase(); const hit = reminders.filter((r) => r.message.toLowerCase().includes(w)); hit.forEach((r) => cancelReminder(r.id)); return { text: hit.length ? `Cancellati: ${hit.map((r) => r.message).join("; ")}.` : "Nessun promemoria con quel testo." }; },
   async leggi_pagina_web({ url }) { const r = await readPage(url); return { text: r.text, sources: [{ doc: r.title, page: null, text: r.text.slice(0, 900), n: "web" }] }; },
   async prepara_email({ destinatario = "", oggetto, testo }) { const el = addTurn("tool", ""); const a = document.createElement("a"); a.href = mailto(oggetto, testo, destinatario); a.className = "dl"; a.textContent = `✉ apri l'email "${oggetto}"${destinatario ? " a " + destinatario : ""}`; el.querySelector(".body").appendChild(a); track("drafts"); return { text: "Email pronta: l'utente la apre con il link nella conversazione e la invia dal suo programma di posta." }; },
+  async gestisci_lista({ azione, lista = "cose da fare", voci = "" }) { const map = { aggiungi: "aggiungi", togli: "togli", fatto: "fatto", mostra: "mostra", svuota: "svuota", elenco: "elenco" }; const r = applyList(lists, { action: map[azione] || "mostra", list: String(lista).toLowerCase(), items: String(voci).split(/,|;/).map((x) => x.trim()).filter(Boolean) }); store.set("lists", lists); renderSuggest(); return { text: r }; },
   async utilita({ richiesta }) { const r = await runUtility(richiesta); if (!r) throw new Error('richiesta non riconosciuta: es. "che ore sono a Tokyo", "converti 10 km in miglia", "distanza tra Milano e Roma", "qualità dell\'aria a Torino", "alba a Napoli", "cosa significa ossimoro", "crea un QR code per …", "genera una password", "festività 2027"'); return { text: r.result }; },
   async converti_valuta({ importo, da, a }) { return { text: await exchange(importo, String(da).toUpperCase(), String(a).toUpperCase()) }; },
 };
-const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word", calcolo_professionale: "calcolo", scadenze_fiscali: "scadenzario", analizza_documento: "analisi documento", confronta_documenti: "confronto", anonimizza_documento: "anonimizza", usa_modello: "modello", elenca_promemoria: "promemoria", cancella_promemoria: "promemoria", converti_valuta: "cambio", utilita: "utilità", leggi_pagina_web: "leggo la pagina", prepara_email: "email" };
+const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word", calcolo_professionale: "calcolo", scadenze_fiscali: "scadenzario", analizza_documento: "analisi documento", confronta_documenti: "confronto", anonimizza_documento: "anonimizza", usa_modello: "modello", elenca_promemoria: "promemoria", cancella_promemoria: "promemoria", converti_valuta: "cambio", utilita: "utilità", gestisci_lista: "liste", leggi_pagina_web: "leggo la pagina", prepara_email: "email" };
 async function getClaudeSession() {
   const m = await loadClaude();
   return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: TOOLS }));
@@ -686,6 +700,7 @@ function localTools(text = "") {
   if (/ore sono a|fuso|convert|distanza|alba|tramonto|aria|smog|significa|definizione|qr|password|casuale|festiv|settimana/.test(t)) want.add("utilita");
   if (/codic|iban|partita iva/.test(t)) want.add("verifica_codice");
   if (/documenti|file/.test(t)) want.add("list_documents");
+  if (/lista|spesa|cose da fare|comprare|impegni/.test(t)) want.add("gestisci_lista");
   if (/https?:\/\/|www\.|pagina|sito/.test(t)) want.add("leggi_pagina_web");
   if (/email|mail|scrivi a|invia a/.test(t)) want.add("prepara_email");
   if (/dimentic/.test(t)) want.add("dimentica");
@@ -891,7 +906,7 @@ function openSettings(focus) {
   $("setStudio").value = settings.studio || ""; $("setSigner").value = settings.signer || ""; $("setPlan").value = settings.plan || ""; $("setBilling").value = settings.billing || "annuale"; $("setRenewal").value = settings.renewal || "";
   $("setTextSize").value = String(settings.textSize || 1); $("setBriefing").checked = settings.briefing !== false; $("setSound").checked = settings.sound !== false; $("setPrivate").checked = !!settings.privateMode;
   $("setPin").value = ""; $("pinNote").textContent = settings.pinHash ? "PIN attivo: J.A.R.V.I.S. lo chiede all'apertura." : "Nessun PIN: chi usa questo dispositivo vede la conversazione."; $("pinClear").hidden = !settings.pinHash; $("lockNow").hidden = !settings.pinHash;
-  $("aboutLine").textContent = aboutText();
+  $("aboutLine").textContent = aboutText(); $("switchProfile").textContent = PERSONAL ? "Apri il Jarvis dello studio" : "Apri il mio Jarvis personale";
   syncProviderUI(); if (!dlg.open) dlg.showModal(); if (focus === "claude") $("setKey").focus();
 }
 $("setProvider").onchange = syncProviderUI;
@@ -988,7 +1003,9 @@ $("tplClose").onclick = () => tplDlg.close();
 function renderSuggest() {
   const box = $("suggest"); if (!box) return; box.innerHTML = "";
   const last = library.docs.slice().sort((a, b) => b.added - a.added)[0], short = last ? last.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 28) : "";
-  const items = [["briefing", () => ask("briefing")], ["scadenze fiscali", () => ask("prossime scadenze fiscali")], ["modelli", () => openTemplates()]];
+  const items = PERSONAL
+    ? [["la mia giornata", () => ask("briefing")], ["cose da fare", () => ask("cosa c'è nella lista cose da fare")], ["lista della spesa", () => ask("cosa c'è nella lista della spesa")], ["meteo", () => ask(settings.city ? `che tempo fa a ${settings.city}` : "che tempo fa")]]
+    : [["briefing", () => ask("briefing")], ["scadenze fiscali", () => ask("prossime scadenze fiscali")], ["modelli", () => openTemplates()]];
   if (last) items.push([`riassumi ${short}`, () => ask(`riassumi ${short}`)], [`scadenze di ${short}`, () => ask(`estrai le scadenze da ${short}`)]);
   items.push(["promemoria", () => { input.value = "ricordami domani alle 9 di "; input.focus(); }], ["calcoli", () => { input.value = "interessi legali su 10.000 euro dal 1/1/2025 a oggi"; input.focus(); }]);
   for (const [label, go] of items) { const b = document.createElement("button"); b.type = "button"; b.textContent = label; b.onclick = go; box.appendChild(b); }
@@ -1025,13 +1042,14 @@ $("restoreFile").onchange = async () => {
 $("wipeBtn").onclick = async () => {
   if (!confirm("Cancellare da questo dispositivo tutti i dati di J.A.R.V.I.S.: documenti, conoscenze, memoria, promemoria, cronologia e impostazioni? L'operazione non si può annullare. I modelli scaricati restano in cache.")) return;
   await library.clear(); await knowledge.clearAll();
-  try { Object.keys(localStorage).filter((k) => k.startsWith("jarvis.")).forEach((k) => localStorage.removeItem(k)); } catch {}
+  try { Object.keys(localStorage).filter((k) => k.startsWith(PREFIX) && (PERSONAL || !k.startsWith("jarvis.p."))).forEach((k) => localStorage.removeItem(k)); } catch {}
   location.reload();
 };
 window.addEventListener("pagehide", () => { if (settings.privateMode) { store.set("history", []); store.set("claudeHistory", []); store.set("puterHistory", []); store.set("inputHistory", []); } });
 
 // ---------------------------------------------------------------- abbonamento e assistenza
 const aboutText = () => `J.A.R.V.I.S. ${APP_VERSION}${settings.plan ? ` · piano ${settings.plan} ${settings.billing}` : ""}${settings.renewal ? ` · rinnovo il ${new Date(settings.renewal + "T12:00").toLocaleDateString("it-IT")}` : ""}.`;
+$("switchProfile").onclick = () => { location.href = PERSONAL ? location.pathname : location.pathname + "?p=personale"; };
 $("assistBtn").onclick = () => {
   const ua = navigator.userAgent, br = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "browser";
   const os = /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Windows/.test(ua) ? "Windows" : /Mac/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
@@ -1121,8 +1139,8 @@ applyLook(); renderSuggest(); if (settings.pinHash) lockScreen();
 updateReminderChip(); reminders.forEach(armReminder);
 history.slice(-6).filter((m) => m.content && String(m.content).trim()).forEach((m) => addTurn(m.role === "user" ? "user" : "jarvis", m.content, m.role === "user" ? "lei" : "jarvis"));
 const hour = new Date().getHours();
-addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, "modelli" per lettere e atti pronti, o trascini qui un documento.`, "jarvis", { plain: true });
-(() => { const today = new Date().toDateString(); if (settings.briefing !== false && store.get("lastBriefing", "") !== today) { store.set("lastBriefing", today); const b = briefing(); if (/Promemoria di oggi:|Scadenze fiscali entro/.test(b)) addTurn("jarvis", "Briefing del giorno. " + b, "jarvis", { plain: true }); } })();
+addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. ${PERSONAL ? `Sono il suo Jarvis personale: impegni, liste, promemoria, meteo e documenti di casa, tutto su questo dispositivo. Provi: "aggiungi latte e pane alla lista della spesa" o "ricordami domani alle 8 di chiamare il dentista".` : `Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, "modelli" per lettere e atti pronti, o trascini qui un documento.`}`, "jarvis", { plain: true });
+(() => { const today = new Date().toDateString(); if (settings.briefing !== false && store.get("lastBriefing", "") !== today) { store.set("lastBriefing", today); const b = briefing(); if (/Promemoria di oggi:|Scadenze fiscali entro|Cose da fare:/.test(b)) addTurn("jarvis", "Briefing del giorno. " + b, "jarvis", { plain: true }); } })();
 renewalNotice();
 library.load().then(() => { renderDocs(); refreshTele(); });
 { const rq = store.get("retryQuestion", ""); if (rq) { store.set("retryQuestion", ""); app.queue.push(rq); addTurn("user", rq, "lei"); } }
