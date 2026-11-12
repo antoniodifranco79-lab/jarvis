@@ -8,6 +8,7 @@ import { routeStudio } from "./studio.js";
 import * as studio from "./studio.js";
 import { Voice } from "./voice.js";
 import { runLocalAgent, toolsBlock } from "./localagent.js";
+import { createCpuEngine, CPU_MODELS } from "./cpuengine.js";
 
 const $ = (id) => document.getElementById(id);
 const transcript = $("transcript"), input = $("input"), stateChip = $("stateChip"), caption = $("caption");
@@ -111,6 +112,8 @@ async function route(text) {
     try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
     return { tool: "promemoria", result: `Promemoria impostato ${when}: ${r.message}.`, direct: `Fatto. Glielo ricordo ${when}, ${settings.name}.` };
   }
+  const studyM = /^(?:studia|studiati|informati su|impara tutto su|impara su|documentati su)\s+(?:l'|il |lo |la |i |gli |le |un |una )?(.+?)[?.!]*$/i.exec(text.trim());
+  if (studyM && !agentCapable()) return await studyOnWikipedia(studyM[1].trim());
   const learnM = /^(impara che|impara:|imparalo:|sappi che|tieni presente che)\s*(.+)$/is.exec(text.trim());
   if (learnM) { const content = learnM[2].trim(); const title = content.split(/[.:;\n]/)[0].split(/\s+/).slice(0, 8).join(" "); const r = await knowledge.learn({ title, content, source: "insegnato da " + settings.name, origin: "user" }); renderKnowledge(); return { tool: "conoscenza", result: `${r.updated ? "Aggiornato" : "Imparato"}: ${title}`, direct: `${r.updated ? "Aggiornato" : "Imparato"}, ${settings.name}. Lo userò d'ora in poi.` }; }
   if (/\b(cosa hai imparato|che cosa hai imparato|cosa sai fare di nuovo|mostrami la conoscenza)\b/.test(t)) { const list = knowledge.recent(8).map((k) => k.title); return { tool: "conoscenza", result: list.length ? "Voci recenti: " + list.join("; ") : "Nessuna voce.", direct: list.length ? `Ho imparato ${knowledge.size} cose, ${settings.name}. Le più recenti: ${list.join("; ")}.` : `Per ora non ho imparato nulla, ${settings.name}. Mi insegni qualcosa con "impara che…".` }; }
@@ -119,6 +122,22 @@ async function route(text) {
   const calc = /^(quanto fa|calcola|calculate|what is|quanto è)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (calc) { const v = calculate(calc[2]); if (v != null) return { tool: "calcolatrice", result: `${calc[2]} = ${v}`, direct: `Fa ${String(v).replace(".", ",")}, ${settings.name}.` }; }
   const who = /^(chi è|chi era|cos'è|cosa è|che cos'è|who is|what is)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (who) { const r = await wikipedia(who[2], /^who|^what/i.test(who[1]) ? "en" : "it").catch(() => null); if (r) return { tool: "wikipedia", result: r, direct: r }; }
   return null;
+}
+
+// Studio senza modello: Wikipedia, voce più pertinente, scheda di conoscenza con la fonte.
+const agentCapable = () => app.engineReady && !/0\.6B|-cpu$/.test(app.model || "");
+async function studyOnWikipedia(topic) {
+  const found = await TOOLS.cerca_wikipedia({ query: topic });
+  const first = /^- (.+?):/m.exec(found.text);
+  if (!first) return { tool: "wikipedia", result: "", direct: `Su Wikipedia non trovo nulla su "${topic}", ${settings.name}.` };
+  const page = await TOOLS.leggi_wikipedia({ titolo: first[1] });
+  const body = page.text.split("\n\n").slice(1).join("\n\n").trim();
+  if (!body) return { tool: "wikipedia", result: "", direct: `Non riesco a leggere la voce "${first[1]}", ${settings.name}.` };
+  const url = (/\(fonte: (\S+)\)/.exec(page.text) || [])[1] || "Wikipedia";
+  const summary = body.split(/\n+/).filter((l) => l.length > 40 && !/^=+/.test(l)).join("\n").slice(0, 1800);
+  const r = await knowledge.learn({ title: first[1], content: summary, source: url, origin: "claude" }); renderKnowledge();
+  const lead = (summary.match(/^(.+?[.!?])\s+(.+?[.!?])/) || [summary.slice(0, 240)])[0];
+  return { tool: "studio", result: "", direct: `${r.updated ? "Ho aggiornato" : "Ho studiato"} "${first[1]}" su Wikipedia e l'ho salvato nella conoscenza, ${settings.name}. In breve: ${lead}` };
 }
 
 // ---------------------------------------------------------------- Claude (cloud): il cervello più capace, senza modelli da scaricare
@@ -216,20 +235,66 @@ async function pickModels() {
   if (settings.lastModel && WEBLLM_MODELS.includes(settings.lastModel)) start = settings.lastModel; // già scaricato: niente nuovo download
   return WEBLLM_MODELS.slice(WEBLLM_MODELS.indexOf(start)).map(id);
 }
-async function loadEngine() {
-  if (!("gpu" in navigator)) { notice("Questo browser non ha WebGPU: funzionano documenti (ricerca), strumenti da studio, orologio, meteo, promemoria, calcoli e Wikipedia, ma non la conversazione libera. Serve Chrome o Edge aggiornati."); $("model").textContent = "modalità essenziale"; return; }
-  const candidates = await pickModels(); if (!candidates.length) { notice("La GPU non è disponibile: resto in modalità essenziale."); $("model").textContent = "modalità essenziale"; return; }
-  setState("loading"); $("progress").hidden = false;
-  let webllm; try { webllm = await import(WEBLLM_URL); } catch (e) { $("progress").hidden = true; setState("idle"); notice("Non raggiungo la libreria del modello: controlli la connessione. Intanto funzionano gli strumenti."); $("model").textContent = "modalità essenziale"; return; }
+// Stato del cervello: "loading" (con percentuale), "ready", "failed" (con motivo). Le domande fatte durante il
+// caricamento vanno in coda e ricevono risposta appena il cervello è pronto.
+app.brain = { state: "loading", pct: 0, reason: "" }; app.queue = [];
+let progressTurn = null;
+function showProgress(pct, detail) {
+  pct = Math.max(0, Math.min(100, Math.round(pct)));
+  app.brain.pct = pct; $("progress").hidden = false; $("progressBar").style.width = pct + "%"; caption.textContent = `preparo il cervello · ${pct}%`;
+  const txt = `Preparo il cervello: ${pct}%${detail ? " · " + detail : ""}. Serve solo la prima volta, poi resta su questo dispositivo e funziona anche offline. Intanto può già chiedermi l'ora, calcoli, scadenze e documenti.`;
+  if (!progressTurn) progressTurn = addTurn("system", txt); else progressTurn.querySelector(".body").textContent = txt;
+}
+function brainReady(label, how) {
+  app.engineReady = true; app.brain = { state: "ready", pct: 100, reason: "" };
+  $("progress").hidden = true; setState("idle"); $("model").textContent = label;
+  if (progressTurn) { progressTurn.querySelector(".body").textContent = `Cervello pronto: ${label}, ${how}. Gratis e senza chiave.`; progressTurn = null; } else notice(`Cervello pronto: ${label}, ${how}.`);
+  refreshTele?.(); drainQueue();
+}
+function brainFailed(reason) {
+  app.brain = { state: "failed", pct: 0, reason }; $("progress").hidden = true; setState("idle"); $("model").textContent = "modalità essenziale";
+  const msg = `Non riesco ad avviare il cervello su questo dispositivo: ${reason}. Funzionano comunque documenti, conoscenza, strumenti da studio, meteo e promemoria. Provi con Chrome o Edge aggiornati, oppure da un computer.`;
+  if (progressTurn) { progressTurn.querySelector(".body").textContent = msg; progressTurn = null; } else notice(msg);
+  refreshTele?.(); drainQueue();
+}
+async function drainQueue() {
+  while (app.queue.length) { const q = app.queue.shift(); while (busy) await new Promise((r) => setTimeout(r, 200)); await ask(q, { queued: true }); }
+}
+const friendly = (e) => { const m = String(e?.message || e || ""); if (/fetch|network|load|import|connection|404|cors/i.test(m)) return "il download non è riuscito (connessione assente o instabile)"; if (/memory|oom|alloc|buffer|device lost|quota/i.test(m)) return "memoria insufficiente su questo dispositivo"; return m.slice(0, 120); };
+const mb = (bytes) => (bytes >= 1e9 ? (bytes / 1e9).toFixed(1) + " GB" : Math.round(bytes / 1e6) + " MB");
+async function loadOnGpu(candidates) {
+  let webllm; try { webllm = await import(WEBLLM_URL); } catch (e) { return friendly(e); }
+  let lastErr = "";
   for (const model of candidates) {
-    $("model").textContent = model.replace(/-q4f(16|32)_1-MLC$/, "");
+    const name = model.replace(/-q4f(16|32)_1-MLC$/, "");
+    $("model").textContent = name + " · scarico";
     try {
-      app.engine = await webllm.CreateMLCEngine(model, { initProgressCallback: (p) => { $("progressBar").style.width = Math.round((p.progress || 0) * 100) + "%"; caption.textContent = (p.text || "carico il modello").toLowerCase().slice(0, 70); } }, { context_window_size: /0\.6B|1\.7B/.test(model) ? 6144 : 8192 });
-      app.engineReady = true; app.model = model; settings.lastModel = model.replace(/-q4f(16|32)_1-MLC$/, ""); store.set("settings", settings);
-      $("progress").hidden = true; setState("idle"); notice(`Modello ${settings.lastModel} pronto. Tutto gira su questo dispositivo.`); return;
-    } catch (e) { console.warn(model, e); notice(`${model.replace(/-q4f(16|32)_1-MLC$/, "")} non entra in questo dispositivo, provo un modello più piccolo.`); }
+      app.engine = await webllm.CreateMLCEngine(model, { initProgressCallback: (p) => { const m = /(\d+(?:\.\d+)?)\s*MB fetched/i.exec(p.text || ""); showProgress((p.progress || 0) * 100, `${name}${m ? ", " + m[1] + " MB scaricati" : ""}`); } }, { context_window_size: /0\.6B|1\.7B/.test(model) ? 6144 : 8192 });
+      app.model = model; settings.lastModel = name; store.set("settings", settings);
+      brainReady(name.replace("Qwen3-", "Qwen3 "), "sulla scheda grafica"); return null;
+    } catch (e) { console.warn(model, e); lastErr = friendly(e); notice(`${name} non entra in questo dispositivo, provo un modello più piccolo.`); }
   }
-  $("progress").hidden = true; setState("idle"); notice("Non sono riuscito a caricare nessun modello. Funzionano comunque documenti, strumenti da studio e comandi rapidi."); $("model").textContent = "modalità essenziale";
+  return lastErr || "nessun modello entra nella memoria grafica";
+}
+async function loadOnCpu() {
+  const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent), mem = navigator.deviceMemory || 4;
+  const wanted = settings.model && settings.model !== "auto" ? settings.model.replace(/-q4f(16|32)_1-MLC$/, "") : "";
+  const name = wanted === "Qwen3-0.6B" || mobile || mem < 8 ? "Qwen3-0.6B" : "Qwen3-1.7B";
+  $("model").textContent = CPU_MODELS[name].label + " · scarico";
+  try {
+    app.engine = await createCpuEngine(name, (loaded, total) => showProgress(total ? (loaded / total) * 100 : 0, `${CPU_MODELS[name].label} sul processore, ${mb(loaded)}${total ? " di " + mb(total) : ""}`));
+    app.model = name + "-cpu"; brainReady(CPU_MODELS[name].label, "sul processore"); return null;
+  } catch (e) { console.warn("cpu engine", e); return friendly(e); }
+}
+async function loadEngine() {
+  setState("loading"); showProgress(0, "avvio");
+  let gpuProblem = "";
+  if (!("gpu" in navigator)) gpuProblem = "questo browser non ha WebGPU";
+  else { const candidates = await pickModels(); if (!candidates.length) gpuProblem = "la scheda grafica non è disponibile al browser"; else gpuProblem = await loadOnGpu(candidates); }
+  if (!gpuProblem) return;
+  notice(`Grafica accelerata non utilizzabile (${gpuProblem}): passo al motore sul processore, più lento ma compatibile con tutti i dispositivi.`);
+  const cpuProblem = await loadOnCpu();
+  if (cpuProblem) brainFailed(`${gpuProblem}; sul processore: ${cpuProblem}`);
 }
 
 const SUMMARY = /\b(riassum|riassunto|sintesi|sintetizza|di cosa parla|cosa dice|summari[sz]e|in breve)\b/i;
@@ -266,20 +331,20 @@ Regole:
 - IVA, fatture, scadenze, codici: usa sempre gli strumenti di calcolo e riporta i numeri esatti.
 - Per studiare un argomento: cerca_wikipedia, poi leggi_wikipedia, poi salva i punti chiave con impara (titolo breve, contenuto sintetico, fonte). Quando l'utente ti insegna qualcosa di utile, usa impara.
 - Ogni messaggio dell'utente inizia con [Contesto] (data, ora, fatti, documenti, conoscenze pertinenti): usalo senza ripeterlo. Se c'è un [Risultato strumento] o ci sono [Passaggi], usali.
-${app.model && /0\.6B/.test(app.model) ? "" : toolsBlock()}`;
+${app.model && /0\.6B|-cpu$/.test(app.model) ? "" : toolsBlock()}`;
 async function askLocal(text, toolResult, passages = []) {
   const ctxText = passages.map((p) => `[${p.n}] (${cite(p)})\n${p.text.slice(0, passages.length === 1 ? 2400 : 700)}`).join("\n\n");
   const userContent = `[Contesto] ${contextLine(text)}\n\n` + (toolResult ? `[Risultato strumento] ${toolResult}\n\n` : "") + (ctxText ? `[Passaggi]\n${ctxText}\n\n` : "") + text;
   const view = streamRenderer(); TOOLS._n = passages.length;
   const res = await runLocalAgent({ engine: app.engine, system: localSystem(), history: history.slice(-6), userContent, tools: TOOLS, think: settings.think,
-    onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B/.test(app.model || "") ? 0 : 4, isAborted: () => app.aborted });
+    onText: view.onText, onTool: view.onTool, onThinking: view.onThinking, maxRounds: /0\.6B|-cpu$/.test(app.model || "") ? 0 : 4, isAborted: () => app.aborted });
   view.finish(res.answer, [...passages, ...res.sources]);
   return res.answer;
 }
 let busy = false;
-async function ask(text) {
-  text = (text || "").trim(); if (!text || busy) return; busy = true; app.aborted = false; voice.stop(); input.value = ""; $("sendBtn").classList.add("stop");
-  addTurn("user", text, "lei"); setState("thinking");
+async function ask(text, opts = {}) {
+  text = (text || "").trim(); if (!text || busy) return; busy = true; app.aborted = false; voice.stop(); if (!opts.queued) input.value = ""; $("sendBtn").classList.add("stop");
+  if (!opts.queued) addTurn("user", text, "lei"); setState("thinking");
   try {
     let answer;
     if (usingClaude() && !/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/i.test(text)) {
@@ -291,9 +356,15 @@ async function ask(text) {
     const passages = routed ? [] : docContext(text);
     if (routed) { setState("tool", routed.tool); addTool(routed.tool, (routed.result || routed.direct).slice(0, 140)); setState("thinking"); }
     if (passages.length) addTool("documenti", passages.map(cite).filter((v, i, a) => a.indexOf(v) === i).join(" · ").slice(0, 140));
-    if (app.engineReady && (!routed || (routed.result && !routed.exact))) answer = await askLocal(text, routed ? routed.result : "", passages);
+    const needsModel = !routed || (routed.result && !routed.exact);
+    if (!app.engineReady && needsModel && app.brain.state === "loading" && !opts.queued) {
+      app.queue.push(text);
+      answer = `Sto ancora preparando il cervello (${app.brain.pct}%), ${settings.name}. Le rispondo appena è pronto, non serve riscrivere.`;
+      addTurn("jarvis", answer, "jarvis"); speak(answer); return;
+    }
+    if (app.engineReady && needsModel) answer = await askLocal(text, routed ? routed.result : "", passages);
     else if (passages.length) { answer = `Ecco i passaggi più pertinenti, ${settings.name}. ${app.engineReady ? "" : "Con il modello attivo li riassumerei io; intanto li apra qui sotto."}`.trim(); const el = addTurn("jarvis", answer, "jarvis"); addSources(el, passages); el.querySelectorAll("details")[0]?.setAttribute("open", ""); speak(answer); }
-    else { answer = routed ? routed.direct : `Il modello non è ancora pronto, ${settings.name}. Intanto posso cercare nei documenti, fare calcoli da studio, dirle l'ora, il meteo, impostare promemoria e cercare su Wikipedia. Scriva "aiuto" per l'elenco.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }
+    else { answer = routed ? routed.direct : `Il cervello non è disponibile su questo dispositivo${app.brain.reason ? " (" + app.brain.reason + ")" : ""}, ${settings.name}. Posso comunque cercare nei documenti e nella conoscenza, fare calcoli da studio, dirle l'ora e il meteo, impostare promemoria e cercare su Wikipedia. Scriva "aiuto" per l'elenco.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }
     history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
   } catch (e) { console.error(e); notice("Qualcosa è andato storto: " + (e.message || e)); }
   finally { busy = false; $("sendBtn").classList.remove("stop"); if (app.state !== "speaking") setState("idle"); }
