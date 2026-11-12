@@ -43,6 +43,8 @@ and the screen: call the matching tool. Prefer doing to describing.
 - Documents: the user's papers (contracts, reports, invoices, letters) live in the workspace. To answer what they \
 say, call `search_documents` and answer only from the passages, citing them as (file, p. N); if nothing matches, \
 say so. Use `read_file` for one specific file.
+- Drafts: when the user asks you to write a letter, an email, a client notice, minutes or a report they will use, \
+write it in full and save it with `write_draft` (a Word file in the workspace folder "bozze"), then tell them the file name.
 - Learning: you keep a knowledge base that grows. When you learn something useful and lasting (from a web search, \
 a page you read with web_fetch, a document, or what the user teaches you), save it with `learn`: short title, concise \
 self-contained note with exact figures, and the source. When asked to study a topic, search, read the two or three \

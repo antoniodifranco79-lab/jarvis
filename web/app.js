@@ -9,6 +9,9 @@ import * as studio from "./studio.js";
 import { Voice } from "./voice.js";
 import { runLocalAgent, toolsBlock } from "./localagent.js";
 import { createCpuEngine, CPU_MODELS } from "./cpuengine.js";
+import { parseWhen, describeWhen } from "./when.js";
+import { docxBlob, fileName } from "./docx.js";
+import { summarize, summaryFocus } from "./summarize.js";
 
 const $ = (id) => document.getElementById(id);
 const transcript = $("transcript"), input = $("input"), stateChip = $("stateChip"), caption = $("caption");
@@ -36,8 +39,25 @@ const addTurn = (cls, text, who) => {
   const el = document.createElement("div"); el.className = "turn " + cls;
   if (who) { const w = document.createElement("span"); w.className = "who"; w.textContent = who; el.appendChild(w); }
   const body = document.createElement("span"); body.className = "body"; body.textContent = text; el.appendChild(body);
-  transcript.appendChild(el); transcript.scrollTop = transcript.scrollHeight; return el;
+  transcript.appendChild(el); transcript.scrollTop = transcript.scrollHeight;
+  if (/^jarvis\b/.test(cls) && !/streaming/.test(cls) && text && text.length > 80) addActions(el);
+  return el;
 };
+/** Sotto ogni risposta: copia il testo, oppure scaricalo come bozza Word. */
+function addActions(el) {
+  if (el.querySelector(".acts")) return;
+  const text = () => el.querySelector(".body")?.textContent.trim() || "";
+  const box = document.createElement("div"); box.className = "acts";
+  const copy = document.createElement("button"); copy.type = "button"; copy.textContent = "copia";
+  copy.onclick = async () => { try { await navigator.clipboard.writeText(text()); copy.textContent = "copiato"; } catch { const r = document.createRange(); r.selectNodeContents(el.querySelector(".body")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); copy.textContent = "selezionato"; } setTimeout(() => (copy.textContent = "copia"), 1600); };
+  const word = document.createElement("button"); word.type = "button"; word.textContent = "word";
+  word.onclick = () => { const t = text(); const title = (t.split(/[.!?\n]/)[0] || "Risposta di Jarvis").slice(0, 70); downloadDocx(title, t); };
+  box.append(copy, word); el.appendChild(box);
+}
+function downloadDocx(title, body) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(docxBlob(title, body, fmtDate())); a.download = fileName(title);
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return a.download;
+}
 const addTool = (name, preview) => { const el = document.createElement("div"); el.className = "turn tool"; el.innerHTML = "⚙ <b></b> <span></span>"; el.querySelector("b").textContent = name; el.querySelector("span").textContent = preview; transcript.appendChild(el); transcript.scrollTop = transcript.scrollHeight; };
 const setState = (s, extra) => {
   app.state = s; stateChip.dataset.state = s; stateChip.textContent = extra || { idle: "pronto", listening: "ascolto", thinking: "elaboro", tool: "strumento", speaking: "parlo", loading: "carico" }[s] || s;
@@ -72,6 +92,7 @@ async function weather(place) {
   return { place: `${loc.name}${loc.country ? ", " + loc.country : ""}`, now: `${WMO[c.weather_code] || "variabile"}, ${Math.round(c.temperature_2m)}°C (percepiti ${Math.round(c.apparent_temperature)}°), vento ${Math.round(c.wind_speed_10m)} km/h`, today: `min ${Math.round(d.temperature_2m_min[0])}° max ${Math.round(d.temperature_2m_max[0])}°, pioggia ${d.precipitation_probability_max[0] ?? 0}%`, tomorrow: `${WMO[d.weather_code[1]] || "variabile"}, min ${Math.round(d.temperature_2m_min[1])}° max ${Math.round(d.temperature_2m_max[1])}°, pioggia ${d.precipitation_probability_max[1] ?? 0}%` };
 }
 function calculate(expr) {
+  expr = String(expr).replace(/(\d+(?:[.,]\d+)?)\s*(?:%|per\s*cento)\s+(?:di|del|della|dello|dei|delle|su)\s+(\d+(?:[.,]\d+)*)/gi, (_, a, b) => `(${a.replace(",", ".")}/100*${b.replace(/\.(?=\d{3}\b)/g, "").replace(",", ".")})`).replace(/^(il|lo|la|l')\s*/i, "");
   const clean = expr.replace(/,/g, ".").replace(/\^/g, "**").replace(/×/g, "*").replace(/÷/g, "/").replace(/per cento|percento|%/g, "/100").replace(/\s+(per|x)\s+/gi, "*").replace(/\s+diviso\s+/gi, "/").replace(/\s+più\s+/gi, "+").replace(/\s+meno\s+/gi, "-").replace(/radice di\s*/gi, "Math.sqrt");
   if (!/^[\d\s.+\-*/()%Math.sqrtpowabs,eE]+$/.test(clean)) return null;
   try { const v = Function(`"use strict"; return (${clean});`)(); return Number.isFinite(v) ? Math.round(v * 1e6) / 1e6 : null; } catch { return null; }
@@ -83,35 +104,38 @@ async function wikipedia(topic, lang = "it") {
 function scheduleReminder(message, at) {
   const r = { id: Date.now(), message, at }; reminders.push(r); store.set("reminders", reminders); updateReminderChip(); armReminder(r); return r;
 }
+const MAX_TIMER = 2 ** 31 - 1; // i timer del browser non vanno oltre circa 24,8 giorni: oltre si riarmano
 function armReminder(r) {
   const delay = Math.max(0, r.at - Date.now());
-  setTimeout(() => { reminders = reminders.filter((x) => x.id !== r.id); store.set("reminders", reminders); updateReminderChip(); addTurn("reminder", "⏰ " + r.message); speak(`${settings.name}, ${r.message}`); try { if (Notification.permission === "granted") new Notification("J.A.R.V.I.S.", { body: r.message, icon: "icon-192.png" }); } catch {} }, Math.min(delay, 2 ** 31 - 1));
+  if (delay > MAX_TIMER) { setTimeout(() => armReminder(r), MAX_TIMER); return; }
+  setTimeout(() => { reminders = reminders.filter((x) => x.id !== r.id); store.set("reminders", reminders); updateReminderChip(); addTurn("reminder", "⏰ " + r.message); speak(`${settings.name}, ${r.message}`); try { if (Notification.permission === "granted") new Notification("J.A.R.V.I.S.", { body: r.message, icon: "icon-192.png" }); } catch {} }, delay);
 }
-const parseDelay = (t) => { const m = /(?:tra|in|fra)\s+(\d+|un|una|uno|mezz'?)\s*(secondi?|minut[oi]|or[ae]|ore)/i.exec(t); if (!m) return null; const n = /^un|^mezz/i.test(m[1]) ? (/^mezz/i.test(m[1]) ? 0.5 : 1) : parseInt(m[1], 10); const unit = /sec/i.test(m[2]) ? 1000 : /min/i.test(m[2]) ? 60000 : 3600000; return n * unit; };
-const parseClock = (t) => { const m = /alle\s+(\d{1,2})(?:[:.](\d{2}))?/i.exec(t); if (!m) return null; const d = new Date(); d.setHours(parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0, 0, 0); if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); return d.getTime(); };
 
 /** Fast intent routing: the hands act first, the model phrases the answer. Returns {tool, result, direct} or null. */
-const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Ricerca: "ricerca approfondita su …" legge più fonti e scrive un rapporto con le citazioni. Conoscenza: "impara che …" mi insegna qualcosa, "cosa hai imparato" mostra ciò che so; con Claude posso anche studiare un argomento sul web e memorizzarlo. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude" : settings.provider === "puter" ? " con i modelli di punta tramite Puter" : " con il modello che gira su questo dispositivo, gratis e senza chiave; per la potenza massima scelga Puter nelle impostazioni"}. Dica "studia" e un argomento per farmi imparare da Wikipedia.`;
+const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Bozze: chieda una lettera o una email e la scarica in Word; ogni risposta ha i pulsanti copia e word. Riassunti: "riassumi" e il nome del documento, anche di centinaia di pagine. Promemoria: "ricordami domani alle 9 di…". Ricerca: "ricerca approfondita su …" legge più fonti e scrive un rapporto con le citazioni. Conoscenza: "impara che …" mi insegna qualcosa, "cosa hai imparato" mostra ciò che so; con Claude posso anche studiare un argomento sul web e memorizzarlo. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera${settings.provider === "claude" ? " con Claude" : settings.provider === "puter" ? " con i modelli di punta tramite Puter" : " con il modello che gira su questo dispositivo, gratis e senza chiave; per la potenza massima scelga Puter nelle impostazioni"}. Dica "studia" e un argomento per farmi imparare da Wikipedia.`;
 async function route(text) {
   const t = text.toLowerCase().trim();
   if (/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/.test(t)) return { tool: "aiuto", result: "", direct: HELP() };
   if (/\b(quali|che|elenca|lista)\b.*\b(documenti|file)\b/.test(t) && !/\b(dice|contien|parla)/.test(t)) { const list = library.docs.map((d) => `${d.name} (${d.pages > 1 ? d.pages + " pagine" : d.chars < 1000 ? d.chars + " caratteri" : Math.round(d.chars / 1000) + " mila caratteri"})`); return { tool: "documenti", result: list.length ? "Documenti caricati: " + list.join("; ") : "Nessun documento caricato.", direct: list.length ? `Ho ${list.length} documenti, ${settings.name}: ${list.join("; ")}.` : `Nessun documento caricato, ${settings.name}. Usi la graffetta per aggiungerne.` }; }
+  if (/\b(ricordami|ricorda di|ricordati di|timer|sveglia|svegliami|avvisami|remind me)\b/.test(t)) {
+    const when = parseWhen(text);
+    if (!when && /\bricordami\s+(cosa|chi|come|qual|quant|dove|perch|il nome|che cosa)/.test(t)) { /* è una domanda, non un promemoria */ }
+    else if (!when) return { tool: "promemoria", result: "", direct: `Quando, ${settings.name}? Per esempio "tra dieci minuti", "domani alle 9" o "il 16/12 alle 10".` };
+    else {
+    const r = scheduleReminder(when.rest || "promemoria", when.at); const said = describeWhen(when.at);
+    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
+    return { tool: "promemoria", result: `Promemoria impostato ${said}: ${r.message}.`, direct: `Fatto. Glielo ricordo ${said}, ${settings.name}.`, exact: true };
+    }
+  }
   const studio = routeStudio(text); if (studio) return { tool: studio.tool, result: studio.result, direct: studio.result, exact: true };
   if (/^(che ore sono|che ora è|che ora e|che ora sono|dimmi l.ora|sai che ore sono|what time)/.test(t) || /\b(che ore sono|what time is it)\b/.test(t)) return { tool: "orologio", result: `Ora: ${fmtTime()}, ${fmtDate()}.`, direct: `Sono le ${fmtTime()}, ${settings.name}.` };
   if (/\b(che giorno|data di oggi|what day|what's the date)\b/.test(t)) return { tool: "calendario", result: `Oggi è ${fmtDate()}.`, direct: `Oggi è ${fmtDate()}, ${settings.name}.` };
   if (/\b(meteo|tempo fa|che tempo|piove|pioverà|temperatura|weather|gradi)\b/.test(t)) {
-    const m = /\b(?:a|in|ad|at|per)\s+([A-Za-zÀ-ÿ' ]{2,30})$/i.exec(text.trim().replace(/[?.!]+$/, "")) ; const place = (m && m[1].trim()) || settings.city;
+    const clean = text.trim().replace(/[?.!]+$/, "").replace(/\s+(oggi|domani|dopodomani|stasera|stamattina|adesso|ora|questa settimana|nel weekend)$/i, "");
+    const m = /\b(?:a|in|ad|at|per)\s+([A-Za-zÀ-ÿ' ]{2,30})$/i.exec(clean); const place = (m && m[1].trim()) || settings.city;
     if (!place) return { tool: "meteo", result: "", direct: `Per il meteo mi serve una città, ${settings.name}: la imposti nelle impostazioni, oppure me la dica.` };
     const w = await weather(place); if (w.error) return { tool: "meteo", result: w.error, direct: w.error };
     return { tool: "meteo", result: `Meteo a ${w.place}: adesso ${w.now}. Oggi ${w.today}. Domani ${w.tomorrow}.`, direct: `A ${w.place} adesso ${w.now}. Oggi ${w.today}; domani ${w.tomorrow}.` };
-  }
-  if (/\b(ricordami|ricorda di|timer|sveglia|avvisami|remind me)\b/.test(t)) {
-    const at = parseDelay(t) != null ? Date.now() + parseDelay(t) : parseClock(t);
-    if (!at) return { tool: "promemoria", result: "", direct: `Quando, ${settings.name}? Per esempio "tra dieci minuti" o "alle 18:30".` };
-    const msg = text.replace(/.*?(ricordami|ricorda di|avvisami|remind me)\s*(di\s+)?/i, "").replace(/\b(tra|in|fra)\s+\S+\s+\S+/i, "").replace(/\balle\s+[\d:.]+/i, "").replace(/\btimer\b/i, "").trim().replace(/^di\s+/i, "") || "promemoria";
-    const r = scheduleReminder(msg, at); const when = at - Date.now() < 3600000 ? `tra ${Math.round((at - Date.now()) / 60000)} minuti` : `alle ${fmtTime(new Date(at))}`;
-    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
-    return { tool: "promemoria", result: `Promemoria impostato ${when}: ${r.message}.`, direct: `Fatto. Glielo ricordo ${when}, ${settings.name}.` };
   }
   const studyM = /^(?:studia|studiati|informati su|impara tutto su|impara su|documentati su)\s+(?:l'|il |lo |la |i |gli |le |un |una )?(.+?)[?.!]*$/i.exec(text.trim());
   if (studyM && !agentCapable()) return await studyOnWikipedia(studyM[1].trim());
@@ -121,7 +145,7 @@ async function route(text) {
   if (/^(ricorda che|ricordati che|memorizza che|remember that)\s+/i.test(text.trim())) { const fact = text.trim().replace(/^(ricorda che|ricordati che|memorizza che|remember that)\s+/i, ""); facts.push(fact); store.set("facts", facts); return { tool: "memoria", result: `Memorizzato: ${fact}`, direct: `Annotato, ${settings.name}.` }; }
   if (/\b(cosa sai di me|cosa ti ho detto|cosa ricordi|what do you remember)\b/.test(t)) return { tool: "memoria", result: facts.length ? "Fatti memorizzati: " + facts.join("; ") : "Nessun fatto memorizzato.", direct: facts.length ? `Ricordo questo, ${settings.name}: ${facts.join("; ")}.` : `Per ora non mi ha detto nulla da ricordare, ${settings.name}.` };
   const calc = /^(quanto fa|calcola|calculate|what is|quanto è)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (calc) { const v = calculate(calc[2]); if (v != null) return { tool: "calcolatrice", result: `${calc[2]} = ${v}`, direct: `Fa ${String(v).replace(".", ",")}, ${settings.name}.` }; }
-  const who = /^(chi è|chi era|cos'è|cosa è|che cos'è|who is|what is)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (who) { const r = await wikipedia(who[2], /^who|^what/i.test(who[1]) ? "en" : "it").catch(() => null); if (r) return { tool: "wikipedia", result: r, direct: r }; }
+  const who = /^(chi è|chi era|cos'è|cosa è|che cos'è|who is|what is)\s+(.+)$/i.exec(text.trim().replace(/[?.!]+$/, "")); if (who) { who[2] = who[2].replace(/^(il|lo|la|l'|i|gli|le|un|uno|una|un'|the|a|an)\s*/i, ""); const r = await wikipedia(who[2], /^who|^what/i.test(who[1]) ? "en" : "it").catch(() => null); if (r) return { tool: "wikipedia", result: r, direct: r }; }
   return null;
 }
 
@@ -198,7 +222,7 @@ const TOOLS = {
     const at = minuti_da_ora != null ? Date.now() + minuti_da_ora * 60000 : data_ora ? new Date(data_ora).getTime() : NaN;
     if (!Number.isFinite(at) || at < Date.now() - 60000) throw new Error("orario non valido: indicare minuti_da_ora oppure data_ora futura");
     scheduleReminder(messaggio, at); try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch {}
-    return { text: `Promemoria impostato per ${fmtDate(new Date(at))} alle ${fmtTime(new Date(at))}: ${messaggio}.` };
+    return { text: `Promemoria impostato ${describeWhen(at)}: ${messaggio}.` };
   },
   async impara({ titolo, contenuto, fonte = "" }) { const r = await knowledge.learn({ title: titolo, content: contenuto, source: fonte, origin: "claude" }); renderKnowledge(); return { text: `${r.updated ? "Voce aggiornata" : "Voce salvata"} nella base di conoscenza: ${r.item.title} (${knowledge.size} voci in tutto).` }; },
   async cerca_conoscenza({ query }) { const hits = knowledge.search(query, 5); return { text: hits.length ? hits.map((k, i) => `(${i + 1}) ${k.title}${k.source ? ` [fonte: ${k.source}]` : ""}\n${k.content}`).join("\n\n") : `Niente nella base di conoscenza su "${query}".` }; },
@@ -214,9 +238,14 @@ const TOOLS = {
     const url = `https://${lingua}.wikipedia.org/wiki/${encodeURIComponent(page.title.replace(/ /g, "_"))}`;
     return { text: `${page.title} (fonte: ${url})\n\n${page.extract.slice(0, 12000)}`, sources: [{ doc: "Wikipedia: " + page.title, page: null, text: page.extract.slice(0, 900), n: "wiki" }] };
   },
+  async crea_bozza({ titolo, testo }) {
+    const name = fileName(titolo), url = URL.createObjectURL(docxBlob(titolo, testo, fmtDate()));
+    const el = addTurn("tool", ""); const a = document.createElement("a"); a.href = url; a.download = name; a.textContent = `📄 ${name} · scarica la bozza in Word`; a.className = "dl"; el.querySelector(".body").appendChild(a);
+    return { text: `Bozza pronta: ${name}. L'utente la scarica con il link comparso nella conversazione.` };
+  },
   async ricorda({ fatto }) { facts.push(fatto); store.set("facts", facts); return { text: `Memorizzato: ${fatto}` }; },
 };
-const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia" };
+const TOOL_LABEL = { search_documents: "documenti", read_document: "leggo documento", list_documents: "documenti", calcola_iva: "IVA", calcola_fattura_professionista: "parcella", calcola_scadenza: "scadenza", giorni_tra_date: "calendario", verifica_codice: "verifica", calcola: "calcolatrice", meteo: "meteo", imposta_promemoria: "promemoria", ricorda: "memoria", impara: "imparo", cerca_conoscenza: "conoscenza", dimentica: "dimentico", cerca_wikipedia: "wikipedia", leggi_wikipedia: "leggo wikipedia", crea_bozza: "bozza word" };
 async function getClaudeSession() {
   const m = await loadClaude();
   return (claudeSession ||= new m.ClaudeSession({ getKey: claudeKey.get, getModel: () => settings.claudeModel || m.DEFAULT_CLAUDE_MODEL, getName: () => settings.name, getEffort: () => (settings.think ? "high" : "medium"), store, tools: TOOLS }));
@@ -230,11 +259,12 @@ function streamRenderer() {
   return {
     onText: (d) => { bubble(); buffer += d; body.textContent = buffer.trimStart(); transcript.scrollTop = transcript.scrollHeight; flushSpeech(false); },
     onThinking: () => { caption.textContent = "ragiono…"; },
-    onTool: (name, input) => { close(); setState("tool", TOOL_LABEL[name] || name); addTool(TOOL_LABEL[name] || name, Object.values(input).filter((v) => typeof v !== "object").join(" · ").slice(0, 120)); setState("thinking"); },
+    onTool: (name, input) => { close(); setState("tool", TOOL_LABEL[name] || name); addTool(TOOL_LABEL[name] || name, (name === "crea_bozza" ? [input.titolo] : Object.values(input)).filter((v) => typeof v !== "object").map((v) => String(v).replace(/\s+/g, " ").slice(0, 60)).join(" · ").slice(0, 120)); setState("thinking"); },
     onNotice: (t) => addTurn("system", t),
     finish(answer, sources = [], web = []) {
       close();
-      if (!lastEl) { lastEl = addTurn("jarvis", answer || "Fatto.", "jarvis"); speak(answer); }
+      if (!lastEl) { const a = answer && answer.trim() ? answer : `Non sono riuscito a formulare una risposta, ${settings.name}. Provi a riformulare la domanda, oppure attivi il ragionamento approfondito nelle impostazioni.`; lastEl = addTurn("jarvis", a, "jarvis"); speak(a); }
+      else addActions(lastEl);
       const docSources = sources.filter((p, i, a) => a.findIndex((q) => q.n === p.n && q.doc === p.doc) === i);
       if (docSources.length) addSources(lastEl, docSources);
       if (web.length) { const box = document.createElement("div"); box.className = "sources"; web.slice(0, 6).forEach(([url, title]) => { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "↗ " + title; box.appendChild(a); }); lastEl.appendChild(box); }
@@ -249,6 +279,7 @@ Le risposte vengono anche lette ad alta voce: vai dritto al punto, di solito da 
 Lavori con strumenti: usali con decisione, in parallelo quando sono indipendenti.
 - Documenti dell'utente: search_documents o read_document, poi rispondi solo da quei testi citando [1], [2].
 - IVA, fatture, scadenze, codici fiscali e IBAN: sempre gli strumenti di calcolo, numeri riportati esattamente.
+- Lettere, email, comunicazioni, verbali da usare: scrivili con crea_bozza, che produce un file Word da scaricare.
 - Studiare e verificare: cerca_wikipedia e leggi_wikipedia (anche in inglese con lingua "en"), poi salva ciò che conta con impara (titolo breve, contenuto sintetico con date e numeri, fonte). Quando l'utente ti insegna qualcosa di utile, usa impara; per ciò che hai già studiato, cerca_conoscenza.
 - Ogni messaggio inizia con [Contesto] (data, ora, fatti, documenti, conoscenze pertinenti): usalo senza ripeterlo.
 Non inventare mai fatti, numeri, norme o risultati: se non sai, usa uno strumento o dillo. Su temi legali, fiscali e medici sii accurato e ricorda di verificare con la fonte ufficiale quando la decisione è importante.`;
@@ -279,7 +310,8 @@ async function pickModels() {
   let f16 = true, maxBuf = 0;
   try { const a = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" }); if (!a) return []; f16 = a.features.has("shader-f16"); maxBuf = a.limits.maxBufferSize || 0; } catch { return []; }
   const q = f16 ? "q4f16_1" : "q4f32_1", id = (m) => `${m}-${q}-MLC`;
-  if (settings.model !== "auto") { const base = settings.model.replace(/-q4f(16|32)_1-MLC$/, ""); return WEBLLM_MODELS.slice(WEBLLM_MODELS.indexOf(base)).map(id); }
+  const base = String(settings.model || "auto").replace(/-q4f(16|32)_1-MLC$/, "");
+  if (base !== "auto" && WEBLLM_MODELS.includes(base)) return WEBLLM_MODELS.slice(WEBLLM_MODELS.indexOf(base)).map(id);
   const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent), mem = navigator.deviceMemory || 4;
   let start = mobile ? (mem >= 8 ? "Qwen3-1.7B" : "Qwen3-0.6B") : (mem >= 8 && maxBuf >= 2 ** 31 ? "Qwen3-4B" : "Qwen3-1.7B");
   if (settings.lastModel && WEBLLM_MODELS.includes(settings.lastModel)) start = settings.lastModel; // già scaricato: niente nuovo download
@@ -307,8 +339,10 @@ function brainFailed(reason) {
   if (progressTurn) { progressTurn.querySelector(".body").textContent = msg; progressTurn = null; } else notice(msg);
   refreshTele?.(); drainQueue();
 }
+let draining = false;
 async function drainQueue() {
-  while (app.queue.length) { const q = app.queue.shift(); while (busy) await new Promise((r) => setTimeout(r, 200)); await ask(q, { queued: true }); }
+  if (draining) return; draining = true;
+  try { while (app.queue.length) { while (busy) await new Promise((r) => setTimeout(r, 200)); const q = app.queue.shift(); await ask(q, { queued: true }); } } finally { draining = false; }
 }
 const friendly = (e) => { const m = String(e?.message || e || ""); if (/fetch|network|load|import|connection|404|cors/i.test(m)) return "il download non è riuscito (connessione assente o instabile)"; if (/memory|oom|alloc|buffer|device lost|quota/i.test(m)) return "memoria insufficiente su questo dispositivo"; return m.slice(0, 120); };
 const mb = (bytes) => (bytes >= 1e9 ? (bytes / 1e9).toFixed(1) + " GB" : Math.round(bytes / 1e6) + " MB");
@@ -347,7 +381,8 @@ async function loadEngine() {
   if (cpuProblem) brainFailed(`${gpuProblem}; sul processore: ${cpuProblem}`);
 }
 
-const SUMMARY = /\b(riassum|riassunto|sintesi|sintetizza|di cosa parla|cosa dice|summari[sz]e|in breve)\b/i;
+const SUMMARY = /\b(riassum\w*|riassunto|sintesi|sintetizz\w*|di cosa parla|cosa dice|summari[sz]e|in breve)\b/i;
+const FULLSUM = /\b(riassum|riassunto|sintesi|sintetizza|di cosa parla|summari[sz]e)/i;
 const DOCWORDS = /\b(document|contratt|file|pdf|allegat|testo|clausol|articol|bilanci|verbal|atto|fattur|preventiv|relazion|lettera|mail|delibera|statuto|perizia)/i;
 /** Passaggi dai documenti pertinenti alla domanda, o [] se la domanda non riguarda i documenti. */
 function docContext(text) {
@@ -365,6 +400,18 @@ function docPassages(text) {
   const strong = hits[0].score >= 2.2 || DOCWORDS.test(text) || named;
   return strong ? hits.map((h, i) => ({ ...h, n: i + 1 })) : [];
 }
+/** Riassunto di un intero documento con il cervello locale, a parti e livelli, con avanzamento visibile. */
+async function summarizeDocument(doc, question) {
+  const focus = summaryFocus(question, doc.name);
+  setState("tool", "riassunto"); const line = addTurn("tool", ""); line.innerHTML = "⚙ <b>riassunto</b> <span></span>";
+  const status = (f, a, b) => { line.querySelector("span").textContent = `${doc.name} · ${f === "lettura" ? "leggo la parte" : f === "unione" ? "unisco" : "riassumo"} ${a}/${b}`; caption.textContent = `riassunto ${a}/${b}`; };
+  const text = library.fullText(doc.id, 400000);
+  const summary = await summarize({ engine: app.engine, text, title: doc.name, focus, onProgress: status, partChars: /-cpu$|0\.6B/.test(app.model || "") ? 2200 : 3000, isAborted: () => app.aborted });
+  setState("thinking");
+  const answer = summary && summary.trim() ? summary : `Non sono riuscito a riassumere ${doc.name}, ${settings.name}.`;
+  const el = addTurn("jarvis", answer, "jarvis"); addSources(el, [{ doc: doc.name, page: null, text: library.head(doc.id, 900), n: "doc" }]); speak(answer);
+  return answer;
+}
 const cite = (p) => `${p.doc}${p.page ? ", p. " + p.page : ""}`;
 function addSources(el, passages) {
   if (!passages.length) return;
@@ -379,6 +426,7 @@ Regole:
 - Non inventare mai fatti, numeri, date, norme o nomi. Se non lo sai, usa uno strumento o dillo.
 - Documenti dell'utente: usa search_documents (o read_document per riassunti) e rispondi solo da quei testi, citando [1], [2].
 - IVA, fatture, scadenze, codici: usa sempre gli strumenti di calcolo e riporta i numeri esatti.
+- Per scrivere lettere, email o comunicazioni da usare: crea_bozza (file Word scaricabile).
 - Per studiare un argomento: cerca_wikipedia, poi leggi_wikipedia, poi salva i punti chiave con impara (titolo breve, contenuto sintetico, fonte). Quando l'utente ti insegna qualcosa di utile, usa impara.
 - Ogni messaggio dell'utente inizia con [Contesto] (data, ora, fatti, documenti, conoscenze pertinenti): usalo senza ripeterlo. Se c'è un [Risultato strumento] o ci sono [Passaggi], usali.
 ${app.model && /0\.6B|-cpu$/.test(app.model) ? "" : toolsBlock()}`;
@@ -397,7 +445,9 @@ async function askLocal(text, toolResult, passages = [], maxChars = 700) {
 }
 let busy = false;
 async function ask(text, opts = {}) {
-  text = (text || "").trim(); if (!text || busy) return; busy = true; app.aborted = false; voice.stop(); if (!opts.queued) input.value = ""; $("sendBtn").classList.add("stop");
+  text = (text || "").trim(); if (!text) return;
+  if (busy) { if (!opts.queued) { app.queue.push(text); input.value = ""; addTurn("user", text, "lei"); addTurn("system", "in coda: rispondo appena finisco"); } return; }
+  busy = true; app.aborted = false; voice.stop(); if (!opts.queued) input.value = ""; $("sendBtn").classList.add("stop");
   if (!opts.queued) addTurn("user", text, "lei"); setState("thinking");
   try {
     let answer;
@@ -413,9 +463,13 @@ async function ask(text, opts = {}) {
       history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
       return;
     }
+    if (FULLSUM.test(text) && library.size && app.engineReady && !usingPuter() && !usingClaude()) {
+      const doc = library.mentioned(text) || (library.size === 1 && (DOCWORDS.test(text) || /^\s*(riassumi(lo|la)?|sintetizza(lo|la)?|fammi un riassunto|riassunto)\s*[.!?]*$/i.test(text)) ? library.docs[0] : null);
+      if (doc) { answer = await summarizeDocument(doc, text); history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history); return; }
+    }
     let routed = null; try { routed = await route(text); } catch (e) { console.warn(e); }
     const passages = routed ? [] : docContext(text);
-    if (routed) { setState("tool", routed.tool); addTool(routed.tool, (routed.result || routed.direct).slice(0, 140)); setState("thinking"); }
+    if (routed) { setState("tool", routed.tool); if (routed.tool !== "aiuto") addTool(routed.tool, (routed.result || routed.direct).slice(0, 140)); setState("thinking"); }
     if (passages.length) addTool("documenti", passages.map(cite).filter((v, i, a) => a.indexOf(v) === i).join(" · ").slice(0, 140));
     const needsModel = !routed || (routed.result && !routed.exact);
     if (!app.engineReady && needsModel && app.brain.state === "loading" && !opts.queued) {
@@ -427,8 +481,11 @@ async function ask(text, opts = {}) {
     else if (passages.length) { answer = `Ecco i passaggi più pertinenti, ${settings.name}. ${app.engineReady ? "" : "Con il modello attivo li riassumerei io; intanto li apra qui sotto."}`.trim(); const el = addTurn("jarvis", answer, "jarvis"); addSources(el, passages); el.querySelectorAll("details")[0]?.setAttribute("open", ""); speak(answer); }
     else { answer = routed ? routed.direct : `Il cervello non è disponibile su questo dispositivo${app.brain.reason ? " (" + app.brain.reason + ")" : ""}, ${settings.name}. Posso comunque cercare nei documenti e nella conoscenza, fare calcoli da studio, dirle l'ora e il meteo, impostare promemoria e cercare su Wikipedia. Scriva "aiuto" per l'elenco.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }
     history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
-  } catch (e) { console.error(e); notice("Qualcosa è andato storto: " + (e.message || e)); }
-  finally { busy = false; $("sendBtn").classList.remove("stop"); if (app.state !== "speaking") setState("idle"); }
+  } catch (e) {
+    console.error(e); const msg = String(e.message || e);
+    notice(/^(Interrotto|Per la potenza|Serve |Il credito|Non raggiungo|La chiave|Troppe richieste|Modello non|Richiesta rifiutata|Errore del servizio)/.test(msg) ? msg : "Qualcosa è andato storto: " + msg);
+  }
+  finally { busy = false; $("sendBtn").classList.remove("stop"); if (app.state !== "speaking") setState("idle"); if (app.queue.length && app.brain.state !== "loading") drainQueue(); }
 }
 
 // ---------------------------------------------------------------- documents: add, list, remove, drag & drop
@@ -485,7 +542,7 @@ const startRec = (continuous) => {
   if (rec) rec.stop(); rec = new SR(); rec.lang = settings.lang; rec.continuous = continuous; rec.interimResults = true;
   rec.onstart = () => { app.recognizing = true; $("micBtn").classList.toggle("on", !continuous); if (!continuous) setState("listening"); };
   rec.onresult = (ev) => { let final = "", interim = ""; for (let i = ev.resultIndex; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) final += r[0].transcript; else interim += r[0].transcript; } app.level = Math.min(1, 0.3 + interim.length / 40);
-    if (continuous) { const m = /\b(jarvis|giarvis)\b[,.!?]?\s*(.+)/i.exec(final); if (m && m[2].trim()) ask(m[2]); } else { input.value = final || interim; if (final) ask(final); } };
+    if (continuous) { if (voice.pending) return; const m = /\b(jarvis|giarvis)\b[,.!?]?\s*(.+)/i.exec(final); if (m && m[2].trim()) ask(m[2]); } else { input.value = final || interim; if (final) ask(final); } };
   rec.onerror = (e) => { if (e.error !== "no-speech" && e.error !== "aborted") notice("microfono: " + e.error); };
   rec.onend = () => { app.recognizing = false; $("micBtn").classList.remove("on"); if (app.state === "listening") setState("idle"); if (app.wake && continuous) setTimeout(() => startRec(true), 300); };
   try { rec.start(); } catch (e) { notice("microfono: " + e.message); }

@@ -31,6 +31,8 @@ export const TOOL_DEFS = [
     input_schema: { type: "object", properties: { titolo: str }, required: ["titolo"] } },
   { name: "ricorda", description: "Salva un fatto da ricordare sull'utente (preferenze, nomi, procedure dello studio). Usalo quando l'utente dice qualcosa che vale la pena ricordare.",
     input_schema: { type: "object", properties: { fatto: str }, required: ["fatto"] } },
+  { name: "crea_bozza", description: "Prepara una bozza scaricabile in Word (.docx): lettere, email, comunicazioni ai clienti, verbali, relazioni. Usalo quando l'utente chiede di scrivere, redigere o preparare un testo da usare. Il testo può usare righe che iniziano con \"# \" per i titoli, \"- \" per gli elenchi e **grassetto**.",
+    input_schema: { type: "object", properties: { titolo: { ...str, description: "Titolo del documento, es. \"Lettera di recesso - Rossi\"." }, testo: { ...str, description: "Testo completo della bozza." } }, required: ["titolo", "testo"] } },
   { name: "cerca_wikipedia", description: "Cerca su Wikipedia (italiana, o inglese con lingua \"en\") e restituisce i titoli delle voci più pertinenti con un estratto. Usalo per studiare un argomento o verificare un fatto enciclopedico.",
     input_schema: { type: "object", properties: { query: str, lingua: { type: "string", enum: ["it", "en"] } }, required: ["query"] } },
   { name: "leggi_wikipedia", description: "Legge il testo di una voce di Wikipedia (fino a circa 12.000 caratteri). Usalo dopo cerca_wikipedia per studiare un argomento, poi salva i punti chiave con impara.",

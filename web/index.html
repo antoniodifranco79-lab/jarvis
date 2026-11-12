@@ -45,6 +45,10 @@ dialog.holo label.check { display: flex; gap: 8px; align-items: flex-start; colo
 body.dropping .dropzone { display: grid; }
 .install { display: none; position: fixed; left: 50%; bottom: max(90px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 45; font: 600 0.95rem var(--font-ui); letter-spacing: 0.06em;
   color: #02070d; background: var(--holo); border: none; padding: 12px 22px; box-shadow: 0 0 30px rgba(86, 214, 255, 0.6); cursor: pointer; }
+.turn .acts { display: flex; gap: 6px; margin-top: 8px; white-space: normal; }
+.turn .acts button { font: 0.62rem var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--holo); background: rgba(86, 214, 255, 0.06); border: 1px solid var(--line); padding: 4px 10px; cursor: pointer; }
+.turn .acts button:hover, .turn .acts button:focus-visible { background: rgba(86, 214, 255, 0.18); outline: none; }
+.turn a.dl { color: var(--holo); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(320px, 44vw); } .left { display: none; } .strip { display: flex; } }
 @media (max-width: 760px) {
   body.hud { font-size: 16px; }

@@ -54,10 +54,10 @@ export function coerceArgs(name, args) {
 export async function runLocalAgent({ engine, system, history = [], userContent, tools, think = false, onText, onTool, onThinking, maxRounds = 4, resultChars = 3500, isAborted = () => false }) {
   const suffix = think ? "" : " /no_think";
   const messages = [{ role: "system", content: system }, ...history, { role: "user", content: userContent + suffix }];
-  const sources = []; let answer = "", rounds = 0;
+  const sources = []; let answer = "", rounds = 0, final = false;
   while (true) {
     let out = "", shown = "";
-    const stream = await engine.chat.completions.create({ messages, stream: true, temperature: 0.35, max_tokens: think ? 1600 : 700, stop: ["</tool_call>"] });
+    const stream = await engine.chat.completions.create({ messages, stream: true, temperature: 0.35, max_tokens: think ? 2600 : 900, stop: ["</tool_call>"] });
     for await (const chunk of stream) {
       const d = chunk.choices?.[0]?.delta?.content || ""; if (!d) continue; out += d;
       if (/<think>(?![\s\S]*<\/think>)/.test(out)) onThinking?.();
@@ -66,9 +66,17 @@ export async function runLocalAgent({ engine, system, history = [], userContent,
     }
     if (shown) answer += (answer ? "\n" : "") + shown;
     const calls = out.includes("<tool_call>") ? parseToolCalls(out) : [];
-    if (!calls.length || rounds >= maxRounds || isAborted()) break;
-    rounds++;
+    if (!calls.length || final || isAborted()) break;
     const cleanOut = out.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    if (rounds >= maxRounds) {
+      // Strumenti esauriti: invece di lasciare l'utente senza risposta, chiede una risposta con quello che ha già.
+      if (maxRounds === 0 || answer) break;
+      final = true;
+      messages.push({ role: "assistant", content: cleanOut.includes("</tool_call>") ? cleanOut : cleanOut + "\n</tool_call>" });
+      messages.push({ role: "user", content: "<tool_response>\nLimite di strumenti raggiunto. Rispondi ora all'utente con le informazioni che hai già, senza chiamare altri strumenti.\n</tool_response>" + suffix });
+      continue;
+    }
+    rounds++;
     messages.push({ role: "assistant", content: cleanOut.includes("</tool_call>") ? cleanOut : cleanOut + "\n</tool_call>" });
     const results = [];
     for (const c of calls) {
