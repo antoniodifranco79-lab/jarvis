@@ -100,8 +100,8 @@ Con un tasso di chiusura prudente del 20% dalla chiamata gratuita alla diagnosi,
 >
 > Vi va bene martedì o giovedì alle 9:30?
 >
-> Antonio Di Franco
-> [sito] · [telefono]
+> Leonardo Di Franco
+> https://antoniodifranco79-lab.github.io/jarvis/ · +39 379 166 7781
 
 ### Post LinkedIn (primo della serie)
 
@@ -141,8 +141,11 @@ Con un tasso di chiusura prudente del 20% dalla chiamata gratuita alla diagnosi,
 
 ## 10. Cose da fare adesso (in ordine)
 
+La guida operativa giorno per giorno, con i testi da dire, è [VENDITA.md](VENDITA.md); la lista dei contatti è [CONTATTI.csv](CONTATTI.csv).
+
+
 1. **Abilitare GitHub Pages**: Settings → Pages → Source: "GitHub Actions". Il workflow pubblica da solo al prossimo push (oggi fallisce solo per questo).
-2. Inserire email e telefono in `site/index.html`, oggetto `CONTACT` in fondo al file.
+2. Telefono già sul sito (+39 379 166 7781, anche WhatsApp). Aggiungere l'email professionale in `site/index.html`, oggetto `CONTACT` in fondo al file.
 3. Aprire la Partita IVA (o verificare il regime forfettario: 15% fino a 85.000 €, 5% i primi 5 anni se nuova attività) e un conto dedicato.
 4. Scegliere 3 studi conosciuti e proporre la diagnosi pilota a 290 € entro questa settimana.
 5. Scaricare l'elenco ODCEC e Ordine Avvocati della provincia; preparare 20 email per lunedì.

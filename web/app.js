@@ -1,6 +1,9 @@
 // J.A.R.V.I.S. for the browser: the language model runs on this device through WebGPU (WebLLM);
-// the hands (clock, weather, calculator, reminders, memory, Wikipedia) are plain JavaScript;
-// voice comes from the browser. Nothing leaves the device except weather/Wikipedia lookups.
+// the hands (clock, weather, calculator, reminders, memory, Wikipedia, studio tools, documents) are plain
+// JavaScript; voice comes from the browser. Nothing leaves the device except weather/Wikipedia lookups:
+// documents are read, indexed and searched inside the browser.
+import { Library, ACCEPT } from "./docs.js";
+import { routeStudio } from "./studio.js";
 
 const $ = (id) => document.getElementById(id);
 const transcript = $("transcript"), input = $("input"), stateChip = $("stateChip"), caption = $("caption");
@@ -12,7 +15,8 @@ const store = {
   get(key, fallback) { try { const v = localStorage.getItem("jarvis." + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem("jarvis." + key, JSON.stringify(value)); } catch {} },
 };
-const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "Qwen3-1.7B-q4f16_1-MLC" }, store.get("settings", {}));
+const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "" }, store.get("settings", {}));
+const library = new Library();
 let facts = store.get("facts", []);          // long-term memory: strings
 let history = store.get("history", []);      // [{role, content}]
 let reminders = store.get("reminders", []);  // [{id, message, at}]
@@ -94,8 +98,12 @@ const parseDelay = (t) => { const m = /(?:tra|in|fra)\s+(\d+|un|una|uno|mezz'?)\
 const parseClock = (t) => { const m = /alle\s+(\d{1,2})(?:[:.](\d{2}))?/i.exec(t); if (!m) return null; const d = new Date(); d.setHours(parseInt(m[1], 10), m[2] ? parseInt(m[2], 10) : 0, 0, 0); if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1); return d.getTime(); };
 
 /** Fast intent routing: the hands act first, the model phrases the answer. Returns {tool, result, direct} or null. */
+const HELP = () => `Ecco cosa so fare, ${settings.name}. Documenti: carichi PDF, Word o testi con la graffetta e mi chieda cosa contengono, un riassunto o una clausola; restano su questo dispositivo. Studio: IVA (aggiungi o scorpora), fattura del professionista con cassa e ritenuta, giorni tra due date, scadenze tra N giorni con festività, verifica di codice fiscale, partita IVA e IBAN. Poi ora, meteo, calcoli, promemoria, memoria a lungo termine e Wikipedia. Per il resto, conversazione libera con il modello locale.`;
 async function route(text) {
   const t = text.toLowerCase().trim();
+  if (/^(aiuto|help|cosa sai fare|che cosa sai fare|comandi|cosa puoi fare)\b/.test(t)) return { tool: "aiuto", result: "", direct: HELP() };
+  if (/\b(quali|che|elenca|lista)\b.*\b(documenti|file)\b/.test(t) && !/\b(dice|contien|parla)/.test(t)) { const list = library.docs.map((d) => `${d.name} (${d.pages > 1 ? d.pages + " pagine" : d.chars < 1000 ? d.chars + " caratteri" : Math.round(d.chars / 1000) + " mila caratteri"})`); return { tool: "documenti", result: list.length ? "Documenti caricati: " + list.join("; ") : "Nessun documento caricato.", direct: list.length ? `Ho ${list.length} documenti, ${settings.name}: ${list.join("; ")}.` : `Nessun documento caricato, ${settings.name}. Usi la graffetta per aggiungerne.` }; }
+  const studio = routeStudio(text); if (studio) return { tool: studio.tool, result: studio.result, direct: studio.result, exact: true };
   if (/\b(che or[ae]|che ore sono|what time)\b/.test(t)) return { tool: "orologio", result: `Ora: ${fmtTime()}, ${fmtDate()}.`, direct: `Sono le ${fmtTime()}, ${settings.name}.` };
   if (/\b(che giorno|data di oggi|what day|what's the date)\b/.test(t)) return { tool: "calendario", result: `Oggi è ${fmtDate()}.`, direct: `Oggi è ${fmtDate()}, ${settings.name}.` };
   if (/\b(meteo|tempo fa|che tempo|piove|pioverà|temperatura|weather|gradi)\b/.test(t)) {
@@ -120,43 +128,144 @@ async function route(text) {
 }
 
 // ---------------------------------------------------------------- the model (WebLLM on WebGPU)
-const persona = () => `Sei J.A.R.V.I.S., l'assistente personale di ${settings.name}: calmo, preciso, educato, con un'ironia britannica leggera. Rispondi in modo breve (una o tre frasi), senza elenchi né markdown, nella lingua in cui ti scrivono. Chiama l'utente "${settings.name}". Non inventare fatti; se un risultato di uno strumento è presente, usalo e cita i numeri esatti. Oggi è ${fmtDate()}, sono le ${fmtTime()}.${facts.length ? " Cose che sai dell'utente: " + facts.join("; ") + "." : ""}`;
-async function loadEngine() {
-  if (!("gpu" in navigator)) { notice("Questo browser non ha WebGPU: funzionano orologio, meteo, promemoria, calcoli e Wikipedia, ma non la conversazione libera. Serve Chrome aggiornato su Android 12 o più recente."); $("model").textContent = "modalità essenziale"; return; }
-  setState("loading"); $("progress").hidden = false; $("model").textContent = settings.model.replace(/-q4f16_1-MLC$/, "");
-  try {
-    const webllm = await import(WEBLLM_URL);
-    app.engine = await webllm.CreateMLCEngine(settings.model, { initProgressCallback: (p) => { $("progressBar").style.width = Math.round((p.progress || 0) * 100) + "%"; caption.textContent = (p.text || "carico il modello").toLowerCase().slice(0, 70); } });
-    app.engineReady = true; $("progress").hidden = true; setState("idle"); notice("Modello pronto. Tutto gira su questo dispositivo.");
-  } catch (e) { console.error(e); $("progress").hidden = true; setState("idle"); notice("Non sono riuscito a caricare il modello (" + (e.message || e) + "). Provi un modello più piccolo nelle impostazioni; intanto funzionano gli strumenti."); $("model").textContent = "modalità essenziale"; }
+const WEBLLM_MODELS = ["Qwen3-8B", "Qwen3-4B", "Qwen3-1.7B", "Qwen3-0.6B"];
+const persona = (withDocs) => `Sei J.A.R.V.I.S., l'assistente personale di ${settings.name}: calmo, preciso, educato, con un'ironia britannica leggera. Chiama l'utente "${settings.name}" e rispondi nella lingua in cui ti scrivono.
+Regole:
+- Sii utile e concreto. Di solito bastano da una a quattro frasi; per riassunti, confronti o procedure usa un breve elenco puntato.
+- Non inventare mai fatti, numeri, date, norme o nomi. Se non lo sai, dillo e suggerisci come verificarlo.
+- Se è presente un [Risultato strumento], quei numeri sono esatti: riportali senza ricalcolarli.
+${withDocs ? "- Rispondi SOLO in base ai [Passaggi] forniti, citandoli tra parentesi quadre come [1] o [2]. Se la risposta non è nei passaggi, dillo chiaramente.\n" : ""}- Per questioni legali, fiscali o mediche dai informazioni generali e ricorda di verificarle con un professionista o con la fonte ufficiale.
+Oggi è ${fmtDate()}, sono le ${fmtTime()}.${facts.length ? " Cose che sai dell'utente: " + facts.join("; ") + "." : ""}`;
+
+/** Sceglie il modello più capace che il dispositivo regge, con la variante f32 dove la GPU non supporta f16. */
+async function pickModels() {
+  let f16 = true, maxBuf = 0;
+  try { const a = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" }); if (!a) return []; f16 = a.features.has("shader-f16"); maxBuf = a.limits.maxBufferSize || 0; } catch { return []; }
+  const q = f16 ? "q4f16_1" : "q4f32_1", id = (m) => `${m}-${q}-MLC`;
+  if (settings.model !== "auto") { const base = settings.model.replace(/-q4f(16|32)_1-MLC$/, ""); return WEBLLM_MODELS.slice(WEBLLM_MODELS.indexOf(base)).map(id); }
+  const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent), mem = navigator.deviceMemory || 4;
+  let start = mobile ? (mem >= 8 ? "Qwen3-1.7B" : "Qwen3-0.6B") : (mem >= 8 && maxBuf >= 2 ** 31 ? "Qwen3-4B" : "Qwen3-1.7B");
+  if (settings.lastModel && WEBLLM_MODELS.includes(settings.lastModel)) start = settings.lastModel; // già scaricato: niente nuovo download
+  return WEBLLM_MODELS.slice(WEBLLM_MODELS.indexOf(start)).map(id);
 }
-async function askModel(userText, toolResult) {
-  const messages = [{ role: "system", content: persona() }, ...history.slice(-8)];
-  messages.push({ role: "user", content: (toolResult ? `[Risultato strumento] ${toolResult}\n\n` : "") + userText + " /no_think" });
+async function loadEngine() {
+  if (!("gpu" in navigator)) { notice("Questo browser non ha WebGPU: funzionano documenti (ricerca), strumenti da studio, orologio, meteo, promemoria, calcoli e Wikipedia, ma non la conversazione libera. Serve Chrome o Edge aggiornati."); $("model").textContent = "modalità essenziale"; return; }
+  const candidates = await pickModels(); if (!candidates.length) { notice("La GPU non è disponibile: resto in modalità essenziale."); $("model").textContent = "modalità essenziale"; return; }
+  setState("loading"); $("progress").hidden = false;
+  let webllm; try { webllm = await import(WEBLLM_URL); } catch (e) { $("progress").hidden = true; setState("idle"); notice("Non raggiungo la libreria del modello: controlli la connessione. Intanto funzionano gli strumenti."); $("model").textContent = "modalità essenziale"; return; }
+  for (const model of candidates) {
+    $("model").textContent = model.replace(/-q4f(16|32)_1-MLC$/, "");
+    try {
+      app.engine = await webllm.CreateMLCEngine(model, { initProgressCallback: (p) => { $("progressBar").style.width = Math.round((p.progress || 0) * 100) + "%"; caption.textContent = (p.text || "carico il modello").toLowerCase().slice(0, 70); } });
+      app.engineReady = true; app.model = model; settings.lastModel = model.replace(/-q4f(16|32)_1-MLC$/, ""); store.set("settings", settings);
+      $("progress").hidden = true; setState("idle"); notice(`Modello ${settings.lastModel} pronto. Tutto gira su questo dispositivo.`); return;
+    } catch (e) { console.warn(model, e); notice(`${model.replace(/-q4f(16|32)_1-MLC$/, "")} non entra in questo dispositivo, provo un modello più piccolo.`); }
+  }
+  $("progress").hidden = true; setState("idle"); notice("Non sono riuscito a caricare nessun modello. Funzionano comunque documenti, strumenti da studio e comandi rapidi."); $("model").textContent = "modalità essenziale";
+}
+
+const SUMMARY = /\b(riassum|riassunto|sintesi|sintetizza|di cosa parla|cosa dice|summari[sz]e|in breve)\b/i;
+const DOCWORDS = /\b(document|contratt|file|pdf|allegat|testo|clausol|articol|bilanci|verbal|atto|fattur|preventiv|relazion|lettera|mail|delibera|statuto|perizia)/i;
+/** Passaggi dai documenti pertinenti alla domanda, o [] se la domanda non riguarda i documenti. */
+function docContext(text) {
+  if (!library.size) return [];
+  const named = library.mentioned(text);
+  if (named && SUMMARY.test(text)) return [{ doc: named.name, page: null, text: library.head(named.id), n: 1 }];
+  if (SUMMARY.test(text) && library.size === 1 && DOCWORDS.test(text)) return [{ doc: library.docs[0].name, page: null, text: library.head(library.docs[0].id), n: 1 }];
+  const hits = library.search(text, 4, named ? named.id : null);
+  if (!hits.length) return [];
+  const strong = hits[0].score >= 2.2 || DOCWORDS.test(text) || named;
+  return strong ? hits.map((h, i) => ({ ...h, n: i + 1 })) : [];
+}
+const cite = (p) => `${p.doc}${p.page ? ", p. " + p.page : ""}`;
+function addSources(el, passages) {
+  if (!passages.length) return;
+  const box = document.createElement("div"); box.className = "sources";
+  passages.forEach((p) => { const d = document.createElement("details"); const s = document.createElement("summary"); s.textContent = `[${p.n}] ${cite(p)}`; const q = document.createElement("p"); q.textContent = p.text.slice(0, 900) + (p.text.length > 900 ? "…" : ""); d.append(s, q); box.appendChild(d); });
+  el.appendChild(box); transcript.scrollTop = transcript.scrollHeight;
+}
+
+async function askModel(userText, toolResult, passages = []) {
+  const ctxText = passages.map((p) => `[${p.n}] (${cite(p)})\n${p.text.slice(0, passages.length === 1 ? 3200 : 850)}`).join("\n\n");
+  const messages = [{ role: "system", content: persona(passages.length > 0) }, ...history.slice(passages.length ? -4 : -10)];
+  messages.push({ role: "user", content: (toolResult ? `[Risultato strumento] ${toolResult}\n\n` : "") + (ctxText ? `[Passaggi]\n${ctxText}\n\n[Domanda] ` : "") + userText + (settings.think ? "" : " /no_think") });
   const el = addTurn("jarvis streaming", "", "jarvis"); const body = el.querySelector(".body"); let out = "", spoken = "";
-  const stream = await app.engine.chat.completions.create({ messages, stream: true, temperature: 0.6, max_tokens: 300 });
-  for await (const chunk of stream) { const d = chunk.choices?.[0]?.delta?.content || ""; if (!d) continue; out += d; const shown = out.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trimStart(); body.textContent = shown; transcript.scrollTop = transcript.scrollHeight;
-    const m = /^(.*?[.!?])\s/.exec(shown.slice(spoken.length)); if (m && m[1].length > 12) { speak(m[1]); spoken += m[0]; } }
-  el.classList.remove("streaming"); const final = out.replace(/<think>[\s\S]*?<\/think>/g, "").trim(); body.textContent = final; if (final.slice(spoken.length).trim()) speak(final.slice(spoken.length).trim()); return final;
+  const stream = await app.engine.chat.completions.create({ messages, stream: true, temperature: passages.length || toolResult ? 0.3 : 0.6, max_tokens: settings.think ? 1600 : passages.length ? 600 : 400 });
+  for await (const chunk of stream) {
+    const d = chunk.choices?.[0]?.delta?.content || ""; if (!d) continue; out += d;
+    const thinking = /<think>(?![\s\S]*<\/think>)/.test(out); if (thinking) caption.textContent = "ragiono…";
+    const shown = out.replace(/<think>[\s\S]*?(<\/think>|$)/g, "").trimStart(); body.textContent = shown; transcript.scrollTop = transcript.scrollHeight;
+    const m = /^(.*?[.!?])\s/.exec(shown.slice(spoken.length)); if (m && m[1].length > 12) { speak(m[1]); spoken += m[0]; }
+  }
+  el.classList.remove("streaming"); const final = out.replace(/<think>[\s\S]*?<\/think>/g, "").trim(); body.textContent = final;
+  if (final.slice(spoken.length).trim()) speak(final.slice(spoken.length).trim());
+  addSources(el, passages); return final;
 }
 let busy = false;
 async function ask(text) {
-  text = (text || "").trim(); if (!text || busy) return; busy = true; input.value = "";
+  text = (text || "").trim(); if (!text || busy) return; busy = true; input.value = ""; $("sendBtn").classList.add("stop");
   addTurn("user", text, "lei"); setState("thinking");
   try {
     let routed = null; try { routed = await route(text); } catch (e) { console.warn(e); }
+    const passages = routed ? [] : docContext(text);
     let answer;
-    if (routed) { setState("tool", routed.tool); addTool(routed.tool, routed.result.slice(0, 120)); setState("thinking"); }
-    if (app.engineReady && (!routed || routed.result)) answer = await askModel(text, routed ? routed.result : "");
-    else { answer = routed ? routed.direct : `Il modello non è ancora pronto, ${settings.name}. Posso dirle l'ora, il meteo, fare calcoli, promemoria e cercare su Wikipedia.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }
+    if (routed) { setState("tool", routed.tool); addTool(routed.tool, (routed.result || routed.direct).slice(0, 140)); setState("thinking"); }
+    if (passages.length) addTool("documenti", passages.map(cite).filter((v, i, a) => a.indexOf(v) === i).join(" · ").slice(0, 140));
+    if (app.engineReady && (!routed || (routed.result && !routed.exact))) answer = await askModel(text, routed ? routed.result : "", passages);
+    else if (passages.length) { answer = `Ecco i passaggi più pertinenti, ${settings.name}. ${app.engineReady ? "" : "Con il modello attivo li riassumerei io; intanto li apra qui sotto."}`.trim(); const el = addTurn("jarvis", answer, "jarvis"); addSources(el, passages); el.querySelectorAll("details")[0]?.setAttribute("open", ""); speak(answer); }
+    else { answer = routed ? routed.direct : `Il modello non è ancora pronto, ${settings.name}. Intanto posso cercare nei documenti, fare calcoli da studio, dirle l'ora, il meteo, impostare promemoria e cercare su Wikipedia. Scriva "aiuto" per l'elenco.`; addTurn("jarvis", answer, "jarvis"); speak(answer); }
     history.push({ role: "user", content: text }, { role: "assistant", content: answer }); history = history.slice(-20); store.set("history", history);
   } catch (e) { console.error(e); notice("Qualcosa è andato storto: " + (e.message || e)); }
-  finally { busy = false; if (app.state !== "speaking") setState("idle"); }
+  finally { busy = false; $("sendBtn").classList.remove("stop"); if (app.state !== "speaking") setState("idle"); }
 }
 
+// ---------------------------------------------------------------- documents: add, list, remove, drag & drop
+const docsDlg = $("docsDialog"), fileInput = $("fileInput");
+fileInput.accept = ACCEPT;
+const fmtSize = (b) => (b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB");
+function renderDocs() {
+  $("docsChip").textContent = library.size ? `${library.size} document${library.size === 1 ? "o" : "i"}` : "documenti";
+  const ul = $("docsList"); ul.innerHTML = "";
+  if (!library.size) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "Nessun documento. Aggiunga PDF, Word o file di testo: vengono letti e cercati solo su questo dispositivo."; ul.appendChild(li); }
+  library.docs.slice().sort((a, b) => b.added - a.added).forEach((d) => {
+    const li = document.createElement("li"); const name = document.createElement("span"); name.className = "dname"; name.textContent = d.name;
+    const meta = document.createElement("span"); meta.className = "dmeta"; meta.textContent = `${d.pages > 1 ? d.pages + " pagine · " : ""}${d.chunks.length} passaggi · ${fmtSize(d.size)}`;
+    const rm = document.createElement("button"); rm.type = "button"; rm.textContent = "rimuovi"; rm.onclick = async () => { await library.remove(d.id); renderDocs(); };
+    li.append(name, meta, rm); ul.appendChild(li);
+  });
+  $("docsClear").hidden = library.size < 2;
+}
+async function addFiles(files) {
+  files = [...files]; if (!files.length) return;
+  for (const f of files) {
+    setState("tool", "leggo"); caption.textContent = `leggo ${f.name}`.toLowerCase();
+    try { const d = await library.add(f); addTool("documenti", `${d.name}: ${d.pages > 1 ? d.pages + " pagine, " : ""}${d.chunks.length} passaggi indicizzati`); }
+    catch (e) { console.warn(e); notice(String(e.message || e)); }
+  }
+  setState("idle"); renderDocs();
+  if (library.size) notice(`Documenti pronti. Chieda pure, per esempio: "riassumi ${library.docs[library.docs.length - 1].name.replace(/\.[a-z0-9]+$/i, "")}".`);
+}
+$("attachBtn").onclick = () => fileInput.click();
+fileInput.onchange = () => { addFiles(fileInput.files); fileInput.value = ""; };
+$("docsChip").onclick = () => { renderDocs(); docsDlg.showModal(); };
+$("docsChip").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("docsChip").click(); } };
+$("docsAdd").onclick = () => fileInput.click();
+$("docsClose").onclick = () => docsDlg.close();
+$("docsClear").onclick = async () => { await library.clear(); renderDocs(); };
+let dragDepth = 0;
+window.addEventListener("dragenter", (e) => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { dragDepth++; document.body.classList.add("dropping"); } });
+window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) document.body.classList.remove("dropping"); });
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => { e.preventDefault(); dragDepth = 0; document.body.classList.remove("dropping"); if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
+
 // ---------------------------------------------------------------- input: text, microphone, wake mode
-$("form").addEventListener("submit", (e) => { e.preventDefault(); ask(input.value); });
+$("form").addEventListener("submit", (e) => { e.preventDefault(); if (busy && app.engine) { try { app.engine.interruptGenerate(); } catch {} return; } ask(input.value); });
 $("newSession").onclick = () => { history = []; store.set("history", history); transcript.innerHTML = ""; addTurn("system", "— nuova sessione —"); };
+$("exportBtn").onclick = () => {
+  const lines = [...transcript.querySelectorAll(".turn")].map((el) => { const who = el.querySelector(".who")?.textContent; const body = el.querySelector(".body")?.textContent ?? el.textContent; const src = [...el.querySelectorAll(".sources summary")].map((s) => "   fonte " + s.textContent).join("\n"); return (who ? who.toUpperCase() + ": " : "") + body + (src ? "\n" + src : ""); });
+  const blob = new Blob([`J.A.R.V.I.S. · conversazione del ${fmtDate()}\n\n` + lines.join("\n\n")], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `jarvis-${new Date().toISOString().slice(0, 10)}.txt`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition; let rec = null;
 const startRec = (continuous) => {
   if (!SR) { notice("Il riconoscimento vocale non è disponibile in questo browser: usi Chrome."); return; }
@@ -174,9 +283,10 @@ $("wakeBtn").onclick = () => { app.wake = !app.wake; $("wakeBtn").classList.togg
 
 // ---------------------------------------------------------------- settings dialog
 const dlg = $("settings");
-$("settingsBtn").onclick = () => { $("setName").value = settings.name; $("setCity").value = settings.city; $("setLang").value = settings.lang; $("setModel").value = settings.model; dlg.showModal(); };
+$("settingsBtn").onclick = () => { $("setName").value = settings.name; $("setCity").value = settings.city; $("setLang").value = settings.lang; $("setModel").value = settings.model.replace(/-q4f(16|32)_1-MLC$/, ""); $("setThink").checked = !!settings.think; dlg.showModal(); };
+$("settingsBtn").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("settingsBtn").click(); } };
 $("setCancel").onclick = () => dlg.close();
-$("setSave").onclick = (e) => { e.preventDefault(); const prevModel = settings.model; settings.name = $("setName").value.trim() || "Signore"; settings.city = $("setCity").value.trim(); settings.lang = $("setLang").value; settings.model = $("setModel").value; store.set("settings", settings); dlg.close(); if (settings.model !== prevModel) location.reload(); };
+$("setSave").onclick = (e) => { e.preventDefault(); const prevModel = settings.model; settings.name = $("setName").value.trim() || "Signore"; settings.city = $("setCity").value.trim(); settings.lang = $("setLang").value; settings.model = $("setModel").value; settings.think = $("setThink").checked; if (settings.model !== prevModel) settings.lastModel = ""; store.set("settings", settings); dlg.close(); if (settings.model !== prevModel) location.reload(); };
 
 // ---------------------------------------------------------------- install prompt & boot
 let installEvent = null;
@@ -185,7 +295,8 @@ $("installBtn").onclick = async () => { if (!installEvent) return; installEvent.
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 updateReminderChip(); reminders.forEach(armReminder);
 history.slice(-6).forEach((m) => addTurn(m.role === "user" ? "user" : "jarvis", m.content, m.role === "user" ? "lei" : "jarvis"));
-const hour = new Date().getHours(); const hello = `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. ${app.engineReady ? "" : "Preparo i sistemi."}`.trim();
-addTurn("jarvis", hello, "jarvis");
+const hour = new Date().getHours();
+addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, o trascini qui un documento.`, "jarvis");
 if (synth) synth.onvoiceschanged = () => {};
+library.load().then(renderDocs);
 loadEngine();
