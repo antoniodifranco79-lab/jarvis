@@ -13,13 +13,17 @@ from typing import Any
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from .. import __version__
 from ..app import Jarvis
+from ..claude_setup import activate, check_key, setup_state
 from ..config import Settings, get_settings
 from ..events import Event
+from ..tools.documents import DOC_EXT
+from ..tools.knowledge import list_notes
 from ..tools.system import status_snapshot
 from ..voice.sentences import SentenceBuffer
 from ..voice.tts import Speaker
@@ -140,6 +144,12 @@ class Hub:
             self.busy = False
 
 
+def count_documents(workspace: Path) -> int:
+    if not workspace.exists():
+        return 0
+    return sum(1 for p in workspace.rglob("*") if p.is_file() and p.suffix.lower() in DOC_EXT and not any(part.startswith(".") for part in p.relative_to(workspace).parts))
+
+
 def create_app(
     settings: Settings | None = None, jarvis: Jarvis | None = None, *, voice: bool = False
 ) -> Starlette:
@@ -152,6 +162,11 @@ def create_app(
         await j.start()
         state["jarvis"] = j
         state["hub"] = Hub(j, Speaker(settings))
+        state["claude_setup"] = setup_state(settings)
+        if state["claude_setup"] == "required":
+            await j.bus.publish(
+                "notice", message="Claude is selected but no API key is set: paste it in the panel that just opened."
+            )
         if settings.resolved_provider == "ollama":
             from ..providers.ollama import ensure_ready
 
@@ -203,6 +218,9 @@ def create_app(
                 "user_name": settings.user_name,
                 "tools": j.registry.names() + [t["name"] for t in j.brain.server_tools],
                 "system": status_snapshot(),
+                "knowledge": len(list_notes(settings.workspace)),
+                "documents": count_documents(settings.workspace),
+                "mcp": j.mcp.status() if getattr(j, "mcp", None) else {"connected": {}, "errors": {}},
             }
         )
 
@@ -226,6 +244,28 @@ def create_app(
             return JSONResponse({"error": "text is required"}, status_code=400)
         return JSONResponse({"answer": await j.brain.ask_text(text)})
 
+    async def claude_key(request: Request) -> JSONResponse:
+        """Save a Claude API key typed in the HUD and switch the brain to Claude, without a restart.
+        Only accepted from this machine: the key never travels over the network to Jarvis."""
+        host = request.client.host if request.client else ""
+        if host not in {"127.0.0.1", "::1", "localhost", "testclient"}:
+            return JSONResponse({"error": "the key can only be set from this computer"}, status_code=403)
+        payload = await request.json()
+        key = str(payload.get("key", "")).strip() if isinstance(payload, dict) else ""
+        problem = await check_key(key, settings.model)
+        if problem:
+            return JSONResponse({"error": problem}, status_code=400)
+        saved = activate(key, settings)
+        prep = state.pop("brain_prep", None)
+        if prep:
+            prep.cancel()
+        j: Jarvis = state["jarvis"]
+        j.brain.reload_provider()
+        state["claude_setup"] = None
+        await state["hub"].broadcast({"type": "claude_ready", "model": j.brain.model})
+        await j.bus.publish("notice", message=f"Claude is now my brain ({j.brain.model}). Key saved in {saved}.")
+        return JSONResponse({"ok": True, "model": j.brain.model})
+
     async def ws(websocket: WebSocket) -> None:
         await websocket.accept()
         hub: Hub = state["hub"]
@@ -239,6 +279,7 @@ def create_app(
                 "state": j.bus.state.value,
                 "user_name": settings.user_name,
                 "model": j.brain.model,
+                "claude_setup": state.get("claude_setup"),
                 "transcript": transcript,
                 "reminders": [
                     {"id": r.id, "message": r.message, "due_at": r.due_at.isoformat()}
@@ -283,6 +324,8 @@ def create_app(
             Route("/api/reminders", reminders),
             Route("/api/memory", memory),
             Route("/api/ask", ask, methods=["POST"]),
+            Route("/api/claude-key", claude_key, methods=["POST"]),
+            Mount("/hud", app=StaticFiles(directory=STATIC / "hud"), name="hud"),
             WebSocketRoute("/ws", ws),
         ],
         lifespan=lifespan,

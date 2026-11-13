@@ -1,29 +1,40 @@
-name: Web app (GitHub Pages)
+name: Sito e web app (GitHub Pages)
+# Pubblica su https://<utente>.github.io/jarvis/ :
+#   /      -> sito personale (cartella site/)
+#   /app/  -> J.A.R.V.I.S. web app (cartella web/)
+# Il sito è servito dal ramo gh-pages (Settings > Pages > "Deploy from a branch", gh-pages, / root):
+# questo workflow ricostruisce quel ramo a ogni modifica di site/ o web/.
 on:
   push:
     branches: ["**"]
-    paths: ["web/**", ".github/workflows/pages.yml"]
+    paths: ["site/**", "web/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
   group: pages
   cancel-in-progress: true
 jobs:
-  deploy:
+  publish:
+    # Solo dal ramo principale di lavoro, perché gh-pages è uno solo.
+    if: github.ref_name == 'ccr-e130c7f6-ui5eiu' || github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: web
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Assemble site (root) + app (/app)
+        run: |
+          rm -rf _site && mkdir -p _site/app
+          cp -r site/. _site/
+          cp -r web/. _site/app/
+          rm -rf _site/app/tests   # i test restano nel repository, non nel sito
+          touch _site/.nojekyll
+          find _site -type f | sort
+      - name: Push to gh-pages
+        run: |
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish ${GITHUB_SHA::7} from ${GITHUB_REF_NAME}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

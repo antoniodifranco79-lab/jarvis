@@ -21,7 +21,9 @@ Il cervello è Claude (modello predefinito `claude-opus-5-5`), usato attraverso 
 | **Personalità** | Prompt di sistema scritto per il personaggio: conciso, educato, asciutto, protettivo. Risponde nella lingua in cui gli parli (italiano o inglese, turno per turno). |
 | **Voce** | Wake word "Hey Jarvis" (openWakeWord), trascrizione locale con faster-whisper, voce neurale britannica `en-GB-RyanNeural` (edge-tts, gratuita) o italiana `it-IT-DiegoNeural`; ElevenLabs e pyttsx3 opzionali. Parla frase per frase mentre la risposta arriva. |
 | **HUD** | Interfaccia web stile reattore ad arco: stato animato (ascolto, elaborazione, strumento, parlato), trascrizione in streaming, microfono e wake mode dal browser, approvazioni con un click. |
-| **Strumenti** | ora e data · meteo (Open-Meteo, senza chiave) · ricerca e lettura web (server-side Anthropic) · diagnostica di sistema · shell · file (in una cartella sandbox) · promemoria e timer · memoria a lungo termine · ricerca nelle conversazioni passate · calcolatrice · notizie RSS · apertura di URL e applicazioni · Home Assistant · visione (schermo e webcam). |
+| **Strumenti** | ora e data · meteo (Open-Meteo, senza chiave) · ricerca e lettura web (server-side Anthropic) · diagnostica di sistema · shell · file (in una cartella sandbox) · **ricerca nei documenti** (PDF, Word, testi: indice BM25 locale, risposte con file e pagina) · promemoria e timer · memoria a lungo termine · ricerca nelle conversazioni passate · calcolatrice · notizie RSS · apertura di URL e applicazioni · Home Assistant · visione (schermo e webcam). |
+| **Conoscenza** | Jarvis impara: quando studia un argomento sul web (ricerca e lettura delle pagine), legge un documento o gli si insegna qualcosa ("impara che…"), salva una scheda con la fonte. Nell'app desktop le schede sono file Markdown in `~/jarvis-workspace/conoscenza`, cercati insieme ai documenti; nel browser stanno nel dispositivo, si esportano e si importano in JSON. Le schede pertinenti entrano da sole nel contesto di ogni domanda. |
+| **HUD olografico** | Interfaccia a cabina di pilotaggio condivisa da app desktop e browser: reattore animato che cambia colore con lo stato (ascolto, ragionamento, voce), telemetria reale (CPU con grafico, memoria, disco, batteria, temperatura nell'app desktop; rete, batteria, GPU e fotogrammi nel browser), sequenza d'avvio. Reattore e stile stanno in `jarvis/server/static/hud/`; `scripts/sync-hud.py` li copia nell'app web e nel sito. |
 | **Memoria** | SQLite: sessioni di conversazione persistenti, fatti a lungo termine (`remember`/`recall`), promemoria. Le sessioni lunghe vengono riassunte e riaperte da capo, così il contesto non esplode. |
 | **Sicurezza** | Le azioni pericolose (comandi shell, lancio di applicazioni) richiedono conferma: in terminale, con la voce ("procedi?") o nel HUD. I file sono confinati in `~/jarvis-workspace`. |
 | **Affidabilità** | Validazione degli input dei tool, gestione di `max_tokens`/`refusal`/`pause_turn`, fallback server-side sui rifiuti, retry sugli errori dell'API, test offline con un client finto. |
@@ -35,7 +37,17 @@ Il cervello è Claude (modello predefinito `claude-opus-5-5`), usato attraverso 
 | Privacy | le conversazioni passano per l'API Anthropic | tutto resta sul PC |
 | Hardware | qualsiasi | 8 GB di RAM per `qwen3:4b`, 16 GB per `qwen3:8b`, una GPU aiuta molto |
 
-Con `JARVIS_PROVIDER=auto` (default) Jarvis usa Claude se trova una chiave e altrimenti il modello locale. Per la modalità locale:
+Con `JARVIS_PROVIDER=auto` (default) Jarvis usa Claude se trova una chiave e altrimenti il modello locale.
+
+**Solo Claude, mai Ollama.** Per usare sempre Claude e non scaricare né avviare il motore locale:
+
+```bash
+jarvis claude          # chiede la chiave API (senza mostrarla), la verifica e la salva in ~/.jarvis/.env
+```
+
+Il comando scrive `ANTHROPIC_API_KEY` e `JARVIS_PROVIDER=anthropic`. Nell'app installata non serve il terminale: se manca la chiave, la finestra di J.A.R.V.I.S. apre un pannello dove incollarla; salvandola, Jarvis passa subito a Claude e annulla l'eventuale download del modello locale. La chiave si crea su [console.anthropic.com](https://console.anthropic.com/settings/keys).
+
+Per la modalità locale:
 
 ```bash
 # 1. installa Ollama (Linux; su macOS/Windows: scarica da ollama.com)
@@ -62,9 +74,41 @@ Al primo avvio l'app scarica da sola il motore AI (Ollama, 0,2-1,6 GB a seconda 
 
 ## Nel browser, senza installare nulla (tablet e Chromebook)
 
-La cartella `web/` è J.A.R.V.I.S. in versione web app: stessa interfaccia, voce dal browser, promemoria, meteo, calcoli, memoria, Wikipedia, e il modello linguistico (Qwen3 via WebLLM) che gira **dentro Chrome** grazie a WebGPU. Niente account, niente chiavi: al primo avvio scarica il modello (1-3 GB, una volta sola) e poi funziona anche offline.
+La cartella `web/` è J.A.R.V.I.S. in versione web app: stessa interfaccia, voce dal browser, promemoria, meteo, calcoli, memoria, Wikipedia, **chat con i documenti** (PDF, Word e testi letti e cercati nel browser, risposte con le fonti), **strumenti da studio** (IVA, fattura del professionista con cassa e ritenuta, scadenze con festività, verifica di codice fiscale, partita IVA e IBAN), e il modello linguistico (Qwen3 da 0,6 a 8 miliardi di parametri via WebLLM, scelto in automatico in base al dispositivo, con ragionamento approfondito opzionale) che gira **dentro Chrome** grazie a WebGPU. Niente account, niente chiavi: al primo avvio scarica il modello (1-3 GB, una volta sola) e poi funziona anche offline.
 
-Si pubblica con GitHub Pages (workflow `pages.yml`; in Settings > Pages scegliere come sorgente "GitHub Actions"): l'indirizzo diventa `https://<utente>.github.io/jarvis/`. Da Chrome su Android: "Aggiungi a schermata Home". Richiede Chrome aggiornato e Android 12 o più recente per WebGPU; senza WebGPU restano attivi gli strumenti.
+Funziona **gratis e senza chiave su qualunque dispositivo**: se il browser ha la grafica accelerata (WebGPU) il modello gira sulla scheda grafica con WebLLM; altrimenti, o se il caricamento fallisce, passa da solo a llama.cpp in WebAssembly (`web/cpuengine.js`, wllama) con Qwen3 0.6B o 1.7B sul processore. Durante il primo download l'app mostra percentuale e megabyte, mette in coda le domande e risponde appena il cervello è pronto; se nessun motore parte, spiega il motivo. "Studia …" funziona anche senza modello: legge Wikipedia e salva una scheda di conoscenza. **Potenza massima senza chiave**: nelle impostazioni si può scegliere Puter (`web/puterbrain.js`, Puter.js): con un account Puter gratuito J.A.R.V.I.S. usa i modelli di punta (sceglie da solo il Claude più potente disponibile) con tutti i suoi strumenti; l'uso è conteggiato sul credito dell'account Puter. **Ragionamento adattivo**: sui modelli locali da 4B in su le domande difficili attivano il ragionamento. **Ricerca approfondita**: "ricerca approfondita su …" legge più voci di Wikipedia (italiano e inglese) e fa scrivere al cervello attivo un rapporto con citazioni, salvato nella conoscenza. Il cervello predefinito è il modello locale (Qwen3 via WebLLM, da 0,6 a 8 miliardi di parametri scelti in base al dispositivo), che usa gli stessi strumenti di Claude con il formato `<tool_call>` di Qwen3: documenti, conoscenza, calcoli da studio, meteo, promemoria e Wikipedia per studiare e imparare. Claude resta un'opzione avanzata nelle impostazioni, con la propria chiave API.
+
+**Lavoro da studio, pronto all'uso.** Ogni risposta ha i pulsanti *copia* e *word*: il testo diventa un file Word (.docx) scaricabile, creato nel browser senza librerie (`web/docx.js`). Chiedendo una lettera, una email o un verbale, J.A.R.V.I.S. usa lo strumento `crea_bozza` e lascia nella conversazione il link al file Word (nell'app desktop lo strumento `write_draft` salva la bozza in `~/jarvis-workspace/bozze`). "Riassumi" e il nome di un documento producono il riassunto dell'**intero** documento anche di centinaia di pagine: il testo si divide in parti, ogni parte diventa pochi punti con la pagina, poi i punti si uniscono a più livelli, con l'avanzamento visibile (`web/summarize.js`). I promemoria capiscono l'italiano parlato (`web/when.js`): "tra due ore", "domani alle 9", "lunedì alle 10", "il 16/12 alle 9:30", "stasera"; anche quelli a settimane di distanza scattano all'ora giusta, con notifica. Dopo la prima apertura l'app e le sue librerie restano in cache (`web/sw.js`) e funzionano senza internet.
+
+**Versione 2.0: 100 upgrade** ([elenco completo](docs/UPGRADE-100.md)). Calcoli da studio (interessi legali, mutuo, importi in lettere, codice fiscale, forfettario, prestazione occasionale, compenso dal netto, margini, sconti, ore lavorate, cambio BCE), scadenzario fiscale e calendario .ics, analisi dei documenti (scadenze, importi, dati identificativi, clausole, leggibilità), confronto tra versioni, anonimizzazione GDPR, 14 modelli di documento in Word, promemoria ricorrenti con rinvio, briefing del giorno, risposte formattate con i pulsanti leggi, impara e riprova, PIN, modalità privata, backup e cancellazione dei dati, dati dello studio e dell'abbonamento. Tutto in moduli separati e testati: `web/calc.js`, `web/extract.js`, `web/templates.js`, `web/ics.js`, `web/format.js`.
+
+**Scansioni, foto ed Excel**: i PDF scansionati e le foto di documenti si leggono con l'OCR sul dispositivo (Tesseract.js, caricato solo quando serve); i fogli Excel con SheetJS. **Pagine web ed email**: "riassumi https://…" legge la pagina (lettore r.jina.ai, gratuito); ogni risposta si apre come email.
+
+**Jarvis personale**: `app/?p=personale` apre un secondo Jarvis per la vita privata, con memoria, documenti, liste, promemoria e impostazioni separati da quello dello studio, installabile a parte sulla schermata Home. Liste (`web/lists.js`): "aggiungi latte e pane alla lista della spesa", "metti chiamare il dentista nella lista cose da fare", "ho comprato il latte", "cosa devo fare".
+
+**Utilità** (`web/utility.js`, anche come strumento `utilita` per i cervelli): ora nelle città del mondo, conversioni di unità, distanza tra città, alba e tramonto, qualità dell'aria (Open-Meteo), definizioni dal Wikizionario, QR code, password sicure, numeri casuali, festività dell'anno, numero della settimana. Tutto gratis e senza chiave.
+
+**Test della web app**: `node --test web/tests/*.test.mjs` (promemoria, Word, riassunti, agente locale, motore CPU, documenti, conoscenza, voce, calcoli da studio, controlli statici su strumenti e cache offline); girano anche in CI.
+
+**Voce.** `web/voice.js` sceglie la voce più naturale del dispositivo (prima le voci neurali Microsoft "Natural" di Edge, poi quelle di rete Google, poi le Premium di Apple, mai le voci robotiche), legge a frasi brevi con l'intonazione naturale e prepara il testo come lo direbbe una persona: importi in euro e centesimi, percentuali, date per esteso, ore, abbreviazioni sciolte, niente citazioni né link. Nelle impostazioni si sceglie la voce, maschile o femminile e la velocità. L'app desktop applica la stessa pulizia (`jarvis/voice/speechtext.py`) alle voci neurali Microsoft di edge-tts.
+
+Si pubblica con GitHub Pages dal ramo `gh-pages`, che il workflow `pages.yml` ricostruisce a ogni modifica di `site/` o `web/`: la web app risponde a `https://<utente>.github.io/jarvis/app/`, mentre la radice `https://<utente>.github.io/jarvis/` è il sito di Leonardo Di Franco (cartella `site/`, vedi [docs/BUSINESS-PLAN.md](docs/BUSINESS-PLAN.md)). Da Chrome su Android: "Aggiungi a schermata Home". Richiede Chrome aggiornato e Android 12 o più recente per WebGPU; senza WebGPU restano attivi gli strumenti.
+
+## Tutti gli strumenti del mondo: server MCP (app desktop)
+
+Jarvis desktop è un client [Model Context Protocol](https://modelcontextprotocol.io): può usare gli strumenti di qualsiasi server MCP, locale o remoto (file, database, calendari, CRM, GitHub, browser, gestionali…). Basta elencarli in `~/.jarvis/mcp.json`, nello stesso formato di Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/percorso/documenti"] },
+    "fetch": { "command": "uvx", "args": ["mcp-server-fetch"] },
+    "remoto": { "url": "https://esempio.it/mcp", "headers": { "Authorization": "Bearer …" }, "trusted": false }
+  }
+}
+```
+
+All'avvio Jarvis si collega, registra ogni strumento come `mcp__<server>__<strumento>` e lo usa quando serve. Gli strumenti che non sono dichiarati di sola lettura chiedono conferma prima di agire, a meno che il server sia segnato `"trusted": true`. Stato dei collegamenti in `/api/status` (campo `mcp`). Nessuna dipendenza in più: il client (`jarvis/mcp_client.py`) parla JSON-RPC su stdio e su Streamable HTTP.
 
 ## Su tablet Android (Termux)
 
@@ -203,7 +247,8 @@ flowchart LR
 
 ```bash
 pip install -e ".[all]"
-pytest -q            # 34 test offline con un client Anthropic finto
+pytest -q            # test offline con un client Anthropic finto
+node --test web/tests/*.test.mjs   # test della web app
 ruff check jarvis tests
 docker compose up --build   # HUD in container (solo testo + voce nel browser)
 ```

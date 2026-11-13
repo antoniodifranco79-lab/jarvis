@@ -3,113 +3,381 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#04080f">
+<meta name="theme-color" content="#02070d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>J.A.R.V.I.S.</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="hud/hud.css">
 <style>
-:root { --bg:#04080f; --bg-2:#081423; --fg:#d9edf9; --muted:#7693ab; --line:rgba(57,198,255,.18); --panel:rgba(10,28,46,.62); --accent:#39c6ff; --accent-soft:rgba(57,198,255,.14); --amber:#ffb547; --good:#52e39b; --bad:#ff6b7a;
-  --font-display:"Orbitron","Segoe UI",system-ui,sans-serif; --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif; --font-mono:"JetBrains Mono",Menlo,Consolas,monospace; color-scheme:dark; }
-* { box-sizing:border-box; } html, body { height:100%; }
-body { margin:0; background:radial-gradient(1200px 700px at 30% 40%, var(--bg-2), var(--bg) 70%); color:var(--fg); font-family:var(--font-body); font-size:16px; line-height:1.5;
-  padding-left:max(12px, env(safe-area-inset-left,0px)); padding-right:max(12px, env(safe-area-inset-right,0px)); padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
-.app { height:100%; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:auto 1fr auto; gap:10px; padding-block:10px; }
-header { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-.brand { display:flex; align-items:baseline; gap:10px; } .brand h1 { font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:.3em; margin:0; color:var(--accent); text-shadow:0 0 18px rgba(57,198,255,.45); }
-.brand small { font-family:var(--font-mono); font-size:.68rem; color:var(--muted); letter-spacing:.06em; }
-.chips { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
-.chip { font-family:var(--font-mono); font-size:.66rem; letter-spacing:.1em; text-transform:uppercase; padding:4px 9px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:var(--accent-soft); white-space:nowrap; cursor:default; }
-.chip.btn { cursor:pointer; color:var(--accent); } .chip.btn:hover { border-color:var(--accent); }
-.chip.state { color:var(--accent); border-color:rgba(57,198,255,.5); }
-.chip.state[data-state="listening"] { color:var(--good); border-color:rgba(82,227,155,.5); background:rgba(82,227,155,.1); }
-.chip.state[data-state="tool"], .chip.state[data-state="loading"] { color:var(--amber); border-color:rgba(255,181,71,.5); background:rgba(255,181,71,.1); }
-.chip.state[data-state="speaking"] { color:#fff; border-color:rgba(255,255,255,.4); }
-main { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:12px; min-height:0; min-width:0; } main > * { min-width:0; }
-.reactor { position:relative; display:grid; place-items:center; min-height:220px; min-width:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); overflow:hidden; }
-.reactor canvas { width:100%; max-width:480px; aspect-ratio:1/1; height:auto; display:block; }
-.reactor .caption { position:absolute; left:8px; right:8px; bottom:10px; text-align:center; font-family:var(--font-mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
-.progress { position:absolute; left:16px; right:16px; top:12px; height:4px; border-radius:2px; background:rgba(255,255,255,.08); overflow:hidden; } .progress > i { display:block; height:100%; width:0; background:var(--accent); transition:width .3s; }
-.panel { display:grid; grid-template-rows:auto 1fr; min-height:0; min-width:0; border:1px solid var(--line); border-radius:18px; background:var(--panel); }
-.panel-head { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 12px; border-bottom:1px solid var(--line); font-family:var(--font-mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); }
-.panel-head button { font:inherit; letter-spacing:inherit; text-transform:inherit; color:var(--accent); background:none; border:1px solid var(--line); border-radius:999px; padding:3px 10px; cursor:pointer; }
-.transcript { overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; min-height:0; }
-.turn { max-width:94%; padding:10px 14px; border-radius:14px; white-space:pre-wrap; overflow-wrap:anywhere; min-width:0; }
-.turn.user { align-self:flex-end; background:rgba(57,198,255,.12); border:1px solid rgba(57,198,255,.25); border-bottom-right-radius:4px; }
-.turn.jarvis { align-self:flex-start; background:rgba(255,255,255,.04); border:1px solid var(--line); border-bottom-left-radius:4px; }
-.turn.jarvis.streaming::after { content:"▍"; color:var(--accent); animation:blink 1s steps(2) infinite; }
-.turn .who { display:block; font-family:var(--font-mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
-.turn.system { align-self:center; font-family:var(--font-mono); font-size:.72rem; color:var(--muted); background:none; padding:2px 8px; text-align:center; }
-.turn.tool { align-self:flex-start; font-family:var(--font-mono); font-size:.72rem; color:var(--muted); background:none; padding:0 8px; } .turn.tool b { color:var(--amber); font-weight:500; }
-.turn.reminder { align-self:stretch; background:rgba(255,181,71,.1); border:1px solid rgba(255,181,71,.4); color:var(--amber); }
-footer form { display:flex; gap:8px; align-items:center; }
-footer input { flex:1; min-width:0; font:inherit; color:var(--fg); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:999px; padding:11px 16px; }
-footer input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); } footer input::placeholder { color:var(--muted); }
-.btn { width:46px; height:46px; flex:none; border-radius:50%; border:1px solid var(--line); background:var(--accent-soft); color:var(--accent); cursor:pointer; display:grid; place-items:center; }
-.btn svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-.btn.mic.on { color:#fff; background:var(--good); border-color:var(--good); box-shadow:0 0 24px rgba(82,227,155,.5); } .btn.wake.on { color:#04080f; background:var(--accent); }
-.hint { font-family:var(--font-mono); font-size:.64rem; color:var(--muted); letter-spacing:.06em; text-align:center; margin-top:6px; }
-dialog { background:var(--bg-2); color:var(--fg); border:1px solid var(--line); border-radius:18px; padding:20px; max-width:min(92vw, 460px); width:100%; font-family:var(--font-body); }
-dialog::backdrop { background:rgba(0,0,0,.6); } dialog h2 { font-family:var(--font-display); font-size:.9rem; letter-spacing:.2em; color:var(--accent); margin:0 0 14px; }
-dialog label { display:grid; gap:4px; margin-bottom:12px; font-size:.85rem; color:var(--muted); }
-dialog input, dialog select { font:inherit; color:var(--fg); background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
-dialog .row { display:flex; gap:8px; justify-content:flex-end; } dialog button { font:inherit; padding:8px 16px; border-radius:999px; border:1px solid var(--line); background:var(--accent-soft); color:var(--accent); cursor:pointer; }
-.install { display:none; position:fixed; left:50%; bottom:max(84px, env(safe-area-inset-bottom,0px)); transform:translateX(-50%); z-index:5; font:600 .95rem var(--font-body); color:#04080f; background:var(--accent); border:none; border-radius:999px; padding:12px 22px; box-shadow:0 0 30px rgba(57,198,255,.5); cursor:pointer; }
-@keyframes blink { to { opacity:0; } }
-@media (max-width:760px) { main { grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(200px,1fr); } .reactor { min-height:200px; } .reactor canvas { max-width:240px; } .turn { max-width:100%; } }
-@media (prefers-reduced-motion:reduce) { .turn.jarvis.streaming::after { animation:none; } }
+/* Layout: telemetry column | reactor stage | transcript; on tablets the telemetry becomes a strip, on phones everything stacks. */
+.app { position: relative; z-index: 1; height: 100%; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 10px;
+  padding-top: max(10px, env(safe-area-inset-top, 0px)); padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); }
+.app > header { grid-row: 1; } .app > .strip { grid-row: 2; } .app > main { grid-row: 3; } .app > footer { grid-row: 4; }
+main { display: grid; grid-template-columns: 250px minmax(0, 1fr) minmax(340px, 32vw); gap: 12px; min-height: 0; min-width: 0; }
+main > * { min-width: 0; min-height: 0; }
+.left { display: grid; grid-auto-rows: min-content; gap: 12px; overflow-y: auto; scrollbar-width: none; }
+.right { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.strip { display: none; gap: 6px; flex-wrap: wrap; }
+.learned { display: grid; gap: 6px; padding: 10px 12px 12px; font-size: 0.92rem; }
+.learned div { border-left: 2px solid var(--holo); padding-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.learned .empty { border: 0; padding: 0; color: var(--muted); white-space: normal; font-size: 0.86rem; }
+.docs-list, .k-list { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; max-height: 46vh; overflow: auto; }
+.docs-list li, .k-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); background: rgba(86, 214, 255, 0.04); }
+.docs-list li.empty, .k-list li.empty { display: block; color: var(--muted); font-size: 0.88rem; border-style: dashed; }
+.docs-list .dname, .k-list .kt { overflow-wrap: anywhere; font-weight: 600; }
+.docs-list .dmeta, .k-list .km { grid-column: 1; font-family: var(--font-mono); font-size: 0.66rem; color: var(--muted); letter-spacing: 0.06em; overflow-wrap: anywhere; }
+.k-list .kc { grid-column: 1 / -1; font-size: 0.86rem; color: var(--fg); opacity: 0.85; white-space: pre-wrap; max-height: 5.6em; overflow: hidden; }
+.docs-list button, .k-list button { grid-column: 2; grid-row: 1 / span 2; font-size: 0.68rem !important; padding: 4px 10px !important; }
+.voicebox { border: 1px solid var(--line); padding: 10px 12px 2px; margin: 0 0 12px; } .voicebox legend { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--holo); padding: 0 6px; }
+dialog.holo input[type=range] { padding: 0; accent-color: var(--holo); }
+.brain-choices { display: grid; gap: 10px; }
+.brain { display: grid; gap: 4px; text-align: left; padding: 14px 16px !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--font-ui) !important; font-size: 0.95rem !important; color: var(--fg) !important; }
+.brain b { color: var(--holo); font-family: var(--font-display); letter-spacing: 0.12em; font-size: 0.82rem; font-weight: 500; } .brain span { color: var(--muted); }
+dialog.holo label.check { display: flex; gap: 8px; align-items: flex-start; color: var(--fg); } dialog.holo label.check input { width: auto; margin-top: 4px; }
+.dropzone { display: none; position: fixed; inset: 12px; z-index: 55; border: 2px dashed var(--holo); background: rgba(2, 7, 13, 0.86); place-items: center; text-align: center; padding: 20px;
+  font-family: var(--font-display); letter-spacing: 0.16em; color: var(--holo); pointer-events: none; }
+body.dropping .dropzone { display: grid; }
+.install { display: none; position: fixed; left: 50%; bottom: max(90px, env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 45; font: 600 0.95rem var(--font-ui); letter-spacing: 0.06em;
+  color: #02070d; background: var(--holo); border: none; padding: 12px 22px; box-shadow: 0 0 30px rgba(86, 214, 255, 0.6); cursor: pointer; }
+.turn .acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; white-space: normal; }
+.turn .acts button { font: 0.6rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; color: var(--holo); background: rgba(86, 214, 255, 0.06); border: 1px solid var(--line); padding: 4px 9px; cursor: pointer; }
+.turn .acts button:hover, .turn .acts button:focus-visible { background: rgba(86, 214, 255, 0.18); outline: none; }
+.turn a.dl { color: var(--holo); font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.04em; text-decoration: underline; text-underline-offset: 3px; }
+.suggest { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.suggest:empty { display: none; }
+.suggest button { font: 0.62rem var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--holo); background: rgba(86, 214, 255, 0.05); border: 1px solid var(--line); padding: 5px 10px; cursor: pointer; }
+.suggest button:hover, .suggest button:focus-visible { background: rgba(86, 214, 255, 0.18); outline: none; }
+.turn .body.rich p { margin: 0 0 6px; } .turn .body.rich p:last-child { margin-bottom: 0; }
+.turn .body.rich ul, .turn .body.rich ol { margin: 4px 0 8px; padding-left: 20px; white-space: normal; } .turn .body.rich li { margin: 2px 0; }
+.turn .body.rich .h { display: block; color: var(--holo); margin: 6px 0 2px; }
+.turn .body.rich a { color: var(--holo); } .turn .body.rich code { font-family: var(--font-mono); font-size: 0.9em; color: var(--holo-2, #b4f2ff); }
+.turn .body.rich .cite { color: var(--amber); font-family: var(--font-mono); font-size: 0.72em; }
+.turn .body.rich { white-space: normal; }
+.turn img.qr { display: block; width: 180px; height: 180px; image-rendering: pixelated; background: #fff; padding: 6px; margin: 6px 0; }
+.docs-list .dacts { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: wrap; }
+.docs-list .dacts button { grid-column: auto; grid-row: auto; }
+#tplFields { display: grid; gap: 2px; max-height: 42vh; overflow: auto; }
+dialog.holo textarea { min-height: 70px; }
+.lock { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(2, 7, 13, 0.97); }
+.lock[hidden] { display: none; }
+.lock-box { display: grid; gap: 12px; text-align: center; padding: 28px; border: 1px solid var(--line); min-width: min(320px, 90vw); }
+.lock-box .title { font-family: var(--font-display); letter-spacing: 0.3em; color: var(--holo); font-size: 1.4rem; }
+.lock-box input { font-size: 1.4rem; text-align: center; letter-spacing: 0.4em; padding: 10px; background: rgba(86, 214, 255, 0.06); border: 1px solid var(--line); color: var(--fg); }
+.lock-box button { font: 600 0.9rem var(--font-ui); letter-spacing: 0.12em; text-transform: uppercase; padding: 10px; background: var(--holo); color: #02070d; border: 0; cursor: pointer; }
+/* Luxury: ingresso morbido dei messaggi, vetro e filo d'oro, indicatore di scrittura, transizioni curate. */
+:root { --gold: #e9c98b; --gold-dim: rgba(233, 201, 139, 0.35); --ease: cubic-bezier(.2, .8, .2, 1); }
+body.hud { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.transcript { scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; }
+.turn { animation: turn-in .42s var(--ease) both; }
+.turn.jarvis { background: linear-gradient(180deg, rgba(10, 30, 46, 0.72), rgba(3, 14, 24, 0.6)); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(233, 201, 139, 0.18); line-height: 1.6; letter-spacing: 0.005em; }
+.turn.jarvis .who { color: var(--gold); letter-spacing: 0.28em; }
+.turn.user { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); }
+.turn.typing { padding: 12px 16px; }
+.turn.typing .dots { display: inline-flex; gap: 6px; align-items: center; height: 1.2em; }
+.turn.typing .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); opacity: .25; animation: dot 1.1s var(--ease) infinite; }
+.turn.typing .dots i:nth-child(2) { animation-delay: .15s; } .turn.typing .dots i:nth-child(3) { animation-delay: .3s; }
+.turn .acts button, .suggest button { transition: background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease); }
+.turn .acts button:hover, .suggest button:hover { border-color: var(--gold-dim); color: var(--gold); transform: translateY(-1px); }
+.turn .acts { opacity: .55; transition: opacity .25s var(--ease); } .turn:hover .acts, .turn:focus-within .acts, .turn:last-child .acts { opacity: 1; }
+.inline-cta { margin-left: 6px; font: 600 0.72rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: #1a1205; background: linear-gradient(135deg, #f3dcaa, #d4a95a); border: 0; padding: 6px 12px; cursor: pointer; box-shadow: 0 0 18px rgba(233, 201, 139, 0.35); }
+.inline-cta:hover { filter: brightness(1.08); }
+dialog.holo { animation: dlg-in .35s var(--ease) both; }
+dialog.holo::backdrop { background: rgba(2, 7, 13, 0.6); backdrop-filter: blur(4px); }
+.cmd .prompt input { transition: box-shadow .25s var(--ease); } .cmd .prompt input:focus { box-shadow: 0 0 0 1px var(--gold-dim), 0 0 24px rgba(233, 201, 139, 0.12); }
+@keyframes turn-in { from { opacity: 0; transform: translateY(10px) scale(.985); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes dot { 0%, 100% { opacity: .2; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-4px); } }
+@keyframes dlg-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .turn, dialog.holo, .turn.typing .dots i { animation: none; } .turn .acts button:hover, .suggest button:hover { transform: none; } }
+body.personal .brand h1::after { content: "PERSONALE"; margin-left: 10px; font: 600 0.55rem var(--font-mono); letter-spacing: 0.2em; color: #1a1205; background: linear-gradient(135deg, #f3dcaa, #d4a95a); padding: 3px 7px; vertical-align: middle; }
+/* Pannello comandi e benvenuto */
+dialog.palette { width: min(640px, 94vw); padding: 14px; }
+.palette input { width: 100%; font-size: 1.05rem; padding: 12px 14px; }
+.palette ul { list-style: none; margin: 10px 0 6px; padding: 0; max-height: 52vh; overflow: auto; display: grid; gap: 2px; }
+.palette li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; cursor: pointer; border-left: 2px solid transparent; transition: background .15s var(--ease), border-color .15s var(--ease); }
+.palette li .k { font: 0.62rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.palette li[aria-selected="true"] { background: rgba(233, 201, 139, 0.1); border-left-color: var(--gold); }
+dialog.onboard { width: min(560px, 94vw); text-align: center; padding: 28px 26px 22px; }
+.onboard section { display: grid; gap: 12px; } .onboard section[hidden] { display: none; } .onboard label { text-align: left; }
+.onboard h2 { letter-spacing: 0.32em; color: var(--gold); margin: 4px 0 0; }
+.ob-lead { margin: 0 0 6px; color: var(--fg); opacity: .9; font-size: 1.02rem; }
+.ob-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; } .ob-dots i { width: 26px; height: 3px; background: var(--line); transition: background .3s var(--ease); } .ob-dots i.on { background: var(--gold); box-shadow: 0 0 10px var(--gold-dim); }
+.ob-mark { width: 74px; height: 74px; margin: 0 auto 4px; border-radius: 50%; border: 2px solid var(--holo); box-shadow: 0 0 30px rgba(86, 214, 255, .45), inset 0 0 22px rgba(86, 214, 255, .35); background: radial-gradient(circle, #fff 0 14%, rgba(86, 214, 255, .5) 15% 30%, transparent 31%); animation: ob-pulse 2.6s ease-in-out infinite; }
+.ob-cards { display: grid; gap: 12px; }
+.ob-card { position: relative; display: grid; gap: 6px; text-align: left; padding: 16px 18px !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--font-ui) !important; font-size: 0.95rem !important; color: var(--fg) !important; background: rgba(86, 214, 255, 0.05) !important; border: 1px solid var(--line) !important; cursor: pointer; transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.ob-card:hover, .ob-card:focus-visible { transform: translateY(-2px); border-color: var(--gold-dim) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, .35); }
+.ob-card b { font-family: var(--font-display); letter-spacing: .14em; font-size: .9rem; color: var(--holo); } .ob-card.best b { color: var(--gold); } .ob-card span { color: var(--muted); }
+.ob-card.best { border-color: var(--gold-dim) !important; box-shadow: 0 0 26px rgba(233, 201, 139, .12); }
+.ob-tag { position: absolute; top: -9px; right: 14px; font: 600 .58rem var(--font-mono) !important; letter-spacing: .16em; text-transform: uppercase; color: #1a1205 !important; background: linear-gradient(135deg, #f3dcaa, #d4a95a); padding: 3px 8px; }
+.ob-tips { text-align: left; margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); }
+button.primary { background: linear-gradient(135deg, #f3dcaa, #d4a95a) !important; color: #1a1205 !important; border: 0 !important; box-shadow: 0 0 22px rgba(233, 201, 139, .3); }
+@keyframes ob-pulse { 0%, 100% { box-shadow: 0 0 22px rgba(86, 214, 255, .35), inset 0 0 18px rgba(86, 214, 255, .3); } 50% { box-shadow: 0 0 40px rgba(86, 214, 255, .6), inset 0 0 26px rgba(86, 214, 255, .45); } }
+@media (prefers-reduced-motion: reduce) { .ob-mark { animation: none; } }
+@media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(320px, 44vw); } .left { display: none; } .strip { display: flex; } }
+@media (max-width: 760px) {
+  body.hud { font-size: 16px; }
+  main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(190px, 32vh) minmax(0, 1fr); }
+  .stage { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding-bottom: 6px; } .stage canvas { width: min(100%, 26vh); }
+  .stage .reticle { display: none; } .stage .caption { position: static; font-size: 0.64rem; letter-spacing: 0.14em; }
+  .clock { display: none; } .turn { max-width: 100%; } .hbtn { width: 42px; height: 42px; }
+}
 </style>
 </head>
-<body>
+<body class="hud">
+<div class="hud-bg" aria-hidden="true"></div>
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="lines">
+    <div class="title">J.A.R.V.I.S.</div>
+    <span style="animation-delay:.05s">inizializzazione nucleo <b>ok</b></span>
+    <span style="animation-delay:.3s">interfaccia olografica <b>ok</b></span>
+    <span style="animation-delay:.55s">archivio documenti <b>ok</b></span>
+    <span style="animation-delay:.8s">base di conoscenza <b>ok</b></span>
+    <span style="animation-delay:1.05s">protocolli vocali <b>ok</b></span>
+    <span style="animation-delay:1.3s">tutti i sistemi operativi <b>online</b></span>
+  </div>
+</div>
 <div class="app">
-  <header>
-    <div class="brand"><h1>J.A.R.V.I.S.</h1><small id="model">avvio…</small></div>
+  <header class="hud-top">
+    <div class="brand"><div class="sigil" aria-hidden="true"></div><div><h1>J.A.R.V.I.S.</h1><small id="model">avvio…</small></div></div>
     <div class="chips">
-      <span class="chip" id="reminderChip" hidden>0 promemoria</span>
-      <span class="chip btn" id="settingsBtn" role="button" tabindex="0">impostazioni</span>
+      <span class="chip act" id="reminderChip" role="button" tabindex="0" title="Promemoria attivi" hidden>0 promemoria</span>
+      <span class="chip act" id="tplChip" role="button" tabindex="0" title="Modelli di documento pronti">modelli</span>
+      <span class="chip act" id="docsChip" role="button" tabindex="0" title="Documenti caricati su questo dispositivo">documenti</span>
+      <span class="chip act" id="knowledgeChip" role="button" tabindex="0" title="Ciò che J.A.R.V.I.S. ha imparato">conoscenza</span>
+      <span class="chip act" id="paletteBtn" role="button" tabindex="0" title="Tutti i comandi (Ctrl+K)">⌘ comandi</span>
+      <span class="chip act" id="settingsBtn" role="button" tabindex="0">impostazioni</span>
       <span class="chip state" id="stateChip" data-state="idle">idle</span>
+      <span class="clock" id="tClock">--:--:--</span>
     </div>
   </header>
+  <div class="strip" aria-label="Telemetria">
+    <span class="chip" id="sBrain">cervello —</span><span class="chip" id="sNet">rete —</span><span class="chip" id="sBatt">batteria —</span>
+    <span class="chip" id="sDocs">0 documenti</span><span class="chip" id="sKnow">0 conoscenze</span>
+  </div>
   <main>
-    <section class="reactor" aria-label="Stato">
+    <aside class="left" aria-label="Telemetria">
+      <section class="frame">
+        <div class="frame-title"><span>sistemi</span><b id="tStatus">online</b></div>
+        <div class="tele">
+          <div class="tele-big" id="tClockBig">--:--</div>
+          <div class="tele-row"><span class="k">data</span><span class="v" id="tDate">—</span></div>
+          <div class="tele-row"><span class="k">cervello</span><span class="v" id="tBrain">—</span></div>
+          <div class="tele-row"><span class="k">rete</span><span class="v" id="tNet">—</span></div>
+          <div class="tele-row"><span class="k">batteria</span><span class="v" id="tBatt">n/d</span><div class="bar"><i id="tBattBar"></i></div></div>
+          <div class="tele-row"><span class="k">processori</span><span class="v" id="tCores">—</span></div>
+          <div class="tele-row"><span class="k">memoria</span><span class="v" id="tMem">—</span></div>
+          <div class="tele-row"><span class="k">gpu</span><span class="v" id="tGpu">—</span></div>
+          <div class="tele-row"><span class="k">fotogrammi</span><span class="v" id="tFps">—</span><div class="bar"><i id="tFpsBar"></i></div></div>
+        </div>
+      </section>
+      <section class="frame">
+        <div class="frame-title"><span>archivio</span><b id="tArchive">locale</b></div>
+        <div class="tele">
+          <div class="tele-row"><span class="k">documenti</span><span class="v" id="tDocs">0</span></div>
+          <div class="tele-row"><span class="k">conoscenze</span><span class="v" id="tKnow">0</span><div class="bar"><i id="tKnowBar"></i></div></div>
+          <div class="tele-row"><span class="k">fatti</span><span class="v" id="tFacts">0</span></div>
+          <div class="tele-row"><span class="k">promemoria</span><span class="v" id="tRem">0</span></div>
+        </div>
+      </section>
+      <section class="frame">
+        <div class="frame-title"><span>ultime acquisizioni</span><b>&#9650;</b></div>
+        <div class="learned" id="tLearned"><div class="empty">Ancora nulla. Chieda a Jarvis di studiare un argomento, o scriva "impara che…".</div></div>
+      </section>
+    </aside>
+    <section class="stage frame" aria-label="Stato">
       <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
-      <canvas id="reactor" width="480" height="480"></canvas>
+      <span class="reticle tl">j.a.r.v.i.s. // olo-hud<br>protocollo assistente</span>
+      <span class="reticle tr" id="rDate">—</span>
+      <span class="reticle bl" id="rBrain">cervello —</span>
+      <span class="reticle br" id="rArchive">archivio —</span>
+      <canvas id="reactor" aria-hidden="true"></canvas>
       <div class="caption" id="caption">avvio dei sistemi</div>
     </section>
-    <section class="panel" aria-label="Conversazione">
-      <div class="panel-head"><span>trascrizione</span><button type="button" id="newSession">nuova sessione</button></div>
+    <section class="right frame" aria-label="Conversazione">
+      <div class="frame-title"><span>trascrizione</span><span class="acts"><button type="button" class="ghost" id="exportBtn" title="Scarica la conversazione in Word">esporta</button><button type="button" class="ghost" id="newSession">nuova sessione</button></span></div>
       <div class="transcript" id="transcript"></div>
     </section>
   </main>
   <footer>
-    <form id="form" autocomplete="off">
-      <button type="button" class="btn wake" id="wakeBtn" title="Ascolta sempre la parola Jarvis" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 12h2m14 0h2M12 3v2m0 14v2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></button>
-      <input id="input" placeholder="Dica qualcosa a Jarvis…" aria-label="Messaggio">
-      <button type="button" class="btn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
-      <button type="submit" class="btn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
+    <div class="suggest" id="suggest" aria-label="Suggerimenti"></div>
+    <form id="form" class="cmd" autocomplete="off">
+      <button type="button" class="hbtn wake" id="wakeBtn" title="Ascolta sempre la parola Jarvis" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 12h2m14 0h2M12 3v2m0 14v2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></button>
+      <button type="button" class="hbtn" id="attachBtn" title="Aggiungi documenti (PDF, Word, testo)"><svg viewBox="0 0 24 24"><path d="M21 11.5 12.4 20a5.5 5.5 0 0 1-7.8-7.8l8.9-8.9a3.7 3.7 0 0 1 5.2 5.2l-8.9 8.9a1.8 1.8 0 0 1-2.6-2.6l8.2-8.2"/></svg></button>
+      <input type="file" id="fileInput" multiple hidden>
+      <div class="prompt"><input id="input" placeholder="Comando per Jarvis, o trascini un documento…" aria-label="Messaggio"></div>
+      <button type="button" class="hbtn mic" id="micBtn" title="Parla" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <button type="submit" class="hbtn" id="sendBtn" title="Invia"><svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg></button>
     </form>
-    <div class="hint" id="hint">scriva, o tocchi il microfono · in modalità ascolto dica "Jarvis, …"</div>
+    <div class="hint" id="hint">"aiuto" per i comandi · "modelli" per lettere e atti pronti · graffetta per i documenti · ↑ richiama le domande · Esc ferma la voce</div>
   </footer>
 </div>
+<div class="hud-scan" aria-hidden="true"></div>
 <button class="install" id="installBtn">Aggiungi J.A.R.V.I.S. alla schermata Home</button>
-<dialog id="settings">
+<dialog class="holo" id="settings">
   <h2>IMPOSTAZIONI</h2>
   <form method="dialog">
     <label>Come deve chiamarla <input id="setName" placeholder="Signore"></label>
     <label>Città per il meteo <input id="setCity" placeholder="Milano"></label>
     <label>Lingua <select id="setLang"><option value="it-IT">Italiano</option><option value="en-GB">English</option></select></label>
-    <label>Modello (più grande = più intelligente, più lento) <select id="setModel">
-      <option value="Qwen3-0.6B-q4f16_1-MLC">Qwen3 0.6B · leggerissimo (1 GB)</option>
-      <option value="Qwen3-1.7B-q4f16_1-MLC">Qwen3 1.7B · consigliato (2 GB)</option>
-      <option value="Qwen3-4B-q4f16_1-MLC">Qwen3 4B · migliore (3.5 GB)</option>
+    <label>Cervello <select id="setProvider">
+      <option value="local">Locale su questo dispositivo · gratuito, senza chiave, privato</option>
+      <option value="puter">Potenza massima · Claude e modelli di punta, gratis con un account Puter, senza chiave</option>
+      <option value="claude">Claude di Anthropic · con la propria chiave API a pagamento</option>
     </select></label>
+    <div id="puterFields" hidden>
+      <div class="row left"><button type="button" id="puterSignIn">Accedi con Puter (gratis)</button></div>
+      <p class="dlg-note" id="puterStatus" aria-live="polite"></p>
+      <label>Modello <select id="setPuterModel"><option value="">Automatico · il più potente disponibile (Claude)</option></select></label>
+      <p class="dlg-note">Puter è un servizio esterno: l'uso è conteggiato sul suo account Puter, con un credito gratuito incluso. Senza account, scelga il cervello locale.</p>
+    </div>
+    <div id="claudeFields">
+      <label>Chiave API di Claude <input id="setKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label>
+      <p class="dlg-note" id="keyStatus" aria-live="polite"></p>
+      <p class="dlg-note">La crea su <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (Settings → API Keys) dopo aver aggiunto un credito. Resta salvata solo in questo browser. Con Claude le domande e i passaggi dei documenti usati per rispondere vengono inviati ad Anthropic.</p>
+      <label>Modello Claude <select id="setClaudeModel">
+        <option value="claude-opus-5-5">Claude Opus 5.5 · consigliato</option>
+        <option value="claude-fable-5-2">Claude Fable 5.2 · il più capace, costa il doppio</option>
+        <option value="claude-sonnet-5-5">Claude Sonnet 5.5 · più veloce ed economico</option>
+        <option value="claude-haiku-5-5">Claude Haiku 5.5 · rapidissimo, per cose semplici</option>
+      </select></label>
+      <div class="row left"><button type="button" id="setForgetKey">Cancella la chiave</button></div>
+    </div>
+    <div id="localFields">
+    <label>Modello (più grande = più intelligente, più lento) <select id="setModel">
+      <option value="auto">Automatico · il migliore che questo dispositivo regge</option>
+      <option value="Qwen3-0.6B">Qwen3 0.6B · leggerissimo (1,4 GB)</option>
+      <option value="Qwen3-1.7B">Qwen3 1.7B · telefoni e tablet (2 GB)</option>
+      <option value="Qwen3-4B">Qwen3 4B · computer (3,5 GB)</option>
+      <option value="Qwen3-8B">Qwen3 8B · massimo, serve una buona GPU (5,7 GB)</option>
+    </select></label>
+    </div>
+    <fieldset class="voicebox">
+      <legend>Voce</legend>
+      <label>Voce italiana <select id="setVoiceIt"></select></label>
+      <label>Voce inglese <select id="setVoiceEn"></select></label>
+      <label>Preferenza automatica <select id="setVoiceGender"><option value="male">Maschile</option><option value="female">Femminile</option></select></label>
+      <label>Velocità <input id="setVoiceRate" type="range" min="0.8" max="1.3" step="0.05"></label>
+      <div class="row left"><button type="button" id="voiceTest">Prova la voce</button><button type="button" id="voiceTestEn">Prova in inglese</button></div>
+      <p class="dlg-note" id="voiceTip" hidden>Su questo browser non trovo voci neurali. Per la voce più realistica apra J.A.R.V.I.S. con Microsoft Edge (voci "Natural") o con Chrome su Android.</p>
+    </fieldset>
+    <label class="check"><input type="checkbox" id="setThink"> Ragionamento approfondito: più lento, più preciso su domande difficili</label>
+    <fieldset class="voicebox">
+      <legend>Studio</legend>
+      <label>Nome dello studio o dell'azienda <input id="setStudio" placeholder="Studio Rossi &amp; Associati"></label>
+      <label>Firma nei documenti <input id="setSigner" placeholder="Dott. Mario Rossi"></label>
+      <p class="dlg-note">Compaiono in fondo a modelli, lettere e quietanze.</p>
+    </fieldset>
+    <fieldset class="voicebox">
+      <legend>Abbonamento</legend>
+      <label>Piano <select id="setPlan"><option value="">Non indicato</option><option value="Essenziale">Essenziale · fino a 3 postazioni</option><option value="Studio">Studio · fino a 10 postazioni</option><option value="Partner">Partner · fino a 25 postazioni</option></select></label>
+      <label>Fatturazione <select id="setBilling"><option value="annuale">Annuale</option><option value="mensile">Mensile</option></select></label>
+      <label>Prossimo rinnovo <input id="setRenewal" type="date"></label>
+      <div class="row left"><button type="button" id="assistBtn">Chiedi assistenza su WhatsApp</button></div>
+      <p class="dlg-note" id="planNote">Aggiornamenti e assistenza sono inclusi nell'abbonamento. Il messaggio di assistenza contiene solo versione, cervello e browser: nessun documento.</p>
+    </fieldset>
+    <fieldset class="voicebox">
+      <legend>Aspetto e abitudini</legend>
+      <label>Dimensione del testo <select id="setTextSize"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.15">Grande</option><option value="1.3">Molto grande</option></select></label>
+      <label class="check"><input type="checkbox" id="setBriefing"> Briefing del giorno alla prima apertura (promemoria e scadenze)</label>
+      <label class="check"><input type="checkbox" id="setSound"> Suono quando scatta un promemoria</label>
+      <label class="check"><input type="checkbox" id="setUiSound"> Suoni e vibrazioni dell'interfaccia</label>
+    </fieldset>
+    <fieldset class="voicebox">
+      <legend>Privacy e dati</legend>
+      <label class="check"><input type="checkbox" id="setPrivate"> Modalità privata: la conversazione non viene salvata su questo dispositivo</label>
+      <label>PIN di blocco (4-8 cifre) <input id="setPin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" placeholder="lasci vuoto per non cambiarlo"></label>
+      <div class="row left"><button type="button" id="pinClear">Togli il PIN</button><button type="button" id="lockNow">Blocca ora</button></div>
+      <p class="dlg-note" id="pinNote"></p>
+      <input type="file" id="restoreFile" accept=".json,application/json" hidden>
+      <div class="row left"><button type="button" id="backupBtn">Backup completo</button><button type="button" id="restoreBtn">Ripristina backup</button><button type="button" id="wipeBtn">Cancella tutti i dati</button></div>
+      <p class="dlg-note">Il backup contiene impostazioni, memoria, promemoria, conoscenza, cronologia e documenti, in un file che resta suo. La chiave di Claude e il PIN non vengono inclusi.</p>
+    </fieldset>
+    <div class="row left"><button type="button" id="switchProfile">Apri il mio Jarvis personale</button></div>
+    <p class="dlg-note">Il Jarvis personale ha memoria, documenti, liste e impostazioni separati da quello dello studio, sullo stesso dispositivo. Si installa a parte sulla schermata Home.</p>
+    <p class="dlg-note" id="aboutLine"></p>
     <div class="row"><button type="button" id="setCancel">Annulla</button><button type="submit" id="setSave">Salva</button></div>
   </form>
 </dialog>
+<dialog class="holo" id="docsDialog">
+  <h2>DOCUMENTI</h2>
+  <p class="dlg-note">Letti, indicizzati e cercati solo su questo dispositivo: nessun file viene inviato a server. PDF con testo, Word (.docx), testo, Markdown, CSV, HTML, email.</p>
+  <ul id="docsList" class="docs-list"></ul>
+  <div class="row"><button type="button" id="docsClear" hidden>Rimuovi tutti</button><button type="button" id="docsAdd">Aggiungi file</button><button type="button" id="docsClose">Chiudi</button></div>
+</dialog>
+<dialog class="holo" id="knowledgeDialog">
+  <h2>BASE DI CONOSCENZA</h2>
+  <p class="dlg-note">Ciò che J.A.R.V.I.S. ha imparato dal web, dai documenti e da lei. Resta su questo dispositivo; può esportarlo e importarlo su un altro.</p>
+  <label>Cerca <input id="kSearch" type="search" placeholder="es. scadenze IMU"></label>
+  <ul id="kList" class="k-list"></ul>
+  <details>
+    <summary class="dlg-note" style="cursor:pointer">Insegna qualcosa a mano</summary>
+    <label>Titolo <input id="kTitle" placeholder="es. Procedura invio F24 dello studio"></label>
+    <label>Contenuto <textarea id="kContent" placeholder="Cosa deve sapere Jarvis, con date e numeri esatti"></textarea></label>
+    <div class="row left"><button type="button" id="kAdd">Salva nella conoscenza</button></div>
+  </details>
+  <input type="file" id="kImportFile" accept=".json,application/json" hidden>
+  <div class="row"><button type="button" id="kImport">Importa</button><button type="button" id="kExport">Esporta</button><button type="button" id="kClose">Chiudi</button></div>
+</dialog>
+<dialog class="holo" id="remDialog">
+  <h2>PROMEMORIA</h2>
+  <p class="dlg-note">Scattano con voce, suono e notifica mentre J.A.R.V.I.S. è aperto; quelli persi mentre era chiuso compaiono alla riapertura. Per averli anche sul telefono, li esporti nel calendario.</p>
+  <ul id="remList" class="k-list"></ul>
+  <div class="row"><button type="button" id="remIcs">Esporta nel calendario</button><button type="button" id="fiscalIcs">Scadenze fiscali nel calendario</button><button type="button" id="remClose">Chiudi</button></div>
+</dialog>
+<dialog class="holo" id="tplDialog">
+  <h2>MODELLI</h2>
+  <p class="dlg-note">Lettere e atti tipici dello studio, compilati sul dispositivo anche senza intelligenza artificiale. Sono bozze: le rilegga e le adatti al caso prima dell'invio.</p>
+  <label>Modello <select id="tplSelect"></select></label>
+  <div id="tplFields"></div>
+  <div class="row"><button type="button" id="tplShow">Mostra nel testo</button><button type="button" id="tplWord">Scarica Word</button><button type="button" id="tplClose">Chiudi</button></div>
+</dialog>
+<dialog class="holo palette" id="palette" aria-label="Comandi">
+  <input id="palInput" placeholder="Cerca un comando o scriva una domanda…" autocomplete="off" spellcheck="false">
+  <ul id="palList" role="listbox"></ul>
+  <p class="dlg-note">↑ ↓ per scegliere · Invio per eseguire · Esc per chiudere · Ctrl+K per riaprire</p>
+</dialog>
+<dialog class="holo onboard" id="onboard" aria-label="Benvenuto">
+  <div class="ob-dots"><i class="on"></i><i></i><i></i></div>
+  <section data-step="1">
+    <div class="ob-mark" aria-hidden="true"></div>
+    <h2>BENVENUTO</h2>
+    <p class="ob-lead">Sono J.A.R.V.I.S. Due domande e sono pronto.</p>
+    <label>Come devo chiamarla? <input id="obName" placeholder="es. Leonardo" autocomplete="given-name"></label>
+    <label>In quale città vive? <span class="dlg-note">(per meteo e giornata)</span> <input id="obCity" placeholder="es. Milano" autocomplete="address-level2"></label>
+    <div class="row"><button type="button" id="obNext1" class="primary">Continua</button></div>
+  </section>
+  <section data-step="2" hidden>
+    <h2>IL MIO CERVELLO</h2>
+    <p class="ob-lead">Scelga come devo pensare. Si cambia quando vuole dalle impostazioni.</p>
+    <div class="ob-cards">
+      <button type="button" class="ob-card best" data-brain="puter"><span class="ob-tag">consigliato</span><b>Potenza massima</b><span>Claude e i modelli di punta del mondo. Risposte di livello professionale. Gratis con un account Puter, senza chiavi.</span></button>
+      <button type="button" class="ob-card" data-brain="local"><b>Privato</b><span>Gira su questo dispositivo: nulla esce da qui, funziona anche offline. Ideale per documenti riservati; più semplice nella conversazione.</span></button>
+    </div>
+  </section>
+  <section data-step="3" hidden>
+    <h2>TUTTO PRONTO</h2>
+    <p class="ob-lead" id="obDone"></p>
+    <ul class="ob-tips"><li>Trascini un documento e chieda "riassumi" o "estrai le scadenze"</li><li>"Ricordami domani alle 9 di…" e "aggiungi latte alla lista della spesa"</li><li>Ctrl+K o "⌘ comandi" per tutto il resto</li></ul>
+    <div class="row"><button type="button" id="obGo" class="primary">Iniziamo</button></div>
+  </section>
+</dialog>
+<div class="lock" id="lock" hidden>
+  <form id="lockForm" class="lock-box">
+    <div class="title">J.A.R.V.I.S.</div>
+    <p>Sistema bloccato. Inserisca il PIN.</p>
+    <input id="lockPin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-label="PIN">
+    <button type="submit">Sblocca</button>
+    <p class="dlg-note" id="lockMsg" aria-live="polite"></p>
+  </form>
+</div>
+<div class="dropzone" aria-hidden="true"><span>Rilasci qui i documenti · restano su questo dispositivo</span></div>
+<script src="hud/reactor.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

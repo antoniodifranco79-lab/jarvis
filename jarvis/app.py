@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .brain import Brain
@@ -11,6 +12,8 @@ from .memory import Memory
 from .persona import greeting
 from .reminders import ReminderService
 from .tools import Approver, ToolContext, build_registry
+
+log = logging.getLogger(__name__)
 
 
 class Jarvis:
@@ -35,8 +38,29 @@ class Jarvis:
 
     async def start(self) -> None:
         self.reminders.start()
+        await self.connect_mcp()
+
+    async def connect_mcp(self) -> int:
+        """Register the tools of the MCP servers in ~/.jarvis/mcp.json (any server of the MCP ecosystem)."""
+        from .mcp_client import MCPHub, load_config
+
+        try:
+            config = load_config(self.settings.data_dir)
+        except (OSError, ValueError) as exc:
+            log.warning("invalid MCP config: %s", exc)
+            return 0
+        if not config:
+            return 0
+        self.mcp = MCPHub(self.registry)
+        added = await self.mcp.connect(config)
+        if added:
+            self.brain.refresh_tools()
+        log.info("MCP: %d tools from %d servers", added, len(self.mcp.servers))
+        return added
 
     async def stop(self) -> None:
+        if getattr(self, "mcp", None):
+            await self.mcp.close()
         await self.reminders.stop()
         self.memory.close()
 

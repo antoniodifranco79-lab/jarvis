@@ -48,7 +48,8 @@ def register(registry: ToolRegistry, ctx: ToolContext) -> None:
 
     @registry.tool()
     def read_file(path: str) -> ToolResult:
-        """Read a text file from the workspace. Call it when the user asks to open, read, summarise or check a file.
+        """Read a file from the workspace (text, PDF or Word .docx). Call it when the user asks to open, read, summarise
+        or check a specific file; to find something across many documents use search_documents instead.
 
         Args:
             path: File path relative to the workspace root.
@@ -56,7 +57,16 @@ def register(registry: ToolRegistry, ctx: ToolContext) -> None:
         target = resolve_in(root, path)
         if not target.is_file():
             return ToolResult.error(f"No such file: {path}")
-        text = target.read_text(encoding="utf-8", errors="replace")
+        if target.suffix.lower() in {".pdf", ".docx"}:
+            from .documents import extract_pages
+
+            try:
+                pages = extract_pages(target)
+            except Exception as exc:  # noqa: BLE001
+                return ToolResult.error(f"Cannot read {path}: {exc}")
+            text = "\n\n".join(f"[p. {i}] {t.strip()}" if len(pages) > 1 else t.strip() for i, t in enumerate(pages, 1))
+        else:
+            text = target.read_text(encoding="utf-8", errors="replace")
         if len(text) > MAX_READ:
             text = text[:MAX_READ] + f"\n… [truncated, {len(text) - MAX_READ} more characters]"
         return ToolResult(text)

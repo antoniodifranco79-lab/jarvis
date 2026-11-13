@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 import shutil
 import subprocess
 import tempfile
@@ -13,16 +12,14 @@ from pathlib import Path
 
 from ..config import Settings
 from .sentences import guess_language
+from .speechtext import speech_text
 
 log = logging.getLogger(__name__)
 
-_MARKDOWN = re.compile(r"[*_`#>]+|\[([^\]]+)\]\([^)]+\)")
-
-
-def clean_for_speech(text: str) -> str:
-    text = _MARKDOWN.sub(lambda m: m.group(1) or "", text)
-    text = re.sub(r"https?://\S+", "", text)
-    return re.sub(r"\s+", " ", text).strip()
+def clean_for_speech(text: str, language: str | None = None) -> str:
+    """Readable text for the voice: see ``speechtext.speech_text`` (markdown, citations, money, dates, abbreviations)."""
+    lang = language or guess_language(text)
+    return speech_text(text, lang)
 
 
 def find_player() -> list[str] | None:
@@ -70,7 +67,7 @@ class Speaker:
 
     async def synthesize(self, text: str, language: str | None = None) -> bytes | None:
         """Return MP3 bytes (or None when the engine speaks directly / is disabled)."""
-        text = clean_for_speech(text)
+        text = clean_for_speech(text, language)
         if not text or self.engine == "none":
             return None
         if self.engine == "edge":
@@ -102,7 +99,7 @@ class Speaker:
         return None  # pyttsx3 speaks directly, no bytes
 
     async def speak(self, text: str, language: str | None = None) -> None:
-        text = clean_for_speech(text)
+        text = clean_for_speech(text, language)
         if not text or self.engine == "none":
             return
         try:

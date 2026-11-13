@@ -160,6 +160,23 @@ def _app(args: argparse.Namespace) -> None:
     run_app(settings, voice=settings.app_voice and not args.no_voice, browser=args.browser)
 
 
+def _claude(args: argparse.Namespace) -> None:
+    """Make Claude Jarvis' brain for good: check the key, save it in ~/.jarvis/.env, never use Ollama."""
+    import getpass
+
+    from .claude_setup import activate, check_key
+
+    settings = get_settings()
+    key = (args.key or "").strip() or getpass.getpass("Anthropic API key (sk-ant-..., input hidden): ").strip()
+    problem = asyncio.run(check_key(key, settings.model))
+    if problem:
+        console.print(f"[red]{problem}[/red]")
+        sys.exit(1)
+    path = activate(key, settings)
+    console.print(f"[green]Claude is now Jarvis' brain[/green] ({settings.model}). Key saved in {path}.")
+    console.print("The local engine (Ollama) will not be downloaded or started. Run [bold]jarvis[/bold] or [bold]jarvis app[/bold].")
+
+
 def _doctor(_: argparse.Namespace) -> None:
     settings = get_settings()
     table = Table(title="J.A.R.V.I.S. diagnostics", show_lines=False)
@@ -331,6 +348,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="add a launcher to the applications menu / Start menu / Dock",
     )
     app.set_defaults(func=_app)
+
+    claude = sub.add_parser("claude", help="use Claude as the brain: check and save your Anthropic API key")
+    claude.add_argument("--key", help="the API key (otherwise asked without echo)")
+    claude.set_defaults(func=_claude)
 
     doctor = sub.add_parser("doctor", help="check configuration and optional components")
     doctor.set_defaults(func=_doctor)
