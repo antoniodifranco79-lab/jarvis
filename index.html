@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leonardo Di Franco · AI privata</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Installo assistenti AI che girano sui computer dello studio, senza cloud: i documenti dei clienti non escono mai. Formazione AI Act inclusa. Diagnosi gratuita di 30 minuti.">
+<meta name="theme-color" content="#02070d">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Leonardo Di Franco · AI privata per studi professionali e PMI">
+<meta property="og:description" content="L'intelligenza artificiale nel tuo studio. I dati restano nel tuo studio. Installazione, formazione AI Act, supporto mensile.">
+<meta property="og:locale" content="it_IT">
+<link rel="icon" href="app/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="app/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Exo+2:ital,wght@0,400;0,500;0,600;1,400&family=Share+Tech+Mono&display=swap">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"Person","name":"Leonardo Di Franco","jobTitle":"Consulente AI per studi professionali e PMI","telephone":"+39 379 166 7781","url":"https://antoniodifranco79-lab.github.io/jarvis/","sameAs":["https://github.com/antoniodifranco79-lab"],"knowsAbout":["intelligenza artificiale locale","GDPR","AI Act","assistenti vocali","automazione per studi professionali"]},
+ {"@type":"ProfessionalService","name":"Leonardo Di Franco · AI privata","description":"Assistenti AI locali per studi professionali e PMI in abbonamento mensile o annuale: installazione, formazione AI Act, aggiornamenti e assistenza inclusi.","url":"https://antoniodifranco79-lab.github.io/jarvis/","areaServed":"IT","priceRange":"€149 - €590 al mese","telephone":"+39 379 166 7781","founder":{"@type":"Person","name":"Leonardo Di Franco"},"hasOfferCatalog":{"@type":"OfferCatalog","name":"Abbonamenti J.A.R.V.I.S.","itemListElement":[{"@type":"Offer","name":"Essenziale mensile","price":"149","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"149","priceCurrency":"EUR","unitCode":"MON","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Essenziale annuale","price":"1490","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"1490","priceCurrency":"EUR","unitCode":"ANN","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Studio mensile","price":"290","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"290","priceCurrency":"EUR","unitCode":"MON","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Studio annuale","price":"2900","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"2900","priceCurrency":"EUR","unitCode":"ANN","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Partner mensile","price":"590","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"590","priceCurrency":"EUR","unitCode":"MON","valueAddedTaxIncluded":false}},{"@type":"Offer","name":"Partner annuale","price":"5900","priceCurrency":"EUR","priceSpecification":{"@type":"UnitPriceSpecification","price":"5900","priceCurrency":"EUR","unitCode":"ANN","valueAddedTaxIncluded":false}}]}}
+]}
+</script>
+<style>
+/* Layout: a holographic command deck. Sticky HUD bar, hero with the live reactor, then telemetry, offer, timeline and contact as glowing panels on a hex grid. Single dark theme by design. */
+:root {
+  --bg: #02070d; --bg-2: #061626; --holo: #56d6ff; --holo-2: #b4f2ff; --fg: #dcf5ff; --muted: #94b8cc;
+  --line: rgba(86, 214, 255, 0.22); --line-2: rgba(86, 214, 255, 0.5); --panel: rgba(4, 22, 36, 0.62); --panel-2: rgba(7, 32, 52, 0.78);
+  --amber: #ffb048; --good: #6dffc9; --on-holo: #02121e;
+  --font-display: "Orbitron", "Segoe UI", system-ui, sans-serif; --font-ui: "Rajdhani", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Exo 2", "Segoe UI", system-ui, sans-serif; --font-mono: "Share Tech Mono", Menlo, Consolas, monospace;
+  --cut: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: radial-gradient(1200px 800px at 70% 8%, rgba(18, 86, 130, 0.34), transparent 65%), radial-gradient(900px 600px at 0% 60%, rgba(18, 86, 130, 0.2), transparent 70%), var(--bg);
+  color: var(--fg); font-family: var(--font-body); font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+.hex { position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.13;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34L28 66v34M28 0v34L0 50v34l28 16 28-16V50L28 34' fill='none' stroke='%2356d6ff' stroke-width='.8'/%3E%3C/svg%3E");
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.5) 60%, #000 100%); mask-image: linear-gradient(180deg, #000 0%, rgba(0,0,0,.5) 60%, #000 100%); }
+.scan { position: fixed; inset: 0; pointer-events: none; z-index: 25; overflow: hidden; background: repeating-linear-gradient(to bottom, rgba(180, 242, 255, 0.022) 0 1px, transparent 1px 3px); }
+.scan::after { content: ""; position: absolute; left: 0; right: 0; top: -160px; height: 160px; background: linear-gradient(to bottom, transparent, rgba(86, 214, 255, 0.06), transparent); animation: sweep 9s linear infinite; }
+@keyframes sweep { to { transform: translateY(calc(100vh + 160px)); } }
+a { color: var(--holo); text-underline-offset: 3px; text-decoration-thickness: 1px; } a:hover { color: var(--holo-2); }
+:focus-visible { outline: 2px solid var(--holo); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.14; margin: 0; text-wrap: balance; font-weight: 700; letter-spacing: 0.01em; }
+h1 { font-size: clamp(1.9rem, 4.4vw, 3.3rem); }
+h2 { font-size: clamp(1.35rem, 2.8vw, 2.05rem); }
+h3 { font-size: 1.02rem; letter-spacing: 0.04em; }
+p { margin: 0; }
+.glow { color: var(--holo-2); text-shadow: 0 0 22px rgba(86, 214, 255, 0.55); }
+.wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.narrow { max-width: 66ch; }
+.muted { color: var(--muted); }
+.tag { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--holo); }
+.tag::before { content: ""; width: 26px; height: 2px; background: var(--holo); box-shadow: 0 0 8px var(--holo); }
+section { padding-block: 76px; position: relative; }
+.stack { display: grid; gap: 18px; }
+
+/* panels */
+.panel { position: relative; background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); box-shadow: inset 0 0 40px rgba(86, 214, 255, 0.05); min-width: 0; }
+.panel::before, .panel::after { content: ""; position: absolute; width: 18px; height: 18px; border: 2px solid var(--holo); pointer-events: none; filter: drop-shadow(0 0 5px rgba(86, 214, 255, 0.7)); }
+.panel::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; } .panel::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+.panel-head { display: flex; justify-content: space-between; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(86, 214, 255, 0.7); }
+.panel-head b { color: var(--holo); font-weight: 400; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 10px; font: 700 1rem var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; padding: 13px 22px; border: 1px solid var(--holo); cursor: pointer; text-decoration: none; clip-path: var(--cut); transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
+.btn-primary { background: var(--holo); color: var(--on-holo); box-shadow: 0 0 26px rgba(86, 214, 255, 0.45); }
+.btn-primary:hover { background: var(--holo-2); color: var(--on-holo); }
+.btn-ghost { background: rgba(86, 214, 255, 0.07); color: var(--holo); }
+.btn-ghost:hover { background: rgba(86, 214, 255, 0.2); color: #fff; }
+.btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.cta-note { font-size: 0.95rem; color: var(--muted); }
+
+/* HUD bar */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: rgba(2, 7, 13, 0.82); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-block: 10px; }
+.logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--fg); min-width: 0; }
+.sigil { width: 28px; height: 28px; flex: none; border-radius: 50%; border: 2px solid var(--holo); box-shadow: 0 0 14px rgba(86, 214, 255, 0.7), inset 0 0 10px rgba(86, 214, 255, 0.6); background: radial-gradient(circle, #fff 0 18%, var(--holo) 30%, transparent 62%); }
+.logo b { display: block; font-family: var(--font-display); font-size: 0.9rem; letter-spacing: 0.22em; color: var(--holo-2); white-space: nowrap; }
+.logo small { display: block; font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+.nav nav { display: flex; gap: 4px 20px; flex-wrap: wrap; justify-content: flex-end; font: 600 0.95rem var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; }
+.nav nav a { color: var(--muted); text-decoration: none; } .nav nav a:hover { color: var(--holo); text-shadow: 0 0 10px var(--holo); }
+.hudclock { font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.14em; color: var(--holo); white-space: nowrap; }
+.hudclock i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 8px var(--good); margin-right: 6px; font-style: normal; }
+@media (max-width: 900px) { .nav nav .hide-sm, .hudclock { display: none; } }
+@media (max-width: 640px) {
+  .logo small { display: none; } .logo b { font-size: 0.74rem; letter-spacing: 0.14em; } .logo > span:last-child { min-width: 0; overflow: hidden; }
+  .nav nav { gap: 14px; font-size: 0.86rem; flex-wrap: nowrap; } .nav nav a:not(.keep) { display: none; }
+}
+@media (max-width: 460px) { .nav nav a[href="#jarvis"] { display: none; } .logo b { letter-spacing: 0.1em; } }
+
+/* hero */
+.hero { padding-block: 58px 66px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); gap: 44px; align-items: center; }
+.hero-grid > * { min-width: 0; }
+.hero .lede { font-size: 1.16rem; color: var(--muted); max-width: 58ch; }
+.console { position: relative; aspect-ratio: 1 / 1; width: 100%; max-width: 520px; margin: 0 auto; }
+.console canvas { position: absolute; inset: 7%; width: 86%; height: 86%; }
+.callout { position: absolute; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--holo-2); background: rgba(2, 12, 22, 0.86); border: 1px solid var(--line-2); padding: 6px 10px; white-space: nowrap; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
+.callout em { display: block; font-style: normal; color: var(--muted); font-size: 0.62rem; letter-spacing: 0.18em; }
+.callout.c1 { top: 2%; left: 0; } .callout.c2 { top: 8%; right: 0; text-align: right; } .callout.c3 { bottom: 6%; left: 0; } .callout.c4 { bottom: 1%; right: 0; text-align: right; }
+.callout.amber { color: #ffd9a3; border-color: rgba(255, 176, 72, 0.6); }
+
+/* telemetry */
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.fact { padding: 18px 20px 20px; display: grid; gap: 8px; }
+.fact .num { font-family: var(--font-display); font-size: 2.3rem; font-weight: 900; letter-spacing: 0.02em; color: var(--holo-2); text-shadow: 0 0 22px rgba(86, 214, 255, 0.5); line-height: 1; font-variant-numeric: tabular-nums; }
+.fact .meter { height: 4px; background: rgba(86, 214, 255, 0.14); position: relative; overflow: hidden; }
+.fact .meter i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, var(--holo), var(--holo-2)); box-shadow: 0 0 10px var(--holo); }
+.fact .meter i.amber { background: linear-gradient(90deg, var(--amber), #ffd28c); box-shadow: 0 0 10px var(--amber); }
+.fact span { color: var(--muted); font-size: 0.97rem; }
+.fact a { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; }
+
+/* problem */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; align-items: start; }
+.two > * { min-width: 0; }
+.quote p { padding: 16px 18px 6px; font-style: italic; font-size: 1.05rem; }
+.quote footer { padding: 0 18px 16px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.checks { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 12px; }
+.checks li { display: flex; gap: 12px; align-items: flex-start; }
+.checks svg { width: 22px; height: 22px; flex: none; margin-top: 3px; fill: none; stroke: var(--good); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(109, 255, 201, 0.6)); }
+
+/* offer */
+.billing { display: inline-flex; margin-top: 26px; border: 1px solid var(--line-2); background: rgba(86, 214, 255, 0.05); clip-path: var(--cut); }
+.billing button { font: 700 0.95rem var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--holo); background: none; border: 0; padding: 11px 20px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.billing button[aria-pressed="true"] { background: var(--holo); color: var(--on-holo); box-shadow: 0 0 22px rgba(86, 214, 255, 0.45); }
+.billing button:focus-visible { outline: 2px solid var(--holo-2); outline-offset: -4px; }
+.billing .save { font: 600 0.66rem var(--font-mono); letter-spacing: 0.12em; padding: 3px 7px; background: var(--amber); color: var(--on-holo); }
+.plan .bill { margin: -6px 0 0; font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.04em; color: var(--good); min-height: 2.4em; }
+.plans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; margin-top: 36px; }
+.plan { display: grid; grid-template-rows: auto auto auto auto 1fr auto; gap: 14px; padding: 26px 22px 22px; }
+.plan.featured { border-color: rgba(255, 176, 72, 0.6); box-shadow: 0 0 40px rgba(255, 176, 72, 0.12), inset 0 0 40px rgba(255, 176, 72, 0.05); }
+.plan.featured::before, .plan.featured::after { border-color: var(--amber); filter: drop-shadow(0 0 6px rgba(255, 176, 72, 0.8)); }
+.plan .badge { position: absolute; top: -12px; left: 22px; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--on-holo); background: var(--amber); padding: 4px 10px; box-shadow: 0 0 16px rgba(255, 176, 72, 0.6); }
+.plan .who { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.price { font-family: var(--font-display); font-size: 2.1rem; font-weight: 900; color: var(--holo-2); text-shadow: 0 0 18px rgba(86, 214, 255, 0.45); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.plan.featured .price { color: #ffe1b5; text-shadow: 0 0 18px rgba(255, 176, 72, 0.5); }
+.price small { font: 500 0.92rem var(--font-body); color: var(--muted); text-shadow: none; letter-spacing: 0; }
+.plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; font-size: 0.97rem; }
+.plan ul li { padding-left: 22px; position: relative; } .plan ul li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 12px; height: 2px; background: var(--holo); box-shadow: 0 0 6px var(--holo); }
+.plan .outcome { border-left: 2px solid var(--good); background: rgba(109, 255, 201, 0.07); padding: 10px 12px; font-size: 0.93rem; }
+.fine { font-size: 0.9rem; color: var(--muted); margin-top: 18px; }
+
+/* timeline */
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-top: 40px; position: relative; counter-reset: step; }
+.steps::before { content: ""; position: absolute; left: 12px; right: 12px; top: 11px; height: 2px; background: linear-gradient(90deg, var(--holo), rgba(86, 214, 255, 0.15)); box-shadow: 0 0 10px var(--holo); }
+.step { position: relative; padding-top: 40px; min-width: 0; }
+.step::before { content: ""; position: absolute; top: 0; left: 0; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--holo); background: radial-gradient(circle, var(--holo-2) 0 30%, var(--bg) 34%); box-shadow: 0 0 14px var(--holo); }
+.step .n { counter-increment: step; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.2em; color: var(--holo); } .step .n::before { content: "FASE " counter(step, decimal-leading-zero); }
+.step h3 { margin: 6px 0 6px; } .step p { color: var(--muted); font-size: 0.96rem; }
+.step .when { display: block; margin-top: 8px; font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; color: var(--amber); text-transform: uppercase; }
+
+/* jarvis */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 10px; border: 1px solid var(--line-2); color: var(--holo); background: rgba(86, 214, 255, 0.06); clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+.terminal pre { margin: 0; padding: 16px 18px; font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.7; color: #cfe9f6; white-space: pre-wrap; overflow-x: auto; }
+.terminal .u { color: var(--holo); } .terminal .t { color: var(--amber); } .terminal .c { color: #5f8aa3; } .terminal .j { color: var(--fg); }
+
+/* about, faq */
+.about-grid { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 40px; align-items: start; }
+.about-grid > * { min-width: 0; }
+.principles { display: grid; gap: 14px; }
+.principle { padding: 16px 18px; } .principle h3 { margin-bottom: 4px; color: var(--holo-2); } .principle p { color: var(--muted); font-size: 0.97rem; }
+.faq { display: grid; gap: 10px; margin-top: 28px; }
+details.q { border: 1px solid var(--line); background: var(--panel); padding: 0 16px; }
+details.q summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 14px; padding: 14px 0; font: 700 1.05rem var(--font-ui); letter-spacing: 0.04em; }
+details.q summary::-webkit-details-marker { display: none; } details.q summary::after { content: "+"; color: var(--holo); font-family: var(--font-mono); } details.q[open] summary::after { content: "\2013"; }
+details.q[open] { border-color: var(--line-2); } details.q p { padding-bottom: 16px; color: var(--muted); max-width: 70ch; }
+
+/* contact */
+.contact { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0; }
+.contact > div { padding: 26px; min-width: 0; } .contact > div + div { border-left: 1px solid var(--line); }
+.phone { font-family: var(--font-display); font-size: clamp(1.4rem, 3.4vw, 2.1rem); font-weight: 900; letter-spacing: 0.06em; color: var(--holo-2); text-shadow: 0 0 20px rgba(86, 214, 255, 0.55); text-decoration: none; display: inline-block; margin: 8px 0 14px; }
+.contact-list { display: grid; gap: 10px; margin-top: 16px; }
+.contact-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 0.98rem; }
+.contact-row .k { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); min-width: 84px; }
+.contact-row code { font-family: var(--font-mono); background: rgba(86, 214, 255, 0.08); padding: 3px 8px; user-select: all; overflow-wrap: anywhere; }
+.copy { font: 600 0.8rem var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border: 1px solid var(--line-2); background: transparent; color: var(--holo); cursor: pointer; }
+form.brief { display: grid; gap: 12px; }
+form.brief label { display: grid; gap: 5px; font: 600 0.92rem var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+form.brief input, form.brief select, form.brief textarea { font: 400 1rem var(--font-body); color: var(--fg); background: rgba(2, 12, 22, 0.8); border: 1px solid var(--line-2); padding: 10px 12px; width: 100%; text-transform: none; letter-spacing: 0; }
+form.brief input:focus, form.brief select:focus, form.brief textarea:focus { outline: none; border-color: var(--holo); box-shadow: inset 0 0 16px rgba(86, 214, 255, 0.15); }
+form.brief textarea { min-height: 96px; resize: vertical; }
+.brief-out { display: none; margin-top: 10px; border: 1px solid rgba(255, 176, 72, 0.55); background: rgba(255, 176, 72, 0.07); padding: 12px; font-size: 0.95rem; }
+.brief-out.show { display: block; } .brief-out pre { white-space: pre-wrap; font: 400 0.92rem var(--font-body); margin: 8px 0 0; user-select: all; }
+footer.site { position: relative; z-index: 1; padding-block: 30px; border-top: 1px solid var(--line); font-family: var(--font-mono); font-size: 0.74rem; letter-spacing: 0.08em; color: var(--muted); }
+footer.site .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; } footer.site a { color: var(--muted); }
+
+@media (max-width: 960px) {
+  .hero-grid, .two, .about-grid, .contact { grid-template-columns: minmax(0, 1fr); }
+  .contact > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .plans { grid-template-columns: minmax(0, 1fr); } .facts { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps::before { display: none; }
+  .console { max-width: 420px; }
+}
+@media (max-width: 520px) { .steps { grid-template-columns: minmax(0, 1fr); } .callout { font-size: 0.6rem; padding: 4px 7px; } .callout em { display: none; } section { padding-block: 56px; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .scan::after { animation: none; } }
+</style>
+</head>
+<body>
+<div class="hex" aria-hidden="true"></div>
+<div class="scan" aria-hidden="true"></div>
+<header class="top">
+  <div class="wrap nav">
+    <a class="logo" href="#top"><span class="sigil" aria-hidden="true"></span><span><b>LEONARDO DI FRANCO</b><small>AI privata // studi professionali</small></span></a>
+    <nav aria-label="Sezioni">
+      <a href="#servizi">Servizi</a>
+      <a href="#come" class="hide-sm">Come funziona</a>
+      <a href="#jarvis" class="keep">J.A.R.V.I.S.</a>
+      <a href="#chi" class="hide-sm">Chi sono</a>
+      <a href="#contatti" class="keep">Contatti</a>
+    </nav>
+    <span class="hudclock"><i></i><span id="hudClock">SISTEMI ONLINE</span></span>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="stack">
+      <span class="tag">Protocollo · AI privata per studi e PMI</span>
+      <h1>L'intelligenza artificiale nel tuo studio. <span class="glow">I dati restano nel tuo studio.</span></h1>
+      <p class="lede">Installo assistenti AI che girano sui computer dello studio, senza cloud e senza abbonamenti per utente. I fascicoli dei clienti non escono mai dalla stanza. Il team impara a usarli come richiede l'AI Act.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#contatti">Prenota la diagnosi gratuita <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="https://wa.me/393791667781?text=Ciao%20Leonardo%2C%20vorrei%20prenotare%20la%20diagnosi%20AI%20gratuita%20di%2030%20minuti." rel="noopener">Scrivimi su WhatsApp</a>
+      </div>
+      <p class="cta-note">Oppure chiama il <a href="tel:+393791667781">+39 379 166 7781</a>. Puoi anche <a href="app/">provare J.A.R.V.I.S. nel browser</a>. Per commercialisti, avvocati, notai, consulenti del lavoro, studi tecnici e PMI che trattano dati sensibili.</p>
+    </div>
+    <div class="console" aria-label="Reattore di J.A.R.V.I.S.">
+      <canvas id="heroReactor" aria-hidden="true"></canvas>
+      <span class="callout c1">0 dati in cloud<em>modello sul vostro pc</em></span>
+      <span class="callout c2">AI Act · art. 4<em>formazione documentata</em></span>
+      <span class="callout c3">GDPR · segreto professionale<em>documenti in sede</em></span>
+      <span class="callout c4 amber">diagnosi 30 min<em>gratuita</em></span>
+    </div>
+  </div>
+</section>
+
+<section aria-label="Il contesto">
+  <div class="wrap">
+    <span class="tag">Telemetria di mercato</span>
+    <div class="facts" style="margin-top:22px">
+      <div class="fact panel"><div class="num">37–47%</div><div class="meter"><i style="width:47%"></i></div><span>degli studi professionali italiani usa già l'AI. Nei grandi studi è il 62%.</span><a href="https://www.teleborsa.it/AMP/News/2026/07/02/professionisti-cresce-la-digitalizzazione-l-ia-traina-gli-investimenti-negli-studi-187.html" rel="noopener">fonte · osservatorio polimi</a></div>
+      <div class="fact panel"><div class="num">40%</div><div class="meter"><i class="amber" style="width:40%"></i></div><span>degli studi non ha nessuna misura privacy specifica per l'AI. Tra i piccoli studi è il 52%.</span><a href="https://www.fiscoetasse.com/new-rassegna-stampa/2257-luso-dellintelligenza-artificiale-negli-studi-legali-vantaggi-e-criticita.html" rel="noopener">fonte · fiscoetasse</a></div>
+      <div class="fact panel"><div class="num">&lt;20%</div><div class="meter"><i class="amber" style="width:20%"></i></div><span>delle imprese ha avviato l'alfabetizzazione AI obbligatoria. L'articolo 4 dell'AI Act è in vigore dal 2 febbraio 2025.</span><a href="https://www.quotidiano.net/economia/ai-act-e-imprese-italiane-in-ritardo-meno-del-20-ha-avviato-la-formazione-obbligatoria-130f5131" rel="noopener">fonte · quotidiano nazionale</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="problema">
+  <div class="wrap two">
+    <div class="stack">
+      <span class="tag">Il problema</span>
+      <h2>In studio l'AI si usa già. Solo che nessuno sa dove finiscono i dati.</h2>
+      <p class="muted">Una praticante incolla un bilancio in ChatGPT per riassumerlo. Un collaboratore carica un contratto su un servizio gratuito per tradurlo. Nessuno lo fa in malafede: lo fa perché funziona. Ma ogni volta un documento coperto da segreto professionale esce dallo studio, verso server di cui non avete un contratto.</p>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Con un modello che gira in locale, il documento non lascia il computer. Niente trasferimento, niente DPA da negoziare, niente "il fornitore potrebbe addestrare sui vostri dati".</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>L'AI Act (Regolamento UE 2024/1689, art. 4) chiede che chi usa sistemi di AI abbia una formazione adeguata. La Legge 132/2025 lo recepisce in Italia. La formazione la faccio io, documentata.</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Nessun canone per utente: il modello è open source, il software è open source. Pagate il lavoro, non le licenze.</span></li>
+      </ul>
+    </div>
+    <div class="stack">
+      <figure class="quote panel" style="margin:0"><div class="panel-head"><span>trasmissione intercettata</span><b>diritto.it</b></div><p>"Il problema non è più se usare ChatGPT, Claude e Gemini negli studi legali, notarili e commerciali, ma come farlo senza violare il GDPR e il segreto professionale."</p><footer>Diritto.it, giugno 2026</footer></figure>
+      <figure class="quote panel" style="margin:0"><div class="panel-head"><span>trasmissione intercettata</span><b>nt+ diritto</b></div><p>"Senza un contratto con il fornitore, gli obblighi di GDPR e AI Act ricadono interamente sullo studio."</p><footer>NT+ Diritto, Il Sole 24 Ore</footer></figure>
+    </div>
+  </div>
+</section>
+
+<section id="servizi">
+  <div class="wrap">
+    <span class="tag">Abbonamenti</span>
+    <h2 style="margin-top:12px">Un abbonamento, mensile o annuale. Tutto incluso, prezzi scritti qui.</h2>
+    <p class="muted narrow" style="margin-top:12px">Niente licenze per utente e niente preventivi a sorpresa: installazione, formazione AI Act, aggiornamenti e assistenza sono dentro il canone. Con l'annuale due mesi sono gratis e l'attivazione è inclusa.</p>
+    <div class="billing" role="group" aria-label="Scegli la fatturazione">
+      <button type="button" data-billing="m" aria-pressed="false">Mensile</button>
+      <button type="button" data-billing="y" aria-pressed="true">Annuale <span class="save">2 mesi gratis</span></button>
+    </div>
+    <div class="plans">
+      <article class="plan panel">
+        <span class="who">Professionista o studio fino a 3 persone</span>
+        <h3>Essenziale</h3>
+        <div class="price"><span data-m="€149" data-y="€1.490">€1.490</span><small data-m="/mese" data-y="/anno">/anno</small></div>
+        <p class="bill" data-m="+ €290 di attivazione una tantum · disdetta con 30 giorni" data-y="pari a €124 al mese · attivazione inclusa · risparmi €588">pari a €124 al mese · attivazione inclusa · risparmi €588</p>
+        <ul>
+          <li>J.A.R.V.I.S. installato fino a 3 postazioni: funziona anche senza internet</li>
+          <li>Chat con i documenti, riassunti di documenti interi, bozze in Word, calcoli da studio, scadenze, promemoria, voce</li>
+          <li>Policy d'uso dell'AI su misura e 90 minuti di alfabetizzazione AI Act con attestato</li>
+          <li>Aggiornamenti del modello e del software, assistenza su WhatsApp entro 2 giorni lavorativi</li>
+        </ul>
+        <p class="outcome">Per iniziare: obbligo AI Act coperto e l'assistente al lavoro in una settimana.</p>
+      </article>
+      <article class="plan panel featured">
+        <span class="badge">Il più scelto</span>
+        <span class="who">Studi e PMI fino a 10 persone</span>
+        <h3>Studio</h3>
+        <div class="price"><span data-m="€290" data-y="€2.900">€2.900</span><small data-m="/mese" data-y="/anno">/anno</small></div>
+        <p class="bill" data-m="+ €290 di attivazione una tantum · disdetta con 30 giorni" data-y="pari a €242 al mese · attivazione inclusa · risparmi €870">pari a €242 al mese · attivazione inclusa · risparmi €870</p>
+        <ul>
+          <li>Tutto di Essenziale, fino a 10 postazioni, con un PC dello studio come "cervello" condiviso</li>
+          <li>Base di conoscenza configurata con procedure, clienti e modelli dello studio</li>
+          <li>Mezza giornata di formazione pratica sui vostri casi, non su esempi finti</li>
+          <li>Assistenza entro un giorno lavorativo e revisione trimestrale di come lo usate</li>
+        </ul>
+        <p class="outcome">Il team lavora con l'AI ogni giorno e nessun documento lascia lo studio.</p>
+      </article>
+      <article class="plan panel">
+        <span class="who">Fino a 25 persone, con automazioni</span>
+        <h3>Partner</h3>
+        <div class="price"><span data-m="€590" data-y="€5.900">€5.900</span><small data-m="/mese" data-y="/anno">/anno</small></div>
+        <p class="bill" data-m="+ €290 di attivazione una tantum · disdetta con 30 giorni" data-y="pari a €492 al mese · attivazione inclusa · risparmi €1.470">pari a €492 al mese · attivazione inclusa · risparmi €1.470</p>
+        <ul>
+          <li>Tutto di Studio, fino a 25 postazioni</li>
+          <li>Ogni mese un flusso di lavoro automatizzato: smistamento mail, prime bozze, controlli su documenti, report ricorrenti</li>
+          <li>Assistenza prioritaria, anche in giornata</li>
+          <li>Richiamo formativo trimestrale e policy aggiornata quando cambia la norma</li>
+        </ul>
+        <p class="outcome">Un referente AI di studio, senza assumere nessuno.</p>
+      </article>
+    </div>
+    <p class="fine">Prezzi IVA esclusa. Mensile: si paga mese per mese e si disdice con 30 giorni di preavviso, senza penali. Annuale: si paga in anticipo, in un'unica soluzione o in due rate semestrali, e vale 12 mesi al prezzo di 10. Postazioni oltre il piano: 12 € al mese l'una. Si cambia piano quando si vuole: la differenza si calcola a giorni. La prima chiamata di 30 minuti è sempre gratuita.</p>
+  </div>
+</section>
+
+<section id="come">
+  <div class="wrap">
+    <span class="tag">Come funziona</span>
+    <h2 style="margin-top:12px">Dalla prima chiamata allo studio operativo in due settimane.</h2>
+    <div class="steps">
+      <div class="step"><span class="n"></span><h3>Chiamata di 30 minuti</h3><p>Mi raccontate come lavorate e cosa vi preoccupa. Vi dico subito se ha senso proseguire e quale abbonamento vi serve.</p><span class="when">Gratuita · entro 3 giorni</span></div>
+      <div class="step"><span class="n"></span><h3>Diagnosi e policy</h3><p>Due ore con il team, incluse nell'abbonamento. Mappo strumenti, dati, PC disponibili. Consegno policy e report.</p><span class="when">Settimana 1</span></div>
+      <div class="step"><span class="n"></span><h3>Installazione e formazione</h3><p>Una giornata in studio: installo, collego la cartella documenti, formo il team sui casi vostri, non su esempi finti.</p><span class="when">Settimana 2</span></div>
+      <div class="step"><span class="n"></span><h3>Abbonamento attivo</h3><p>Aggiornamenti, risposte alle domande, nuovi flussi quando servono. Un referente, non un ticket. Mensile o annuale, come preferite.</p><span class="when">Dal mese 1 in avanti</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="jarvis">
+  <div class="wrap two">
+    <div class="stack">
+      <span class="tag">Lo strumento</span>
+      <h2>J.A.R.V.I.S.: l'assistente che installo è open source e lo potete vedere ora.</h2>
+      <p class="muted">L'ho costruito io. Gira su Windows, macOS, Linux e nel browser con un modello linguistico locale (Qwen3, fino a 8 miliardi di parametri), oppure con Claude di Anthropic se lo studio preferisce la qualità del cloud sotto contratto.</p>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Chat con i documenti dello studio.</b> PDF, Word, email e testi vengono letti e cercati sul computer. Ogni risposta cita file e pagina, così si verifica in un clic.</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Impara e ricorda.</b> Studia un argomento sul web, legge le fonti e salva ciò che conta in una base di conoscenza dello studio che cresce ogni giorno.</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Strumenti da studio con numeri esatti.</b> Scorporo IVA, fattura del professionista con cassa e ritenuta, scadenze con festività, verifica di codice fiscale, partita IVA e IBAN.</span></li>
+        <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Voce e promemoria.</b> Risponde a voce, imposta scadenze, chiede conferma prima delle azioni rischiose e non finge mai di aver fatto ciò che non ha fatto.</span></li>
+      </ul>
+      <div class="chips"><span class="chip">100% locale</span><span class="chip">documenti con citazioni</span><span class="chip">base di conoscenza</span><span class="chip">voce in italiano</span><span class="chip">licenza MIT</span></div>
+      <div class="cta-row" style="margin-top:6px">
+        <a class="btn btn-primary" href="app/">Apri J.A.R.V.I.S.</a>
+        <a class="btn btn-ghost" href="https://github.com/antoniodifranco79-lab/jarvis" rel="noopener">Codice sorgente</a>
+      </div>
+      <p class="cta-note">Gratis e senza chiave: il modello gira nel browser e si scarica una volta. Trascini un PDF e chieda cosa dice, oppure "studia" un argomento: il file non lascia il dispositivo. Per la voce più realistica usi Microsoft Edge.</p>
+    </div>
+    <div class="terminal panel">
+      <div class="panel-head"><span>console // sessione di studio</span><b>locale</b></div>
+<pre><span class="c"># esempio reale in studio</span>
+<span class="u">Tu ›</span> Jarvis, riassumi il contratto di locazione nella cartella Rossi e segnala le clausole sul recesso.
+<span class="t">[search_documents · Rossi/locazione.pdf · 3 passaggi]</span>
+<span class="j">Jarvis ›</span> Contratto 4+4 a uso abitativo, canone 850 euro mensili [1]. Recesso del conduttore con preavviso di sei mesi per gravi motivi [2]. Non trovo clausole sul deposito cauzionale, Signore.
+<span class="c">  fonti: [1] locazione.pdf, p. 1 · [2] locazione.pdf, p. 3</span>
+<span class="u">Tu ›</span> Studia le scadenze fiscali di dicembre e ricordatele.
+<span class="t">[web_search · web_fetch agenziaentrate.gov.it · learn ×3]</span>
+<span class="j">Jarvis ›</span> Fatto: ho salvato tre voci nella base di conoscenza, con le fonti ufficiali. La più vicina è il saldo IMU del 16 dicembre.
+<span class="c"># nessun documento ha lasciato il computer</span></pre>
+    </div>
+  </div>
+</section>
+
+<section id="chi">
+  <div class="wrap about-grid">
+    <div class="stack">
+      <span class="tag">Chi sono</span>
+      <h2>Leonardo Di Franco</h2>
+      <p class="muted">Costruisco software e sistemi di intelligenza artificiale che le persone possono usare senza fidarsi ciecamente di nessuno, me compreso. J.A.R.V.I.S. è nato così: un assistente che gira sul proprio computer, con il codice aperto perché chiunque possa verificare cosa fa con i dati.</p>
+      <p class="muted">Lavoro con studi professionali e piccole imprese perché sono quelli che oggi rischiano di più: usano l'AI tanto quanto le grandi aziende, ma senza un ufficio legale e senza un reparto IT. Il mio lavoro è dare loro entrambe le cose per una giornata al mese.</p>
+    </div>
+    <div class="principles">
+      <div class="principle panel"><h3>I dati restano dove sono</h3><p>Se un processo si può fare in locale, si fa in locale. Il cloud si usa solo con un contratto firmato e per ciò che serve davvero.</p></div>
+      <div class="principle panel"><h3>Nessuna promessa magica</h3><p>Un modello locale è più lento e meno brillante di quelli da miliardi di dollari. Vi dico in diagnosi cosa farà bene e cosa no, prima che paghiate.</p></div>
+      <div class="principle panel"><h3>Prima le persone, poi gli strumenti</h3><p>La formazione non è una formalità per l'AI Act: è il motivo per cui dopo tre mesi lo strumento viene ancora usato.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <span class="tag">Domande frequenti</span>
+    <h2 style="margin-top:12px">Quello che chiedono tutti alla prima chiamata.</h2>
+    <div class="faq">
+      <details class="q"><summary>Serve un server o un computer speciale?</summary><p>No. Un PC con 16 GB di RAM fa girare un modello da 8 miliardi di parametri a velocità accettabile; con 8 GB si usa un modello più piccolo. Una scheda video aiuta molto. Se lo studio ha un PC in più, diventa il "cervello" condiviso di tutti.</p></details>
+      <details class="q"><summary>Quanto costa il modello linguistico?</summary><p>Zero. I modelli locali (Qwen3, Llama, Gemma) sono gratuiti e open source. L'abbonamento paga il mio lavoro di installazione, formazione, aggiornamento e assistenza, non licenze per utente.</p></details>
+      <details class="q"><summary>Funziona senza internet?</summary><p>Sì. Modello, memoria e documenti stanno sul computer. Internet serve solo per il meteo, le notizie o la ricerca web, se li volete.</p></details>
+      <details class="q"><summary>E se vogliamo la qualità di Claude o GPT?</summary><p>Si può: Jarvis usa anche Claude tramite API con un contratto commerciale che esclude l'addestramento sui vostri dati. In diagnosi decidiamo insieme quali attività restano in locale e quali, se volete, vanno in cloud.</p></details>
+      <details class="q"><summary>Impara davvero le cose del nostro studio?</summary><p>Sì. Ogni volta che gli insegnate una procedura, un cliente o una regola, o che studia un argomento sul web, salva una scheda nella base di conoscenza dello studio, con la fonte. Le schede sono file di testo che potete leggere e correggere.</p></details>
+      <details class="q"><summary>La formazione vale per l'AI Act?</summary><p>L'articolo 4 chiede competenze adeguate al contesto d'uso, non un corso standard. La sessione è progettata sui vostri strumenti e casi, e rilascio un attestato con programma e presenze da conservare come documentazione.</p></details>
+      <details class="q"><summary>Esistono contributi pubblici?</summary><p>Spesso sì. Molte Camere di Commercio finanziano l'intelligenza artificiale con il Voucher Doppia Transizione 2026: a Roma, per esempio, il contributo è il 70% su una spesa minima di 3.000 €, che l'abbonamento annuale Partner supera da solo. La formazione dei dipendenti può essere finanziata dai fondi interprofessionali, come Fondoprofessioni per gli studi. Requisiti e scadenze cambiano da provincia a provincia: li verifico con voi in diagnosi, prima di iniziare.</p></details>
+      <details class="q"><summary>Meglio mensile o annuale?</summary><p>Il mensile è per chi vuole provare: si paga mese per mese, con 290 € di attivazione, e si disdice con 30 giorni di preavviso. L'annuale costa come 10 mesi, l'attivazione è inclusa e si può pagare in due rate semestrali. Si passa dal mensile all'annuale quando volete, scalando quanto già pagato.</p></details>
+      <details class="q"><summary>Cosa succede se non siamo soddisfatti?</summary><p>Il mensile si interrompe con 30 giorni di preavviso; l'annuale non si rinnova se lo disdite entro 30 giorni dalla scadenza. Il software resta installato e vostro: è open source, nessun blocco.</p></details>
+    </div>
+  </div>
+</section>
+
+<section id="contatti">
+  <div class="wrap">
+    <span class="tag">Canale diretto</span>
+    <h2 style="margin-top:12px">Prenota la diagnosi gratuita di 30 minuti.</h2>
+    <p class="muted narrow" style="margin-top:12px">Chiamami o scrivimi due righe su come lavora lo studio. Rispondo entro un giorno lavorativo con tre proposte di orario.</p>
+    <div class="contact panel" style="margin-top:28px">
+      <div>
+        <div class="panel-head" style="margin:-26px -26px 18px"><span>linea diretta</span><b>attiva</b></div>
+        <a class="phone" href="tel:+393791667781">+39 379 166 7781</a>
+        <div class="cta-row"><a class="btn btn-primary" href="https://wa.me/393791667781?text=Ciao%20Leonardo%2C%20vorrei%20prenotare%20la%20diagnosi%20AI%20gratuita." rel="noopener">WhatsApp</a></div>
+        <div class="contact-list" id="contactList"></div>
+        <p class="muted" style="margin-top:18px; font-size:.94rem">Il sito non usa cookie né tracker. Quello che mi scrivi resta tra noi.</p>
+      </div>
+      <form class="brief" id="brief">
+        <label>Nome e studio<input id="f-nome" name="nome" autocomplete="name" placeholder="Maria Rossi, Studio Rossi &amp; Associati"></label>
+        <label>Tipo di attività
+          <select id="f-tipo" name="tipo"><option>Commercialista</option><option>Avvocato</option><option>Notaio</option><option>Consulente del lavoro</option><option>Studio tecnico</option><option>PMI</option><option>Altro</option></select>
+        </label>
+        <label>Quante persone usano il computer in studio<input id="f-persone" name="persone" inputmode="numeric" placeholder="es. 6"></label>
+        <label>Cosa vorresti risolvere<textarea id="f-msg" name="messaggio" placeholder="Es. i collaboratori usano ChatGPT con i dati dei clienti e vorrei un'alternativa sicura"></textarea></label>
+        <button class="btn btn-primary" type="submit">Prepara il messaggio</button>
+        <div class="brief-out" id="briefOut"></div>
+      </form>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>© 2026 Leonardo Di Franco · AI privata per studi professionali e PMI</span>
+    <span><a href="https://github.com/antoniodifranco79-lab/jarvis" rel="noopener">GitHub</a> · <a href="app/">J.A.R.V.I.S.</a> · <a href="#top">Torna su</a></span>
+  </div>
+</footer>
+
+<script>
+/* REACTOR:START */
+/* J.A.R.V.I.S. holographic reactor, shared by the browser app, the desktop HUD and the site.
+   Usage: JarvisReactor.create(canvas, { getState: () => ({ state: "idle", level: 0 }), label: "..." }).
+   States: idle, listening, thinking, transcribing, tool, loading, speaking, awaiting_approval, error. */
+(function (root) {
+  "use strict";
+  const PALETTE = {
+    idle: [86, 214, 255], speaking: [150, 236, 255], listening: [110, 255, 205],
+    thinking: [255, 172, 64], transcribing: [255, 172, 64], tool: [255, 172, 64], loading: [255, 172, 64],
+    awaiting_approval: [255, 118, 84], error: [255, 84, 104],
+  };
+  function create(canvas, opts) {
+    opts = opts || {};
+    const ctx = canvas.getContext("2d");
+    const reduced = root.matchMedia && root.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const getState = opts.getState || (() => ({ state: "idle", level: 0 }));
+    const label = (opts.label || "J.A.R.V.I.S. · JUST A RATHER VERY INTELLIGENT SYSTEM · ").toUpperCase();
+    const col = PALETTE.idle.slice(), bars = new Float32Array(72);
+    let W = 0, H = 0, dpr = 1, energy = 0.25, raf = 0, running = true, last = 0;
+    const t0 = performance.now();
+    function resize() {
+      const r = canvas.getBoundingClientRect();
+      dpr = Math.min(2, root.devicePixelRatio || 1); W = Math.max(60, r.width); H = Math.max(60, r.height);
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    }
+    if (root.ResizeObserver) new ResizeObserver(resize).observe(canvas); else root.addEventListener("resize", resize);
+    resize();
+    const rgba = (a) => "rgba(" + (col[0] | 0) + "," + (col[1] | 0) + "," + (col[2] | 0) + "," + a.toFixed(3) + ")";
+    function frame(now) {
+      const st = getState() || {}, s = st.state || "idle", target = PALETTE[s] || PALETTE.idle;
+      for (let i = 0; i < 3; i++) col[i] += (target[i] - col[i]) * 0.08;
+      const t = (now - t0) / 1000, busy = /thinking|tool|transcribing|loading/.test(s);
+      const spd = reduced ? 0 : busy ? 2.2 : s === "speaking" ? 1.2 : s === "listening" ? 1 : 0.35;
+      energy += ((busy ? 1 : s === "speaking" ? 0.8 : s === "listening" ? 0.65 : 0.25) - energy) * 0.05;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+      const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.46;
+      let g = ctx.createRadialGradient(cx, cy, R * 0.05, cx, cy, R * 1.08);
+      g.addColorStop(0, rgba(0.2 + 0.14 * energy)); g.addColorStop(0.4, rgba(0.05)); g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      ctx.save(); ctx.translate(cx, cy); ctx.lineCap = "round"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      // outer bezel: 180 ticks and bearings
+      ctx.save(); ctx.rotate(t * spd * 0.03);
+      for (let i = 0; i < 180; i++) {
+        const a = (i / 180) * Math.PI * 2, major = i % 15 === 0, mid = i % 5 === 0;
+        const r2 = R - (major ? R * 0.065 : mid ? R * 0.035 : R * 0.018);
+        ctx.strokeStyle = rgba(major ? 0.95 : mid ? 0.5 : 0.22); ctx.lineWidth = major ? 1.8 : 1;
+        ctx.beginPath(); ctx.moveTo(Math.cos(a) * R, Math.sin(a) * R); ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2); ctx.stroke();
+      }
+      ctx.fillStyle = rgba(0.75); ctx.font = Math.max(8, R * 0.036) + 'px "Share Tech Mono", monospace';
+      for (let d = 0; d < 360; d += 30) { ctx.save(); ctx.rotate((d / 180) * Math.PI); ctx.fillText(String(d).padStart(3, "0"), 0, -(R - R * 0.11)); ctx.restore(); }
+      ctx.restore();
+      // segmented ring
+      ctx.save(); ctx.rotate(t * spd * 0.25); ctx.lineCap = "butt";
+      for (let i = 0, n = 24; i < n; i++) {
+        const a0 = (i / n) * Math.PI * 2, a1 = a0 + ((Math.PI * 2) / n) * 0.72;
+        ctx.strokeStyle = rgba(i % 6 === 0 ? 0.95 : i % 2 ? 0.3 : 0.58); ctx.lineWidth = R * (i % 6 === 0 ? 0.036 : 0.022);
+        ctx.beginPath(); ctx.arc(0, 0, R * 0.82, a0, a1); ctx.stroke();
+      }
+      ctx.restore(); ctx.lineCap = "round";
+      // counter-rotating arcs with markers
+      ctx.save(); ctx.rotate(-t * spd * 0.45); ctx.lineWidth = 1.6;
+      for (let k = 0; k < 3; k++) {
+        const a = (k * Math.PI * 2) / 3, rr = R * 0.745, m = a + 1.4;
+        ctx.strokeStyle = rgba(0.75); ctx.beginPath(); ctx.arc(0, 0, rr, a, m); ctx.stroke();
+        ctx.fillStyle = rgba(0.95); ctx.beginPath();
+        ctx.moveTo(Math.cos(m) * (rr + R * 0.032), Math.sin(m) * (rr + R * 0.032)); ctx.lineTo(Math.cos(m + 0.05) * rr, Math.sin(m + 0.05) * rr);
+        ctx.lineTo(Math.cos(m) * (rr - R * 0.032), Math.sin(m) * (rr - R * 0.032)); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      // circular legend
+      ctx.save(); ctx.rotate(t * spd * 0.12); ctx.fillStyle = rgba(0.55); ctx.font = Math.max(7, R * 0.042) + 'px "Share Tech Mono", monospace';
+      const step = (Math.PI * 2) / label.length;
+      for (let i = 0; i < label.length; i++) { ctx.save(); ctx.rotate(i * step); ctx.fillText(label[i], 0, -R * 0.665); ctx.restore(); }
+      ctx.restore();
+      // voice spectrum
+      const n = bars.length, active = s === "speaking" || s === "listening";
+      for (let i = 0; i < n; i++) {
+        const env = active ? (s === "listening" ? Math.max(0.15, st.level || 0) : 0.35 + 0.65 * Math.abs(Math.sin(t * 6 + i * 0.9)) * Math.random()) : 0.06 + 0.04 * Math.sin(t * 2 + i);
+        bars[i] += (env * (0.5 + 0.5 * Math.abs(Math.sin(i * 2.3 + t * 3))) - bars[i]) * (reduced ? 1 : 0.22);
+      }
+      ctx.save(); ctx.rotate(-Math.PI / 2); ctx.lineWidth = Math.max(1.5, R * 0.012);
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * Math.PI * 2, r0 = R * 0.5, h = R * 0.015 + bars[i] * R * 0.11;
+        ctx.strokeStyle = rgba(0.32 + bars[i] * 0.6); ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * (r0 + h), Math.sin(a) * (r0 + h)); ctx.stroke();
+      }
+      ctx.restore();
+      // radar sweep while working
+      if ((busy || energy > 0.6) && ctx.createConicGradient) {
+        ctx.save(); ctx.rotate(t * 3.2);
+        const sw = ctx.createConicGradient(0, 0, 0); sw.addColorStop(0, rgba(0)); sw.addColorStop(0.88, rgba(0)); sw.addColorStop(1, rgba(0.4 * energy));
+        ctx.fillStyle = sw; ctx.beginPath(); ctx.arc(0, 0, R * 0.62, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+      // reactor coils
+      ctx.save(); ctx.rotate(t * spd * 0.08); ctx.lineWidth = 1.2;
+      for (let i = 0, c = 10; i < c; i++) {
+        ctx.save(); ctx.rotate((i / c) * Math.PI * 2); ctx.fillStyle = rgba(0.14 + 0.2 * energy); ctx.strokeStyle = rgba(0.85);
+        ctx.beginPath(); ctx.moveTo(-R * 0.034, -R * 0.42); ctx.lineTo(R * 0.034, -R * 0.42); ctx.lineTo(R * 0.056, -R * 0.27); ctx.lineTo(-R * 0.056, -R * 0.27); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      ctx.strokeStyle = rgba(0.9); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, R * 0.44, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, R * 0.25, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+      // core
+      const pulse = reduced ? 0.7 : 0.6 + 0.4 * Math.sin(t * (busy ? 7 : 2.2)) * (0.5 + energy * 0.5);
+      g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 0.24);
+      g.addColorStop(0, "rgba(255,255,255,0.95)"); g.addColorStop(0.25, rgba(0.95)); g.addColorStop(0.6, rgba(0.35 * pulse)); g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R * 0.24, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = rgba(1); ctx.shadowBlur = R * 0.15 * pulse; ctx.fillStyle = "rgba(235,252,255,0.96)";
+      ctx.beginPath(); ctx.arc(0, 0, R * 0.075, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+      // satellites
+      for (let k = 0; k < 3; k++) { const a = t * spd * (0.6 + k * 0.25) + k * 2.1, rr = R * (0.9 + k * 0.025); ctx.fillStyle = rgba(0.9); ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr, Math.max(1.5, R * 0.011), 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+      last = now;
+      if (!running) return;
+      if (reduced) setTimeout(() => { raf = requestAnimationFrame(frame); }, 400); else raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) { running = false; cancelAnimationFrame(raf); }
+      else if (!running) { running = true; raf = requestAnimationFrame(frame); }
+    });
+    return { stop() { running = false; cancelAnimationFrame(raf); }, get lastFrame() { return last; } };
+  }
+  root.JarvisReactor = { create };
+})(typeof window !== "undefined" ? window : globalThis);
+/* REACTOR:END */
+</script>
+<script>
+(() => {
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cycle = [["idle", 6000], ["thinking", 2600], ["speaking", 3200]];
+  let state = "idle", i = 0;
+  window.JarvisReactor.create(document.getElementById("heroReactor"), { getState: () => ({ state, level: 0 }), label: "LEONARDO DI FRANCO \u00b7 AI PRIVATA \u00b7 I DATI RESTANO NEL TUO STUDIO \u00b7 " });
+  if (!reduced) { const next = () => { i = (i + 1) % cycle.length; state = cycle[i][0]; setTimeout(next, cycle[i][1]); }; setTimeout(next, cycle[0][1]); }
+  const clock = document.getElementById("hudClock"), pad = (n) => String(n).padStart(2, "0");
+  const tick = () => { const d = new Date(); clock.textContent = `SISTEMI ONLINE · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+  tick(); setInterval(tick, 1000);
+})();
+</script>
+<script>
+// Abbonamenti: mensile o annuale. Il testo di ogni prezzo è nei data-m / data-y; senza JavaScript resta l'annuale.
+(() => {
+  const btns = document.querySelectorAll(".billing button");
+  const set = (k) => {
+    btns.forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.billing === k)));
+    document.querySelectorAll("#servizi [data-m]").forEach((el) => { el.textContent = el.dataset[k]; });
+    try { localStorage.setItem("billing", k); } catch {}
+  };
+  btns.forEach((b) => b.addEventListener("click", () => set(b.dataset.billing)));
+  let saved = null; try { saved = localStorage.getItem("billing"); } catch {}
+  if (saved === "m" || saved === "y") set(saved);
+})();
+</script>
+<script>
+// Canali di contatto: compila i campi vuoti (email, telefono, LinkedIn) e il sito li mostra da solo.
+const CONTACT = {
+  email: "",          // es. "nome@dominio.it"
+  phone: "+39 379 166 7781", // mostrato anche come WhatsApp
+  linkedin: "",       // es. "https://www.linkedin.com/in/..."
+  github: "https://github.com/antoniodifranco79-lab",
+};
+const list = document.getElementById("contactList");
+function row(k, html) { const d = document.createElement("div"); d.className = "contact-row"; d.innerHTML = `<span class="k">${k}</span>${html}`; list.appendChild(d); return d; }
+function copyBtn(text) { const b = document.createElement("button"); b.type = "button"; b.className = "copy"; b.textContent = "Copia"; b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(text); b.textContent = "Copiato"; } catch { b.textContent = "Seleziona e copia"; } setTimeout(() => (b.textContent = "Copia"), 1800); }); return b; }
+if (CONTACT.email) { const r = row("Email", `<a href="mailto:${CONTACT.email}">${CONTACT.email}</a>`); r.appendChild(copyBtn(CONTACT.email)); }
+if (CONTACT.phone) { const digits = CONTACT.phone.replace(/[^\d+]/g, ""); const r = row("Telefono", `<code>${CONTACT.phone}</code> <a href="https://wa.me/${digits.replace("+", "")}" rel="noopener">WhatsApp</a>`); r.appendChild(copyBtn(CONTACT.phone)); }
+if (CONTACT.linkedin) row("LinkedIn", `<a href="${CONTACT.linkedin}" rel="noopener">${CONTACT.linkedin.replace(/^https?:\/\/(www\.)?/, "")}</a>`);
+if (CONTACT.github) row("GitHub", `<a href="${CONTACT.github}" rel="noopener">${CONTACT.github.replace(/^https?:\/\//, "")}</a>`);
+if (!CONTACT.email && !CONTACT.phone) row("Nota", `<span class="muted">Email e telefono in arrivo: nel frattempo scrivi su GitHub.</span>`);
+
+// Il modulo non invia nulla a server esterni: compone il testo da incollare nell'email o in WhatsApp.
+document.getElementById("brief").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = (id) => document.getElementById(id).value.trim();
+  // Origine del contatto: solo i parametri UTM/gclid del link con cui è arrivato, scritti nel messaggio. Niente cookie.
+  const q = new URLSearchParams(location.search);
+  const src = ["utm_source", "utm_medium", "utm_campaign", "gclid"].map((k) => q.get(k)).filter(Boolean).join(" / ");
+  const text = `Ciao Leonardo,\n\nsono ${v("f-nome") || "[nome e studio]"} (${v("f-tipo")}). In studio usiamo il computer in ${v("f-persone") || "[n]"} persone.\n\nVorrei risolvere: ${v("f-msg") || "[cosa vorresti risolvere]"}\n\nQuando possiamo fare la chiamata di 30 minuti?${src ? `\n\n(Fonte: ${src})` : ""}`;
+  const out = document.getElementById("briefOut");
+  const subject = encodeURIComponent("Diagnosi AI gratuita: " + (v("f-nome") || "richiesta dal sito"));
+  const wa = CONTACT.phone ? `<a class="btn btn-primary" href="https://wa.me/${CONTACT.phone.replace(/\D/g, "")}?text=${encodeURIComponent(text)}" rel="noopener">Invia su WhatsApp</a>` : "";
+  const mail = CONTACT.email ? `<a class="btn btn-ghost" href="mailto:${CONTACT.email}?subject=${subject}&body=${encodeURIComponent(text)}">Apri nell'email</a>` : "";
+  out.innerHTML = `<b>Messaggio pronto.</b> Invialo con un tocco oppure copialo.<p class="cta-row">${wa}${mail}</p><pre>${text.replace(/</g, "&lt;")}</pre>`;
+  out.classList.add("show");
+  out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+</script>
+</body>
+</html>
