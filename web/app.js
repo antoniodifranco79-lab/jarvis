@@ -38,7 +38,7 @@ const store = {
   get(key, fallback) { try { const v = localStorage.getItem(PREFIX + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem(PREFIX + key, JSON.stringify(value)); } catch {} },
 };
-const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "", provider: "local", claudeModel: "claude-opus-5-5", voiceIt: "", voiceEn: "", voiceRate: 1, voiceGender: "male", puterModel: "", studio: "", signer: "", textSize: 1, privateMode: false, pinHash: "", briefing: true, sound: true, plan: "", billing: "annuale", renewal: "" }, store.get("settings", {}));
+const settings = Object.assign({ name: "Signore", city: "", lang: "it-IT", model: "auto", think: false, lastModel: "", provider: "local", claudeModel: "claude-opus-5-5", voiceIt: "", voiceEn: "", voiceRate: 1, voiceGender: "male", puterModel: "", studio: "", signer: "", textSize: 1, privateMode: false, pinHash: "", briefing: true, sound: true, uiSound: true, plan: "", billing: "annuale", renewal: "" }, store.get("settings", {}));
 const claudeKey = { get: () => store.get("claudeKey", ""), set: (k) => store.set("claudeKey", k) };
 const usingClaude = () => settings.provider === "claude";
 const usingPuter = () => settings.provider === "puter";
@@ -500,7 +500,7 @@ function streamRenderer() {
     if (shown < target.length) { shown = reduced ? target.length : Math.min(target.length, shown + Math.max(2, Math.ceil((target.length - shown) / 7))); body.textContent = target.slice(0, shown); scrollDown(); }
     if (shown < target.length) raf = requestAnimationFrame(tick);
   };
-  const bubble = () => { if (!el) { hideTyping(); el = addTurn("jarvis streaming", "", "jarvis"); body = el.querySelector(".body"); spoken = ""; buffer = ""; shown = 0; lastEl = el; created.push(el); } };
+  const bubble = () => { if (!el) { if (!lastEl) uiFx("reply"); hideTyping(); el = addTurn("jarvis streaming", "", "jarvis"); body = el.querySelector(".body"); spoken = ""; buffer = ""; shown = 0; lastEl = el; created.push(el); } };
   const flushSpeech = (final) => { const rest = buffer.slice(spoken.length); if (final) { if (rest.trim()) speak(rest.trim()); spoken = buffer; return; } const m = /^([\s\S]*?[.!?])\s/.exec(rest); if (m && m[1].length > 12) { speak(m[1]); spoken += m[0]; } };
   const close = () => { if (el) { if (raf) cancelAnimationFrame(raf); raf = 0; el.classList.remove("streaming"); body.textContent = buffer.trimStart(); body.dataset.raw = buffer.trim(); richify(el); flushSpeech(true); el = null; scrollDown(); } };
   showTyping();
@@ -751,7 +751,7 @@ let busy = false;
 async function ask(text, opts = {}) {
   text = (text || "").trim(); if (!text) return;
   if (busy) { if (!opts.queued) { app.queue.push(text); input.value = ""; addTurn("user", text, "lei"); addTurn("system", "in coda: rispondo appena finisco"); } return; }
-  busy = true; app.aborted = false; if (!/^(ripeti|basta|stop)/i.test(text)) voice.stop(); if (!opts.queued) input.value = ""; $("sendBtn").classList.add("stop");
+  busy = true; uiFx("send"); app.aborted = false; if (!/^(ripeti|basta|stop)/i.test(text)) voice.stop(); if (!opts.queued) input.value = ""; $("sendBtn").classList.add("stop");
   app.currentQ = text; if (!opts.retry) { inputHistory.push(text); inputHistory = inputHistory.slice(-50); store.set("inputHistory", inputHistory); } histPos = inputHistory.length; track("questions"); document.title = "● J.A.R.V.I.S.";
   if (!opts.queued) addTurn("user", text, "lei"); setState("thinking");
   try {
@@ -904,7 +904,7 @@ function openSettings(focus) {
   $("setProvider").value = settings.provider || "claude"; $("setKey").value = claudeKey.get(); $("setClaudeModel").value = settings.claudeModel || "claude-opus-5-5"; $("keyStatus").textContent = claudeKey.get() ? "Chiave salvata su questo dispositivo." : "";
   fillVoices(); $("setVoiceRate").value = settings.voiceRate || 1; $("setVoiceGender").value = settings.voiceGender || "male";
   $("setStudio").value = settings.studio || ""; $("setSigner").value = settings.signer || ""; $("setPlan").value = settings.plan || ""; $("setBilling").value = settings.billing || "annuale"; $("setRenewal").value = settings.renewal || "";
-  $("setTextSize").value = String(settings.textSize || 1); $("setBriefing").checked = settings.briefing !== false; $("setSound").checked = settings.sound !== false; $("setPrivate").checked = !!settings.privateMode;
+  $("setTextSize").value = String(settings.textSize || 1); $("setBriefing").checked = settings.briefing !== false; $("setSound").checked = settings.sound !== false; $("setUiSound").checked = settings.uiSound !== false; $("setPrivate").checked = !!settings.privateMode;
   $("setPin").value = ""; $("pinNote").textContent = settings.pinHash ? "PIN attivo: J.A.R.V.I.S. lo chiede all'apertura." : "Nessun PIN: chi usa questo dispositivo vede la conversazione."; $("pinClear").hidden = !settings.pinHash; $("lockNow").hidden = !settings.pinHash;
   $("aboutLine").textContent = aboutText(); $("switchProfile").textContent = PERSONAL ? "Apri il Jarvis dello studio" : "Apri il mio Jarvis personale";
   syncProviderUI(); if (!dlg.open) dlg.showModal(); if (focus === "claude") $("setKey").focus();
@@ -932,7 +932,7 @@ $("setSave").onclick = async (e) => {
   settings.name = $("setName").value.trim() || "Signore"; settings.city = $("setCity").value.trim(); settings.lang = $("setLang").value; settings.model = $("setModel").value; settings.think = $("setThink").checked;
   settings.provider = $("setProvider").value; settings.claudeModel = $("setClaudeModel").value; readVoiceFields();
   settings.studio = $("setStudio").value.trim(); settings.signer = $("setSigner").value.trim(); settings.plan = $("setPlan").value; settings.billing = $("setBilling").value; settings.renewal = $("setRenewal").value;
-  settings.textSize = +$("setTextSize").value || 1; settings.briefing = $("setBriefing").checked; settings.sound = $("setSound").checked;
+  settings.textSize = +$("setTextSize").value || 1; settings.briefing = $("setBriefing").checked; settings.sound = $("setSound").checked; settings.uiSound = $("setUiSound").checked;
   const wasPrivate = settings.privateMode; settings.privateMode = $("setPrivate").checked; if (settings.privateMode && !wasPrivate) { store.set("history", []); store.set("claudeHistory", []); store.set("puterHistory", []); store.set("inputHistory", []); }
   const pin = $("setPin").value.trim(); if (pin) { if (!/^\d{4,8}$/.test(pin)) { $("pinNote").textContent = "Il PIN deve avere da 4 a 8 cifre."; return; } settings.pinHash = await hashPin(pin); }
   applyLook();
@@ -1063,6 +1063,80 @@ function renewalNotice() {
   else if (days <= 30) notice(`L'abbonamento ${settings.plan || ""} ${settings.billing} si rinnova tra ${days} giorni.${settings.billing === "mensile" ? " Passando all'annuale due mesi sono gratis." : ""}`);
 }
 
+// ---------------------------------------------------------------- suoni e vibrazioni dell'interfaccia (discreti, disattivabili)
+let uiAc = null;
+function uiFx(kind) {
+  if (settings.uiSound === false) return;
+  try {
+    if (kind === "send") navigator.vibrate?.(8);
+    uiAc ||= new (window.AudioContext || window.webkitAudioContext)();
+    const t = uiAc.currentTime, o = uiAc.createOscillator(), g = uiAc.createGain(), f = { send: [660, 990], reply: [880, 1320], open: [520, 780] }[kind] || [600, 900];
+    o.type = "sine"; o.frequency.setValueAtTime(f[0], t); o.frequency.exponentialRampToValueAtTime(f[1], t + 0.09);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.045, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g).connect(uiAc.destination); o.start(t); o.stop(t + 0.18);
+  } catch {}
+}
+
+// ---------------------------------------------------------------- pannello comandi (Ctrl/⌘+K)
+const palDlg = $("palette");
+const fold = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const COMMANDS = () => [
+  [PERSONAL ? "La mia giornata" : "Briefing del giorno", "giornata", () => ask("briefing")],
+  ["Modelli di documento", "word", () => openTemplates()],
+  ["Documenti caricati", "archivio", () => $("docsChip").click()],
+  ["Aggiungi documenti", "archivio", () => fileInput.click()],
+  ["Promemoria", "agenda", () => { renderReminders(); remDlg.showModal(); }],
+  ["Prossime scadenze fiscali", "studio", () => ask("prossime scadenze fiscali")],
+  ["Lista della spesa", "liste", () => ask("cosa devo comprare")],
+  ["Cose da fare", "liste", () => ask("cosa devo fare")],
+  ["Base di conoscenza", "memoria", () => $("knowledgeChip").click()],
+  ["Esporta la conversazione in Word", "conversazione", () => $("exportBtn").click()],
+  ["Nuova sessione", "conversazione", () => $("newSession").click()],
+  ["Impostazioni", "sistema", () => openSettings()],
+  ["Attiva Potenza massima", "cervello", () => { settings.provider = "puter"; store.set("settings", settings); location.reload(); }],
+  [PERSONAL ? "Apri il Jarvis dello studio" : "Apri il mio Jarvis personale", "profilo", () => { location.href = PERSONAL ? location.pathname : location.pathname + "?p=personale"; }],
+  ["Tempo risparmiato", "statistiche", () => ask("quanto tempo mi hai fatto risparmiare")],
+  ["Aiuto: cosa so fare", "sistema", () => ask("aiuto")],
+  ["Novità", "sistema", () => ask("novità")],
+  ...(settings.pinHash ? [["Blocca ora", "privacy", () => lockScreen()]] : []),
+];
+let palItems = [], palSel = 0;
+function renderPalette() {
+  const q = fold($("palInput").value.trim());
+  palItems = COMMANDS().filter(([l, k]) => !q || fold(l + " " + k).includes(q));
+  if (q) palItems.push([`Chiedi a Jarvis: "${$("palInput").value.trim()}"`, "domanda", () => ask($("palInput").value.trim())]);
+  palSel = Math.min(palSel, palItems.length - 1);
+  const ul = $("palList"); ul.innerHTML = "";
+  palItems.forEach(([label, kind], i) => { const li = document.createElement("li"); li.setAttribute("role", "option"); li.setAttribute("aria-selected", String(i === palSel)); li.innerHTML = "<span></span><span class=\"k\"></span>"; li.firstChild.textContent = label; li.lastChild.textContent = kind; li.onclick = () => runPalette(i); ul.appendChild(li); });
+}
+function runPalette(i) { const it = palItems[i]; if (!it) return; palDlg.close(); setTimeout(it[2], 30); }
+function openPalette() { if (!$("lock").hidden) return; $("palInput").value = ""; palSel = 0; renderPalette(); if (!palDlg.open) palDlg.showModal(); uiFx("open"); setTimeout(() => $("palInput").focus(), 20); }
+$("palInput").oninput = () => { palSel = 0; renderPalette(); };
+$("palInput").onkeydown = (e) => {
+  if (e.key === "ArrowDown") { e.preventDefault(); palSel = (palSel + 1) % palItems.length; renderPalette(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); palSel = (palSel - 1 + palItems.length) % palItems.length; renderPalette(); }
+  else if (e.key === "Enter") { e.preventDefault(); runPalette(palSel); }
+};
+$("paletteBtn").onclick = openPalette;
+$("paletteBtn").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPalette(); } };
+document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); palDlg.open ? palDlg.close() : openPalette(); } });
+
+// ---------------------------------------------------------------- benvenuto al primo avvio
+function onboarding() {
+  const d = $("onboard"), steps = [...d.querySelectorAll("section")], dots = [...d.querySelectorAll(".ob-dots i")];
+  const show = (n) => { steps.forEach((x, i) => (x.hidden = i !== n - 1)); dots.forEach((x, i) => x.classList.toggle("on", i < n)); };
+  $("obName").value = settings.name === "Signore" ? "" : settings.name; $("obCity").value = settings.city;
+  $("obNext1").onclick = () => { settings.name = $("obName").value.trim() || "Signore"; settings.city = $("obCity").value.trim(); store.set("settings", settings); show(2); };
+  $("obName").onkeydown = $("obCity").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); $("obNext1").click(); } };
+  d.querySelectorAll(".ob-card").forEach((b) => (b.onclick = () => {
+    const brain = b.dataset.brain, change = brain !== settings.provider; settings.provider = brain; store.set("settings", settings);
+    $("obDone").textContent = brain === "puter" ? `Perfetto, ${settings.name}. Al prossimo passo colleghi il suo account Puter gratuito: da lì rispondo con i modelli di punta.` : `Perfetto, ${settings.name}. Penso su questo dispositivo: i suoi dati non escono da qui.`;
+    $("obGo").onclick = () => { store.set("onboarded", true); d.close(); if (change) location.reload(); else { input.focus(); renderSuggest(); } };
+    show(3);
+  }));
+  show(1); d.addEventListener("cancel", (e) => e.preventDefault()); d.showModal(); setTimeout(() => $("obName").focus(), 50);
+}
+
 // ---------------------------------------------------------------- knowledge: view, search, teach, export, import
 const kDlg = $("knowledgeDialog");
 const fmtWhen = (ms) => new Date(ms).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
@@ -1142,6 +1216,8 @@ const hour = new Date().getHours();
 addTurn("jarvis", `${hour < 12 ? "Buongiorno" : hour < 18 ? "Buon pomeriggio" : "Buonasera"}, ${settings.name}. ${PERSONAL ? `Sono il suo Jarvis personale: impegni, liste, promemoria, meteo e documenti di casa, tutto su questo dispositivo. Provi: "aggiungi latte e pane alla lista della spesa" o "ricordami domani alle 8 di chiamare il dentista".` : `Preparo i sistemi. Scriva "aiuto" per sapere cosa so fare, "modelli" per lettere e atti pronti, o trascini qui un documento.`}`, "jarvis", { plain: true });
 (() => { const today = new Date().toDateString(); if (settings.briefing !== false && store.get("lastBriefing", "") !== today) { store.set("lastBriefing", today); const b = briefing(); if (/Promemoria di oggi:|Scadenze fiscali entro|Cose da fare:/.test(b)) addTurn("jarvis", "Briefing del giorno. " + b, "jarvis", { plain: true }); } })();
 renewalNotice();
+// Primo avvio di questo profilo: benvenuto guidato (non nei test automatici, che hanno già i loro dati).
+if (!store.get("onboarded", false) && !navigator.webdriver) booted.then(() => { if ($("lock").hidden) onboarding(); });
 library.load().then(() => { renderDocs(); refreshTele(); });
 { const rq = store.get("retryQuestion", ""); if (rq) { store.set("retryQuestion", ""); app.queue.push(rq); addTurn("user", rq, "lei"); } }
 knowledge.load().then(renderKnowledge);

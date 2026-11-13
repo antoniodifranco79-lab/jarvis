@@ -96,6 +96,29 @@ dialog.holo::backdrop { background: rgba(2, 7, 13, 0.6); backdrop-filter: blur(4
 @keyframes dlg-in { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .turn, dialog.holo, .turn.typing .dots i { animation: none; } .turn .acts button:hover, .suggest button:hover { transform: none; } }
 body.personal .brand h1::after { content: "PERSONALE"; margin-left: 10px; font: 600 0.55rem var(--font-mono); letter-spacing: 0.2em; color: #1a1205; background: linear-gradient(135deg, #f3dcaa, #d4a95a); padding: 3px 7px; vertical-align: middle; }
+/* Pannello comandi e benvenuto */
+dialog.palette { width: min(640px, 94vw); padding: 14px; }
+.palette input { width: 100%; font-size: 1.05rem; padding: 12px 14px; }
+.palette ul { list-style: none; margin: 10px 0 6px; padding: 0; max-height: 52vh; overflow: auto; display: grid; gap: 2px; }
+.palette li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; cursor: pointer; border-left: 2px solid transparent; transition: background .15s var(--ease), border-color .15s var(--ease); }
+.palette li .k { font: 0.62rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.palette li[aria-selected="true"] { background: rgba(233, 201, 139, 0.1); border-left-color: var(--gold); }
+dialog.onboard { width: min(560px, 94vw); text-align: center; padding: 28px 26px 22px; }
+.onboard section { display: grid; gap: 12px; } .onboard section[hidden] { display: none; } .onboard label { text-align: left; }
+.onboard h2 { letter-spacing: 0.32em; color: var(--gold); margin: 4px 0 0; }
+.ob-lead { margin: 0 0 6px; color: var(--fg); opacity: .9; font-size: 1.02rem; }
+.ob-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; } .ob-dots i { width: 26px; height: 3px; background: var(--line); transition: background .3s var(--ease); } .ob-dots i.on { background: var(--gold); box-shadow: 0 0 10px var(--gold-dim); }
+.ob-mark { width: 74px; height: 74px; margin: 0 auto 4px; border-radius: 50%; border: 2px solid var(--holo); box-shadow: 0 0 30px rgba(86, 214, 255, .45), inset 0 0 22px rgba(86, 214, 255, .35); background: radial-gradient(circle, #fff 0 14%, rgba(86, 214, 255, .5) 15% 30%, transparent 31%); animation: ob-pulse 2.6s ease-in-out infinite; }
+.ob-cards { display: grid; gap: 12px; }
+.ob-card { position: relative; display: grid; gap: 6px; text-align: left; padding: 16px 18px !important; text-transform: none !important; letter-spacing: 0 !important; font-family: var(--font-ui) !important; font-size: 0.95rem !important; color: var(--fg) !important; background: rgba(86, 214, 255, 0.05) !important; border: 1px solid var(--line) !important; cursor: pointer; transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.ob-card:hover, .ob-card:focus-visible { transform: translateY(-2px); border-color: var(--gold-dim) !important; box-shadow: 0 10px 28px rgba(0, 0, 0, .35); }
+.ob-card b { font-family: var(--font-display); letter-spacing: .14em; font-size: .9rem; color: var(--holo); } .ob-card.best b { color: var(--gold); } .ob-card span { color: var(--muted); }
+.ob-card.best { border-color: var(--gold-dim) !important; box-shadow: 0 0 26px rgba(233, 201, 139, .12); }
+.ob-tag { position: absolute; top: -9px; right: 14px; font: 600 .58rem var(--font-mono) !important; letter-spacing: .16em; text-transform: uppercase; color: #1a1205 !important; background: linear-gradient(135deg, #f3dcaa, #d4a95a); padding: 3px 8px; }
+.ob-tips { text-align: left; margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); }
+button.primary { background: linear-gradient(135deg, #f3dcaa, #d4a95a) !important; color: #1a1205 !important; border: 0 !important; box-shadow: 0 0 22px rgba(233, 201, 139, .3); }
+@keyframes ob-pulse { 0%, 100% { box-shadow: 0 0 22px rgba(86, 214, 255, .35), inset 0 0 18px rgba(86, 214, 255, .3); } 50% { box-shadow: 0 0 40px rgba(86, 214, 255, .6), inset 0 0 26px rgba(86, 214, 255, .45); } }
+@media (prefers-reduced-motion: reduce) { .ob-mark { animation: none; } }
 @media (max-width: 1180px) { main { grid-template-columns: minmax(0, 1fr) minmax(320px, 44vw); } .left { display: none; } .strip { display: flex; } }
 @media (max-width: 760px) {
   body.hud { font-size: 16px; }
@@ -127,6 +150,7 @@ body.personal .brand h1::after { content: "PERSONALE"; margin-left: 10px; font: 
       <span class="chip act" id="tplChip" role="button" tabindex="0" title="Modelli di documento pronti">modelli</span>
       <span class="chip act" id="docsChip" role="button" tabindex="0" title="Documenti caricati su questo dispositivo">documenti</span>
       <span class="chip act" id="knowledgeChip" role="button" tabindex="0" title="Ciò che J.A.R.V.I.S. ha imparato">conoscenza</span>
+      <span class="chip act" id="paletteBtn" role="button" tabindex="0" title="Tutti i comandi (Ctrl+K)">⌘ comandi</span>
       <span class="chip act" id="settingsBtn" role="button" tabindex="0">impostazioni</span>
       <span class="chip state" id="stateChip" data-state="idle">idle</span>
       <span class="clock" id="tClock">--:--:--</span>
@@ -262,6 +286,7 @@ body.personal .brand h1::after { content: "PERSONALE"; margin-left: 10px; font: 
       <label>Dimensione del testo <select id="setTextSize"><option value="0.9">Piccola</option><option value="1">Normale</option><option value="1.15">Grande</option><option value="1.3">Molto grande</option></select></label>
       <label class="check"><input type="checkbox" id="setBriefing"> Briefing del giorno alla prima apertura (promemoria e scadenze)</label>
       <label class="check"><input type="checkbox" id="setSound"> Suono quando scatta un promemoria</label>
+      <label class="check"><input type="checkbox" id="setUiSound"> Suoni e vibrazioni dell'interfaccia</label>
     </fieldset>
     <fieldset class="voicebox">
       <legend>Privacy e dati</legend>
@@ -311,6 +336,36 @@ body.personal .brand h1::after { content: "PERSONALE"; margin-left: 10px; font: 
   <label>Modello <select id="tplSelect"></select></label>
   <div id="tplFields"></div>
   <div class="row"><button type="button" id="tplShow">Mostra nel testo</button><button type="button" id="tplWord">Scarica Word</button><button type="button" id="tplClose">Chiudi</button></div>
+</dialog>
+<dialog class="holo palette" id="palette" aria-label="Comandi">
+  <input id="palInput" placeholder="Cerca un comando o scriva una domanda…" autocomplete="off" spellcheck="false">
+  <ul id="palList" role="listbox"></ul>
+  <p class="dlg-note">↑ ↓ per scegliere · Invio per eseguire · Esc per chiudere · Ctrl+K per riaprire</p>
+</dialog>
+<dialog class="holo onboard" id="onboard" aria-label="Benvenuto">
+  <div class="ob-dots"><i class="on"></i><i></i><i></i></div>
+  <section data-step="1">
+    <div class="ob-mark" aria-hidden="true"></div>
+    <h2>BENVENUTO</h2>
+    <p class="ob-lead">Sono J.A.R.V.I.S. Due domande e sono pronto.</p>
+    <label>Come devo chiamarla? <input id="obName" placeholder="es. Leonardo" autocomplete="given-name"></label>
+    <label>In quale città vive? <span class="dlg-note">(per meteo e giornata)</span> <input id="obCity" placeholder="es. Milano" autocomplete="address-level2"></label>
+    <div class="row"><button type="button" id="obNext1" class="primary">Continua</button></div>
+  </section>
+  <section data-step="2" hidden>
+    <h2>IL MIO CERVELLO</h2>
+    <p class="ob-lead">Scelga come devo pensare. Si cambia quando vuole dalle impostazioni.</p>
+    <div class="ob-cards">
+      <button type="button" class="ob-card best" data-brain="puter"><span class="ob-tag">consigliato</span><b>Potenza massima</b><span>Claude e i modelli di punta del mondo. Risposte di livello professionale. Gratis con un account Puter, senza chiavi.</span></button>
+      <button type="button" class="ob-card" data-brain="local"><b>Privato</b><span>Gira su questo dispositivo: nulla esce da qui, funziona anche offline. Ideale per documenti riservati; più semplice nella conversazione.</span></button>
+    </div>
+  </section>
+  <section data-step="3" hidden>
+    <h2>TUTTO PRONTO</h2>
+    <p class="ob-lead" id="obDone"></p>
+    <ul class="ob-tips"><li>Trascini un documento e chieda "riassumi" o "estrai le scadenze"</li><li>"Ricordami domani alle 9 di…" e "aggiungi latte alla lista della spesa"</li><li>Ctrl+K o "⌘ comandi" per tutto il resto</li></ul>
+    <div class="row"><button type="button" id="obGo" class="primary">Iniziamo</button></div>
+  </section>
 </dialog>
 <div class="lock" id="lock" hidden>
   <form id="lockForm" class="lock-box">
