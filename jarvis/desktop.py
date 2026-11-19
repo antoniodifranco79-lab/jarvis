@@ -22,6 +22,25 @@ BUNDLE_ID = "ai.jarvis.hud"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
+def ensure_streams(log_dir: Path) -> Path | None:
+    """Give a console-less process (a windowed build on Windows) real stdout/stderr.
+
+    Without a console, sys.stdout and sys.stderr are None and uvicorn, logging and print crash on
+    start. Point them at log_dir/jarvis.log instead, which also leaves something to diagnose.
+    Returns the log path, or None when the console streams already exist.
+    """
+    if sys.stdout is not None and sys.stderr is not None:
+        return None
+    log_dir.mkdir(parents=True, exist_ok=True)
+    path = log_dir / "jarvis.log"
+    stream = open(path, "a", encoding="utf-8", errors="replace", buffering=1)  # noqa: SIM115 - process-wide
+    if sys.stdout is None:
+        sys.stdout = stream
+    if sys.stderr is None:
+        sys.stderr = stream
+    return path
+
+
 def free_port(preferred: int) -> int:
     for port in (preferred, 0):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

@@ -59,7 +59,7 @@ if sys.platform == "darwin":
         bundle_identifier="ai.jarvis.hud",
         info_plist={
             "CFBundleDisplayName": "J.A.R.V.I.S.",
-            "CFBundleShortVersionString": "1.0.0",
+            "CFBundleShortVersionString": "1.1.1",
             "NSHighResolutionCapable": True,
             "NSMicrophoneUsageDescription": "Jarvis listens for the wake word and your questions.",
             "NSCameraUsageDescription": "Jarvis can look through the camera when you ask.",

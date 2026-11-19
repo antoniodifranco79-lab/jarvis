@@ -5,4 +5,4 @@ persistent memory, a voice stack (wake word, speech-to-text, text-to-speech)
 and an arc-reactor HUD.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.1"

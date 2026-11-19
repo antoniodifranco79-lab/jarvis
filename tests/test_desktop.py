@@ -24,3 +24,35 @@ def test_macos_bundle(tmp_path):
 def test_free_port():
     port = free_port(0)
     assert 1024 < port < 65536
+
+
+def test_windowed_app_without_console_streams_logs_to_a_file(tmp_path, monkeypatch):
+    """A windowed PyInstaller build on Windows has sys.stdout/sys.stderr = None; uvicorn must still start."""
+    import sys
+
+    import uvicorn
+
+    from jarvis.desktop import ensure_streams
+
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+    log_file = ensure_streams(tmp_path)
+    assert sys.stdout is not None and sys.stderr is not None
+    uvicorn.Config(lambda scope, receive, send: None, log_level="warning")  # crashed before the fix
+    print("hello from a windowed app")
+    sys.stderr.write("an error line\n")
+    sys.stdout.flush()
+    sys.stderr.flush()
+    text = log_file.read_text(encoding="utf-8")
+    assert "hello from a windowed app" in text and "an error line" in text
+
+
+def test_ensure_streams_leaves_a_real_console_alone(tmp_path):
+    import sys
+
+    from jarvis.desktop import ensure_streams
+
+    before = (sys.stdout, sys.stderr)
+    assert ensure_streams(tmp_path) is None
+    assert (sys.stdout, sys.stderr) == before
+    assert not list(tmp_path.iterdir())

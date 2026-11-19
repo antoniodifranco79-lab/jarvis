@@ -27,6 +27,21 @@ jobs:
       - run: python -m pip install -e ".[server,voice,local,app]" pyinstaller
       - run: python -m pip install --no-deps openwakeword
       - run: pyinstaller packaging/jarvis.spec --noconfirm --clean
+      - name: Smoke test the windowed Windows build (no console streams)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:JARVIS_PROVIDER = "ollama"
+          $p = Start-Process -FilePath "dist\JARVIS\JARVIS.exe" -ArgumentList "serve","--port","8799" -PassThru
+          $ok = $false
+          foreach ($i in 1..60) {
+            Start-Sleep -Seconds 1
+            if ($p.HasExited) { break }
+            try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8799/api/status | Out-Null; $ok = $true; break } catch {}
+          }
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          if (Test-Path "$HOME\.jarvis\jarvis.log") { Get-Content "$HOME\.jarvis\jarvis.log" }
+          if (-not $ok) { Write-Error "the windowed JARVIS.exe did not start its server"; exit 1 }
       - name: Version
         id: ver
         shell: bash

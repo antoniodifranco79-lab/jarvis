@@ -346,6 +346,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    from pathlib import Path
+
+    from .desktop import ensure_streams
+
+    ensure_streams(Path(os.environ.get("JARVIS_DATA_DIR") or Path.home() / ".jarvis").expanduser())
     parser = build_parser()
     args = parser.parse_args(argv)
     logging.basicConfig(
