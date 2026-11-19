@@ -6,6 +6,7 @@ platform into the Jarvis data folder, then pulls the model; later launches just 
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import platform
@@ -14,8 +15,9 @@ import subprocess
 import sys
 import tarfile
 import zipfile
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
 from pathlib import Path
+from typing import BinaryIO
 
 import httpx
 
@@ -97,11 +99,9 @@ def extract_archive(archive: Path, dest: Path) -> None:
                     zf.extract(info, dest)
         return
     if name.endswith(".tar.zst"):
-        import zstandard
-
         with (
             open(archive, "rb") as fh,
-            zstandard.ZstdDecompressor().stream_reader(fh) as reader,
+            _zstd_reader(fh) as reader,
             tarfile.open(fileobj=reader, mode="r|") as tf,
         ):
             for member in tf:
@@ -112,6 +112,41 @@ def extract_archive(archive: Path, dest: Path) -> None:
         for member in tf.getmembers():
             if safe(member.name):
                 tf.extract(member, dest)
+
+
+@contextlib.contextmanager
+def _zstd_reader(fh: BinaryIO) -> Iterator[BinaryIO]:
+    """A decompressing stream over fh: the standard library (3.14+), the zstandard package, or the zstd command."""
+    try:
+        from compression import zstd  # type: ignore[import-not-found]
+
+        with zstd.ZstdFile(fh) as reader:
+            yield reader
+        return
+    except ImportError:
+        pass
+    try:
+        import zstandard
+
+        with zstandard.ZstdDecompressor().stream_reader(fh) as reader:
+            yield reader
+        return
+    except ImportError:
+        pass
+    command = shutil.which("zstd")
+    if command is None:
+        raise RuntimeError(
+            "the AI engine package is zstd-compressed and no decompressor is available; "
+            "run: pip install zstandard"
+        )
+    proc = subprocess.Popen([command, "-dc"], stdin=fh, stdout=subprocess.PIPE)
+    assert proc.stdout is not None
+    try:
+        yield proc.stdout
+    finally:
+        proc.stdout.close()
+        if proc.wait() != 0:
+            raise RuntimeError(f"zstd failed to unpack the AI engine (exit code {proc.returncode})")
 
 
 def _locate_binary(root: Path, system: str) -> Path | None:

@@ -94,3 +94,57 @@ async def test_download_engine_reports_progress_and_finds_binary(tmp_path, monke
     assert binary == engine.engine_dir(tmp_path) / "ollama.exe" and binary.read_bytes() == b"MZ fake"
     assert any("100%" in n for n in notices)
     assert not (engine.engine_dir(tmp_path) / "ollama-windows-amd64.zip").exists()
+
+
+def _tar_zst(path, payload: bytes = b"ELF"):
+    zstandard = pytest.importorskip("zstandard")
+    raw = io.BytesIO()
+    with tarfile.open(fileobj=raw, mode="w") as tf:
+        info = tarfile.TarInfo("bin/ollama")
+        info.size = len(payload)
+        tf.addfile(info, io.BytesIO(payload))
+    path.write_bytes(zstandard.ZstdCompressor().compress(raw.getvalue()))
+    return path
+
+
+def _block_zstd_modules(monkeypatch):
+    import sys
+
+    for name in ("zstandard", "compression.zstd"):
+        monkeypatch.setitem(sys.modules, name, None)
+
+
+def test_extract_tar_zst_without_python_zstd_explains_the_fix(tmp_path, monkeypatch):
+    archive = _tar_zst(tmp_path / "e.tar.zst")
+    _block_zstd_modules(monkeypatch)
+    monkeypatch.setattr(engine.shutil, "which", lambda name: None)
+    with pytest.raises(RuntimeError, match="zstandard"):
+        engine.extract_archive(archive, tmp_path / "out")
+
+
+@pytest.mark.skipif(__import__("os").name == "nt", reason="uses a POSIX shebang script")
+def test_extract_tar_zst_falls_back_to_the_zstd_command(tmp_path, monkeypatch):
+    import sys
+
+    archive = _tar_zst(tmp_path / "f.tar.zst", b"ELF2")
+    fake = tmp_path / "zstd"
+    fake.write_text(
+        f"#!{sys.executable}\n"
+        "import sys, zstandard\n"
+        "zstandard.ZstdDecompressor().copy_stream(sys.stdin.buffer, sys.stdout.buffer)\n"
+    )
+    fake.chmod(0o755)
+    _block_zstd_modules(monkeypatch)
+    monkeypatch.setattr(engine.shutil, "which", lambda name: str(fake) if name == "zstd" else None)
+    engine.extract_archive(archive, tmp_path / "out")
+    assert (tmp_path / "out" / "bin" / "ollama").read_bytes() == b"ELF2"
+
+
+def test_server_extra_ships_the_engine_decompressor():
+    from pathlib import Path
+
+    tomllib = pytest.importorskip("tomllib")
+
+    meta = tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text())
+    extras = meta["project"]["optional-dependencies"]
+    assert any(dep.startswith("zstandard") for dep in extras["server"])
